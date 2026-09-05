@@ -5,6 +5,12 @@ import { config } from './config';
 
 export interface Household { id: string; name: string; address: string; country?: string }
 
+export interface Order {
+  id: string; householdId: string; retailer: string; status: string; lines: ListLine[];
+  createdAt: string; updatedAt: string; total?: number; slot?: { id: string; label: string };
+  paymentMethod?: string; retailerOrderId?: string; error?: string;
+}
+
 export interface QuoteResult {
   currency?: string;
   lines: ListLine[];
@@ -35,6 +41,10 @@ export class Api {
   createHousehold = (name: string, address: string, country: string) => this.#call<Household>('POST', '/households', { name, address, country });
   search = (hid: string, q: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
   lookup = (hid: string, gtin: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?gtin=${encodeURIComponent(gtin)}`);
+  createOrder = (hid: string, retailer: string, lines: Omit<ListLine, 'id'>[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { retailer, lines });
+  order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
+  approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
+  cancelOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/cancel`);
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);

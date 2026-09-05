@@ -102,8 +102,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
 }
 
 /** After choosing: deep links per item, and a "done" that teaches memory. */
-export function CheckoutScreen({ api, household, option, quote, onDone, onBack }: {
-  api: Api; household: Household; option: PurchaseOption; quote: QuoteResult; onDone: () => void; onBack: () => void;
+export function CheckoutScreen({ api, household, option, quote, onDone, onBack, onOrder }: {
+  api: Api; household: Household; option: PurchaseOption; quote: QuoteResult; onDone: () => void; onBack: () => void; onOrder: (orderId: string) => void;
 }) {
   const s = S();
   const [busy, setBusy] = useState(false);
@@ -117,9 +117,27 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack }
     });
     try { await api.recordShop(household.id, bought); onDone(); } finally { setBusy(false); }
   };
+  const orderable = option.legs.filter((leg) => /shufersal/i.test(leg.storefrontId));
+  const [ordering, setOrdering] = useState(false);
+  const orderViaKanili = async () => {
+    const leg = orderable[0];
+    if (!leg) return;
+    setOrdering(true);
+    try {
+      const lines = leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; });
+      const o = await api.createOrder(household.id, 'shufersal', lines);
+      onOrder(o.id);
+    } finally { setOrdering(false); }
+  };
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
       <Header title={option.label} subtitle={tr('payAtStore')} onBack={onBack} />
+      {orderable.length > 0 ? (
+        <View style={{ paddingHorizontal: 20, marginBottom: 6 }}>
+          <Button title={tr('orderViaKanili')} onPress={orderViaKanili} disabled={ordering} />
+          <Text style={[s.faint, { marginTop: 6, textAlign: 'center' }]}>{tr('noWorker')}</Text>
+        </View>
+      ) : null}
       <View style={{ paddingHorizontal: 20 }}>
         <View style={[s.row, { marginBottom: 12 }]}><Text style={s.small}>{tr('estTotal')}</Text><Text style={s.priceBig}>{money(option.cashCost)}</Text></View>
         {option.legs.map((leg) => (

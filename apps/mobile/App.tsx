@@ -9,6 +9,7 @@ import type { Line } from './src/lib/store';
 import { HouseholdSetup } from './src/screens/Household';
 import { ListScreen } from './src/screens/List';
 import { CheckoutScreen, OptionsScreen } from './src/screens/Options';
+import { OrderScreen } from './src/screens/Order';
 import { SignIn } from './src/screens/SignIn';
 import { Loading, S } from './src/ui';
 import { regionOf } from '@fca/domain';
@@ -17,7 +18,8 @@ import { setRegion, t as tr } from './src/lib/i18n';
 type Screen =
   | { name: 'list' }
   | { name: 'options'; lines: Line[] }
-  | { name: 'checkout'; option: PurchaseOption; quote: QuoteResult };
+  | { name: 'checkout'; option: PurchaseOption; quote: QuoteResult }
+  | { name: 'order'; orderId: string };
 
 export default function App() {
   const [tokens, setTokens] = useState<Tokens | null | undefined>(undefined);
@@ -44,7 +46,8 @@ export default function App() {
   else if (household === undefined) body = <Loading label={tr('loadingHousehold')} />;
   else if (!household) body = <HouseholdSetup api={api} onDone={(h) => { setRegion(regionOf(h.country)); setHousehold(h); }} />;
   else if (screen.name === 'options') body = <OptionsScreen api={api} household={household} lines={screen.lines} onBack={() => setScreen({ name: 'list' })} onChoose={(option, quote) => setScreen({ name: 'checkout', option, quote })} />;
-  else if (screen.name === 'checkout') body = <CheckoutScreen api={api} household={household} option={screen.option} quote={screen.quote} onBack={() => setScreen({ name: 'options', lines: [] })} onDone={() => setScreen({ name: 'list' })} />;
+  else if (screen.name === 'checkout') body = <CheckoutScreen api={api} household={household} option={screen.option} quote={screen.quote} onBack={() => setScreen({ name: 'options', lines: [] })} onDone={() => setScreen({ name: 'list' })} onOrder={(orderId) => setScreen({ name: 'order', orderId })} />;
+  else if (screen.name === 'order') body = <OrderScreen api={api} household={household} orderId={screen.orderId} onBack={() => setScreen({ name: 'list' })} />;
   else body = <ListScreen api={api} household={household} onQuote={(lines) => setScreen({ name: 'options', lines })} onInvite={invite} />;
 
   return (

@@ -38,10 +38,12 @@ import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
 import { ImageResolver } from '@fca/product-images';
+import { OrderStore } from './orders.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 const households = new HouseholdStore(TABLE);
 const images = new ImageResolver(TABLE);
+const orders = new OrderStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -86,6 +88,20 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     };
 
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
+
+    // --- ordering through Kanili -----------------------------------------
+    // The API only records intent and forwards a job; the worker at home does
+    // the retailer work and writes progress here. Approval is a row update
+    // with a fresh token the worker must present before placing the order.
+    if (method === 'POST' && rest === 'orders') {
+      const retailer = str(body['retailer'], 'retailer');
+      const lines = toLines(body['lines']);
+      return ok(await orders.create(hid, caller.userId, retailer, lines), 201);
+    }
+    if (method === 'GET' && seg[2] === 'orders' && seg[3] && !seg[4]) return ok(await orders.get(hid, seg[3]));
+    if (method === 'POST' && seg[2] === 'orders' && seg[3] && seg[4] === 'approve') return ok(await orders.approve(hid, seg[3], caller.userId));
+    if (method === 'POST' && seg[2] === 'orders' && seg[3] && seg[4] === 'cancel') return ok(await orders.cancel(hid, seg[3]));
+    if (method === 'GET' && rest === 'orders') return ok({ orders: await orders.list(hid) });
 
     // Search-as-you-type: catalogue candidates with pictures. Cheap and
     // interactive, so it is a GET with a short limit.

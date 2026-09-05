@@ -246,7 +246,8 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.main.name
+      TABLE_NAME   = aws_dynamodb_table.main.name
+      ORDERS_QUEUE = aws_sqs_queue.orders.url
       NODE_OPTIONS = "--enable-source-maps"
     }
   }
