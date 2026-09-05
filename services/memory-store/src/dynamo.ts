@@ -47,11 +47,11 @@ export class DynamoMemoryRepository implements MemoryRepository {
         new PutCommand({
           TableName: this.#table,
           Item: { PK: this.#pk, SK: 'MEMORY', ...next },
-          // First write: item must not exist. Later writes: version must match.
-          ConditionExpression:
-            memory.version === 1 && Object.keys(memory.products).length === 0
-              ? 'attribute_not_exists(PK) OR version = :v'
-              : 'version = :v',
+          // Either the row does not exist yet, or it is still at the version
+          // this memory was loaded from. Deciding "first write" by inspecting
+          // the new memory was wrong: the very first confirm already carries a
+          // product, and the row did not exist, so the write failed.
+          ConditionExpression: 'attribute_not_exists(PK) OR version = :v',
           ExpressionAttributeValues: { ':v': memory.version },
         }),
       );

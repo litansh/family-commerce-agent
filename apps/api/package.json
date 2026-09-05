@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --sourcemap --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && cp dist/index.mjs dist/index.js"
+    "build": "rm -rf dist && esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --sourcemap --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && echo '{\"type\":\"module\"}' > dist/package.json"
   },
   "dependencies": {
     "@fca/domain": "*",

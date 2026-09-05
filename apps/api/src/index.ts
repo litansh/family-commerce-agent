@@ -31,7 +31,7 @@ import {
   type ProductChoice,
   type PurchasedLine,
 } from '@fca/domain';
-import { DynamoMemoryRepository } from '@fca/memory-store';
+import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { SuperMcpCatalogProvider, SuperMcpQuoteProvider } from '@fca/retailer-connectors';
 import { quoteWithFallback } from '@fca/shopping-agent';
 import { callerOf, HttpError } from './auth.ts';
@@ -153,6 +153,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     throw new HttpError(404, 'not found');
   } catch (e) {
     if (e instanceof HttpError) return { statusCode: e.status, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
+    if (e instanceof VersionConflict) return { statusCode: 409, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
     if (e instanceof SyntaxError) return { statusCode: 400, headers: JSON_H, body: JSON.stringify({ error: 'invalid JSON' }) };
     console.error(e);
     return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
