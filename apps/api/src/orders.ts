@@ -14,10 +14,27 @@ import { randomBytes } from 'node:crypto';
 import type { ListLine } from '@fca/domain';
 import { HttpError } from './auth.ts';
 
+export interface OrderLeg {
+  readonly retailer: string;
+  readonly lines: readonly ListLine[];
+  readonly status: string;
+  readonly total?: number;
+  readonly slot?: { id: string; label: string };
+  readonly paymentMethod?: string;
+  readonly retailerOrderId?: string;
+  readonly error?: string;
+}
+
+/**
+ * One Kanili order, fanned out to as many retailers as the basket needs.
+ * The family approves once; every leg's worker sees the same token.
+ */
 export interface Order {
   readonly id: string;
   readonly householdId: string;
+  /** Kept for single-retailer callers; equals legs[0].retailer. */
   readonly retailer: string;
+  readonly legs: readonly OrderLeg[];
   readonly status: string;
   readonly lines: readonly ListLine[];
   readonly createdBy: string;
@@ -47,16 +64,20 @@ export class OrderStore {
     this.#doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
   }
 
-  async create(householdId: string, userId: string, retailer: string, lines: readonly ListLine[]): Promise<Order> {
+  async create(householdId: string, userId: string, legsIn: readonly { retailer: string; lines: readonly ListLine[] }[]): Promise<Order> {
     if (!this.#queueUrl) throw new HttpError(503, 'ordering is not configured');
+    if (legsIn.length === 0) throw new HttpError(400, 'an order needs at least one leg');
     const id = randomBytes(5).toString('base64url');
     const now = new Date().toISOString();
-    const order: Order = { id, householdId, retailer, status: 'queued', lines, createdBy: userId, createdAt: now, updatedAt: now };
+    const legs: OrderLeg[] = legsIn.map((l) => ({ retailer: l.retailer, lines: l.lines, status: 'queued' }));
+    const order: Order = { id, householdId, retailer: legs[0]!.retailer, legs, status: 'queued', lines: legs.flatMap((l) => l.lines), createdBy: userId, createdAt: now, updatedAt: now };
     await this.#doc.send(new PutCommand({ TableName: this.#table, Item: { PK: `HOUSEHOLD#${householdId}`, SK: `ORDER#${id}`, GSI1PK: `HOUSEHOLD#${householdId}`, GSI1SK: `ORDER#${now}`, ...order } }));
-    await this.#sqs.send(new SendMessageCommand({
+    // One message per leg: legs run in parallel if there are several workers,
+    // in sequence if there is one.
+    await Promise.all(legs.map((leg, legIndex) => this.#sqs.send(new SendMessageCommand({
       QueueUrl: this.#queueUrl,
-      MessageBody: JSON.stringify({ householdId, orderId: id, retailer, lines: lines.map((l) => ({ lineId: l.id, query: l.query, gtin: l.gtin, amount: l.amount, unit: l.unit, packQty: l.packQty })) }),
-    }));
+      MessageBody: JSON.stringify({ householdId, orderId: id, legIndex, retailer: leg.retailer, lines: leg.lines.map((l) => ({ lineId: l.id, query: l.query, gtin: l.gtin, amount: l.amount, unit: l.unit, packQty: l.packQty })) }),
+    }))));
     return order;
   }
 

@@ -136,15 +136,20 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
     });
     try { await api.recordShop(household.id, bought); onDone(); } finally { setBusy(false); }
   };
-  const orderable = option.legs.filter((leg) => /shufersal/i.test(leg.storefrontId));
+  // Retailers the worker can drive. Everything else stays on deep links.
+  const WORKERS: Record<string, RegExp> = { shufersal: /shufersal/i };
+  const retailerOf = (storefrontId: string) => Object.entries(WORKERS).find(([, re]) => re.test(storefrontId))?.[0];
+  const orderable = option.legs.filter((leg) => retailerOf(leg.storefrontId) !== undefined);
   const [ordering, setOrdering] = useState(false);
   const orderViaKanili = async () => {
-    const leg = orderable[0];
-    if (!leg) return;
+    if (orderable.length === 0) return;
     setOrdering(true);
     try {
-      const lines = leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; });
-      const o = await api.createOrder(household.id, 'shufersal', lines);
+      const legs = orderable.map((leg) => ({
+        retailer: retailerOf(leg.storefrontId)!,
+        lines: leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; }),
+      }));
+      const o = await api.createOrder(household.id, legs);
       onOrder(o.id);
     } finally { setOrdering(false); }
   };

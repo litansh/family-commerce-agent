@@ -70,8 +70,13 @@ export function OrderScreen({ api, household, orderId, onBack }: { api: Api; hou
             <Text style={s.title}>{tr('approveTitle')}</Text>
             <Text style={[s.small, { marginBottom: 10 }]}>{tr('approveSub')}</Text>
             <View style={[s.row, { marginBottom: 6 }]}><Text style={s.small}>{tr('realTotal')}</Text><Text style={s.priceBig}>{money(order.total ?? 0)}</Text></View>
-            {order.slot ? <View style={s.row}><Text style={s.small}>{tr('slot')}</Text><Text style={s.body}>{order.slot.label}</Text></View> : null}
-            {order.paymentMethod ? <View style={s.row}><Text style={s.small}>{tr('payment')}</Text><Text style={s.body}>{order.paymentMethod}</Text></View> : null}
+            {(order.legs ?? []).map((leg, i) => (
+              <View key={i} style={{ borderTopWidth: 1, borderColor: t.line, paddingVertical: 8 }}>
+                <View style={s.row}><Text style={s.body}>{leg.retailer}</Text><Text style={s.price}>{money(leg.total ?? 0)}</Text></View>
+                {leg.slot ? <Text style={s.small}>{tr('slot')}: {leg.slot.label}</Text> : null}
+                {leg.paymentMethod ? <Text style={s.small}>{tr('payment')}: {leg.paymentMethod}</Text> : null}
+              </View>
+            ))}
             <View style={{ height: 14 }} />
             <Button title={tr('approvePay', { x: money(order.total ?? 0) })} onPress={() => act(() => api.approveOrder(household.id, order.id))} disabled={busy} />
             <View style={{ height: 8 }} />

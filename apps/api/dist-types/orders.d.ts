@@ -1,8 +1,27 @@
 import type { ListLine } from '@fca/domain';
+export interface OrderLeg {
+    readonly retailer: string;
+    readonly lines: readonly ListLine[];
+    readonly status: string;
+    readonly total?: number;
+    readonly slot?: {
+        id: string;
+        label: string;
+    };
+    readonly paymentMethod?: string;
+    readonly retailerOrderId?: string;
+    readonly error?: string;
+}
+/**
+ * One Kanili order, fanned out to as many retailers as the basket needs.
+ * The family approves once; every leg's worker sees the same token.
+ */
 export interface Order {
     readonly id: string;
     readonly householdId: string;
+    /** Kept for single-retailer callers; equals legs[0].retailer. */
     readonly retailer: string;
+    readonly legs: readonly OrderLeg[];
     readonly status: string;
     readonly lines: readonly ListLine[];
     readonly createdBy: string;
@@ -20,7 +39,10 @@ export interface Order {
 export declare class OrderStore {
     #private;
     constructor(table: string, queueUrl: string);
-    create(householdId: string, userId: string, retailer: string, lines: readonly ListLine[]): Promise<Order>;
+    create(householdId: string, userId: string, legsIn: readonly {
+        retailer: string;
+        lines: readonly ListLine[];
+    }[]): Promise<Order>;
     get(householdId: string, id: string): Promise<Order>;
     list(householdId: string): Promise<Order[]>;
     /** The family says yes to the real total. Only valid while the worker is waiting. */

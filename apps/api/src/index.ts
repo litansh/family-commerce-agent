@@ -94,9 +94,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     // the retailer work and writes progress here. Approval is a row update
     // with a fresh token the worker must present before placing the order.
     if (method === 'POST' && rest === 'orders') {
-      const retailer = str(body['retailer'], 'retailer');
-      const lines = toLines(body['lines']);
-      return ok(await orders.create(hid, caller.userId, retailer, lines), 201);
+      // Either { retailer, lines } for one store or { legs: [{ retailer, lines }] } for a split.
+      const legs = Array.isArray(body['legs'])
+        ? (body['legs'] as { retailer?: unknown; lines?: unknown }[]).map((l) => ({ retailer: str(l.retailer, 'legs[].retailer'), lines: toLines(l.lines) }))
+        : [{ retailer: str(body['retailer'], 'retailer'), lines: toLines(body['lines']) }];
+      return ok(await orders.create(hid, caller.userId, legs), 201);
     }
     if (method === 'GET' && seg[2] === 'orders' && seg[3] && !seg[4]) return ok(await orders.get(hid, seg[3]));
     if (method === 'POST' && seg[2] === 'orders' && seg[3] && seg[4] === 'approve') return ok(await orders.approve(hid, seg[3], caller.userId));

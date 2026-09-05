@@ -26,9 +26,13 @@ const TABLE = process.env['KANILI_TABLE'] ?? 'fca-main';
 interface Job {
   householdId: string;
   orderId: string;
+  /** Which leg of a multi-store order this message is. */
+  legIndex: number;
   retailer: 'shufersal';
   lines: OrderLine[];
 }
+
+const ORDER_STEPS = ['queued', 'connecting', 'filling_cart', 'choosing_slot', 'awaiting_approval', 'approved', 'placing', 'placed'];
 
 const connectorFor = (job: Pick<Job, 'retailer' | 'householdId'>): RetailerConnector => {
   switch (job.retailer) {
@@ -40,23 +44,39 @@ const connectorFor = (job: Pick<Job, 'retailer' | 'householdId'>): RetailerConne
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
 const sqs = new SQSClient({});
 
+/**
+ * Write this leg's status, then derive the order's overall status from all
+ * legs: the least-advanced non-terminal leg wins, so the family sees
+ * "awaiting approval" only when every store is ready for it.
+ */
 async function setStatus(job: Job, status: string, extra: Record<string, unknown> = {}): Promise<void> {
-  const names: Record<string, string> = { '#s': 'status' };
+  const key = { PK: `HOUSEHOLD#${job.householdId}`, SK: `ORDER#${job.orderId}` };
+  const names: Record<string, string> = { '#legs': 'legs', '#s': 'status' };
   const values: Record<string, unknown> = { ':s': status, ':t': new Date().toISOString() };
-  let expr = 'SET #s = :s, updatedAt = :t';
+  let expr = `SET #legs[${job.legIndex}].#s = :s, updatedAt = :t`;
   for (const [k, v] of Object.entries(extra)) {
     names[`#${k}`] = k;
     values[`:${k}`] = v;
-    expr += `, #${k} = :${k}`;
+    expr += `, #legs[${job.legIndex}].#${k} = :${k}`;
   }
+  await doc.send(new UpdateCommand({ TableName: TABLE, Key: key, UpdateExpression: expr, ExpressionAttributeNames: names, ExpressionAttributeValues: values }));
+
+  const r = await doc.send(new GetCommand({ TableName: TABLE, Key: key }));
+  const legs = ((r.Item as { legs?: { status: string; total?: number }[] } | undefined)?.legs ?? []);
+  const overall = legs.some((l) => l.status === 'failed') ? 'failed'
+    : legs.every((l) => l.status === 'placed') ? 'placed'
+    : legs.some((l) => l.status === 'cancelled') ? 'cancelled'
+    : legs.reduce((acc, l) => (ORDER_STEPS.indexOf(l.status) < ORDER_STEPS.indexOf(acc) ? l.status : acc), 'placed');
+  const total = legs.reduce((sum, l) => sum + (l.total ?? 0), 0);
   await doc.send(new UpdateCommand({
-    TableName: TABLE,
-    Key: { PK: `HOUSEHOLD#${job.householdId}`, SK: `ORDER#${job.orderId}` },
-    UpdateExpression: expr,
-    ExpressionAttributeNames: names,
-    ExpressionAttributeValues: values,
-  }));
-  console.log(`  ${job.orderId} → ${status}`);
+    TableName: TABLE, Key: key,
+    UpdateExpression: 'SET #s = :o, #total = :total',
+    // Never regress an approval the family already gave.
+    ConditionExpression: 'NOT (#s = :approved AND :o = :awaiting)',
+    ExpressionAttributeNames: { '#s': 'status', '#total': 'total' },
+    ExpressionAttributeValues: { ':o': overall, ':total': total, ':approved': 'approved', ':awaiting': 'awaiting_approval' },
+  })).catch(() => undefined);
+  console.log(`  ${job.orderId}[${job.legIndex}] → ${status}   (order: ${overall})`);
 }
 
 /** Poll the order row until the family approves or cancels in the app. */
@@ -65,7 +85,8 @@ async function waitForApproval(job: Job, timeoutMs = 30 * 60_000): Promise<strin
   while (Date.now() < until) {
     const r = await doc.send(new GetCommand({ TableName: TABLE, Key: { PK: `HOUSEHOLD#${job.householdId}`, SK: `ORDER#${job.orderId}` } }));
     const it = r.Item as { status?: string; approvalToken?: string } | undefined;
-    if (it?.status === 'approved' && it.approvalToken) return it.approvalToken;
+    // One approval covers every leg.
+    if (it?.approvalToken) return it.approvalToken;
     if (it?.status === 'cancelled') return null;
     await new Promise((res) => setTimeout(res, 4000));
   }
@@ -121,7 +142,8 @@ async function run(): Promise<void> {
     const r = await sqs.send(new ReceiveMessageCommand({ QueueUrl: QUEUE, MaxNumberOfMessages: 1, WaitTimeSeconds: 20, VisibilityTimeout: 45 * 60 }));
     for (const m of r.Messages ?? []) {
       const job = JSON.parse(m.Body ?? '{}') as Job;
-      console.log(`order ${job.orderId} · ${job.retailer} · ${job.lines.length} lines`);
+      job.legIndex ??= 0;
+      console.log(`order ${job.orderId} leg ${job.legIndex} · ${job.retailer} · ${job.lines.length} lines`);
       try {
         await runJob(job);
       } catch (e) {
