@@ -49,3 +49,15 @@ export declare class OrderStore {
     approve(householdId: string, id: string, userId: string): Promise<Order>;
     cancel(householdId: string, id: string): Promise<Order>;
 }
+/** History imports ride the same queue; the worker tells them apart by `type`. */
+export declare class ImportStore {
+    #private;
+    private readonly table;
+    private readonly queueUrl;
+    constructor(table: string, queueUrl: string);
+    request(householdId: string, retailer: string): Promise<{
+        retailer: string;
+        status: string;
+    }>;
+    status(householdId: string, retailer: string): Promise<Record<string, unknown>>;
+}

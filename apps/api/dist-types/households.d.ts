@@ -16,6 +16,10 @@ export interface Household {
     readonly address: string;
     /** ISO 3166-1 alpha-2. Everything region-specific follows from it. */
     readonly country: string;
+    /** Chains the family usually orders from, e.g. ["shufersal", "rami-levy"]. */
+    readonly retailers?: readonly string[];
+    /** How they prefer to get it. Drives the default quote. */
+    readonly fulfillment?: 'delivery' | 'pickup' | 'either';
     readonly createdBy: string;
     readonly createdAt: string;
 }
@@ -32,6 +36,7 @@ export declare class HouseholdStore {
     create(userId: string, email: string | undefined, name: string, address: string, country: string): Promise<Household>;
     listForUser(userId: string): Promise<Household[]>;
     get(id: string): Promise<Household | undefined>;
+    update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment'>>): Promise<Household>;
     /** The one authorisation check. Throws 404, not 403: an outsider learns nothing. */
     requireMember(householdId: string, userId: string): Promise<Membership>;
     createInvite(householdId: string): Promise<{

@@ -376,3 +376,19 @@ export function suggestMissing(
 
   return out.slice(0, opts.limit ?? 10);
 }
+
+export interface PastOrder {
+  readonly at: string;
+  readonly lines: readonly PurchasedLine[];
+}
+
+/**
+ * Seed memory from a retailer's order history. Each past order is replayed
+ * as a completed shop on its own date, oldest first, so purchase rhythms
+ * come out right and nothing is marked confirmed — the family did buy these,
+ * but has not yet said "yes, that one".
+ */
+export function importHistory(memory: HouseholdMemory, orders: readonly PastOrder[]): HouseholdMemory {
+  const sorted = [...orders].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  return sorted.reduce((m, o) => recordShop(m, o.lines, new Date(o.at)), memory);
+}

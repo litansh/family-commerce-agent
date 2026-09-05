@@ -46,8 +46,15 @@ export interface PlacedOrder {
   readonly confirmationShot: string;
 }
 
+export interface PastOrderRaw {
+  readonly at: string;
+  readonly lines: readonly { name: string; code?: string | undefined; qty: number }[];
+}
+
 export interface RetailerConnector {
   readonly id: string;
+  /** Past orders from the signed-in account, newest first. Names and quantities; barcodes if the site has them. */
+  orderHistory(limit?: number): Promise<readonly PastOrderRaw[]>;
   /** Open the retailer's login page and resolve once the person has signed in. */
   interactiveLogin(): Promise<BrowserContext>;
   /** Attach to a saved session. Rejects if the retailer no longer accepts it. */

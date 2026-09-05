@@ -33,7 +33,7 @@ resource "aws_iam_user_policy" "worker" {
       { Effect = "Allow", Action = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"], Resource = aws_sqs_queue.orders.arn },
       {
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:UpdateItem"]
+        Action   = ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"]
         Resource = aws_dynamodb_table.main.arn
         # Only order rows: the worker never reads memory or members.
         Condition = { "ForAllValues:StringLike" = { "dynamodb:LeadingKeys" = ["HOUSEHOLD#*"] } }

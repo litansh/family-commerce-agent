@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { randomBytes } from 'node:crypto';
 import { HttpError } from './auth.ts';
 
@@ -21,6 +21,10 @@ export interface Household {
   readonly address: string;
   /** ISO 3166-1 alpha-2. Everything region-specific follows from it. */
   readonly country: string;
+  /** Chains the family usually orders from, e.g. ["shufersal", "rami-levy"]. */
+  readonly retailers?: readonly string[];
+  /** How they prefer to get it. Drives the default quote. */
+  readonly fulfillment?: 'delivery' | 'pickup' | 'either';
   readonly createdBy: string;
   readonly createdAt: string;
 }
@@ -75,6 +79,15 @@ export class HouseholdStore {
     const res = await this.#doc.send(new GetCommand({ TableName: this.#table, Key: { PK: `HOUSEHOLD#${id}`, SK: 'META' } }));
     if (!res.Item) return undefined;
     const { PK: _p, SK: _s, ...h } = res.Item as Household & { PK: string; SK: string };
+    return h;
+  }
+
+  async update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment'>>): Promise<Household> {
+    const names: Record<string, string> = {}; const values: Record<string, unknown> = {}; const sets: string[] = [];
+    for (const [k, v] of Object.entries(patch)) { if (v === undefined) continue; names[`#${k}`] = k; values[`:${k}`] = v; sets.push(`#${k} = :${k}`); }
+    if (sets.length > 0) await this.#doc.send(new UpdateCommand({ TableName: this.#table, Key: { PK: `HOUSEHOLD#${id}`, SK: 'META' }, UpdateExpression: `SET ${sets.join(', ')}`, ExpressionAttributeNames: names, ExpressionAttributeValues: values }));
+    const h = await this.get(id);
+    if (!h) throw new HttpError(404, 'household not found');
     return h;
   }
 

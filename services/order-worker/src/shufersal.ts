@@ -11,7 +11,7 @@
  */
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { shekels, type Agorot } from '@fca/domain';
-import type { CartLineResult, DeliverySlot, OrderLine, PlacedOrder, PreparedOrder, RetailerConnector } from './connector.ts';
+import type { CartLineResult, DeliverySlot, OrderLine, PastOrderRaw, PlacedOrder, PreparedOrder, RetailerConnector } from './connector.ts';
 import { hasSession, loadSession, saveSession } from './session.ts';
 
 const BASE = 'https://www.shufersal.co.il/online/he';
@@ -161,6 +161,35 @@ export class ShufersalConnector implements RetailerConnector {
     const id = ((await page.locator(SEL.orderId).first().textContent().catch(() => null)) ?? '').trim() || `unknown-${Date.now()}`;
     const confirmationShot = await this.#shot('confirmation');
     return { retailerOrderId: id, confirmationShot };
+  }
+
+  /**
+   * Order history through the site's own account endpoints, called from the
+   * page so the session cookies apply. Documented by a prior project:
+   * GET /my-account/orders → { closedOrders: [{ code, placed }] },
+   * GET /my-account/orders/{code} → { entries: [{ product: { name, code }, quantity }] }.
+   */
+  async orderHistory(limit = 30): Promise<readonly PastOrderRaw[]> {
+    const page = this.#page$();
+    await page.goto(`${BASE}/my-account/orders`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+    const list = await page.evaluate(async () => {
+      const r = await fetch('/online/he/my-account/orders', { headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' }, credentials: 'include' });
+      const d = (await r.json()) as { closedOrders?: { code: string; placed?: string; created?: string }[] };
+      return (d.closedOrders ?? []).map((o) => ({ code: o.code, at: o.placed ?? o.created ?? '' }));
+    }).catch(() => [] as { code: string; at: string }[]);
+    const out: PastOrderRaw[] = [];
+    for (const o of list.slice(0, limit)) {
+      const lines = await page.evaluate(async (code) => {
+        const r = await fetch(`/online/he/my-account/orders/${code}`, { headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' }, credentials: 'include' });
+        const d = (await r.json()) as { entries?: { product?: { name?: string; code?: string; ean?: string }; quantity?: number }[] };
+        return (d.entries ?? []).filter((e) => e.product?.name && !/משלוח|דמי/.test(e.product.name)).map((e) => ({ name: e.product!.name!, code: e.product!.ean ?? e.product!.code, qty: e.quantity ?? 1 }));
+      }, o.code).catch(() => [] as { name: string; code?: string; qty: number }[]);
+      if (lines.length > 0) out.push({ at: o.at || new Date().toISOString(), lines });
+      await page.waitForTimeout(400);
+    }
+    if (out.length === 0) await this.#shot('history-empty');
+    return out;
   }
 
   get preparedTotal(): Agorot | undefined {

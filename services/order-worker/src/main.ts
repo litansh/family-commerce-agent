@@ -18,12 +18,18 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mkdirSync } from 'node:fs';
 import { ShufersalConnector } from './shufersal.ts';
+import { importHistory, type PurchasedLine } from '@fca/domain';
+import { DynamoMemoryRepository } from '@fca/memory-store';
+import { SuperMcpCatalogProvider } from '@fca/retailer-connectors';
 import type { OrderLine, RetailerConnector } from './connector.ts';
 
 const QUEUE = process.env['KANILI_QUEUE_URL'] ?? '';
 const TABLE = process.env['KANILI_TABLE'] ?? 'fca-main';
 
+interface ImportJob { type: 'import'; householdId: string; retailer: 'shufersal' }
+
 interface Job {
+  type?: 'order';
   householdId: string;
   orderId: string;
   /** Which leg of a multi-store order this message is. */
@@ -123,6 +129,55 @@ async function runJob(job: Job): Promise<void> {
   }
 }
 
+/**
+ * Read the account's past orders and replay them into household memory,
+ * dated, so rhythms are learned before the first shop. Product names are
+ * resolved to barcodes through the catalogue; a name that resolves to
+ * nothing is still remembered by its words.
+ */
+async function runImport(job: ImportJob): Promise<void> {
+  const key = { PK: `HOUSEHOLD#${job.householdId}`, SK: `IMPORT#${job.retailer}` };
+  const mark = (status: string, extra: Record<string, unknown> = {}) =>
+    doc.send(new UpdateCommand({ TableName: TABLE, Key: key, UpdateExpression: 'SET #s = :s, updatedAt = :t' + Object.keys(extra).map((k) => `, #${k} = :${k}`).join(''),
+      ExpressionAttributeNames: { '#s': 'status', ...Object.fromEntries(Object.keys(extra).map((k) => [`#${k}`, k])) },
+      ExpressionAttributeValues: { ':s': status, ':t': new Date().toISOString(), ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [`:${k}`, v])) } }));
+  const c = connectorFor(job);
+  const catalog = new SuperMcpCatalogProvider();
+  try {
+    await mark('connecting');
+    await c.resume();
+    await mark('reading');
+    const history = await c.orderHistory(30);
+    await mark('resolving', { orders: history.length });
+    const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
+    const orders: { at: string; lines: PurchasedLine[] }[] = [];
+    for (const o of history) {
+      const lines: PurchasedLine[] = [];
+      for (const l of o.lines) {
+        let hit = cache.get(l.name);
+        if (hit === undefined) {
+          const found = await catalog.searchProducts({ query: l.name, limit: 3 }).catch(() => []);
+          const best = found.find((f) => f.gtin && f.pricedAtChains > 0);
+          hit = best?.gtin ? { gtin: best.gtin, productName: best.name, ...(best.brand ? { brand: best.brand } : {}) } : null;
+          cache.set(l.name, hit);
+        }
+        lines.push({ phrase: l.name, gtin: hit?.gtin ?? `name:${l.name}`, productName: hit?.productName ?? l.name, ...(hit?.brand ? { brand: hit.brand } : {}), packQty: l.qty });
+      }
+      orders.push({ at: o.at, lines });
+    }
+    const repo = new DynamoMemoryRepository(job.householdId, TABLE);
+    const memory = await repo.load();
+    await repo.save(importHistory(memory, orders));
+    await mark('done', { orders: orders.length, products: cache.size, resolved: [...cache.values()].filter(Boolean).length });
+    console.log(`  import ${job.retailer}: ${orders.length} orders, ${cache.size} products`);
+  } catch (e) {
+    await mark('failed', { error: e instanceof Error ? e.message : String(e) });
+    throw e;
+  } finally {
+    await c.close();
+  }
+}
+
 async function link(): Promise<void> {
   const householdId = process.env['KANILI_HOUSEHOLD'];
   const retailer = (process.env['KANILI_RETAILER'] ?? 'shufersal') as Job['retailer'];
@@ -141,11 +196,17 @@ async function run(): Promise<void> {
   for (;;) {
     const r = await sqs.send(new ReceiveMessageCommand({ QueueUrl: QUEUE, MaxNumberOfMessages: 1, WaitTimeSeconds: 20, VisibilityTimeout: 45 * 60 }));
     for (const m of r.Messages ?? []) {
-      const job = JSON.parse(m.Body ?? '{}') as Job;
-      job.legIndex ??= 0;
-      console.log(`order ${job.orderId} leg ${job.legIndex} · ${job.retailer} · ${job.lines.length} lines`);
+      const raw = JSON.parse(m.Body ?? '{}') as Job | ImportJob;
       try {
-        await runJob(job);
+        if (raw.type === 'import') {
+          console.log(`import history · ${raw.retailer} · household ${raw.householdId}`);
+          await runImport(raw);
+        } else {
+          const job = raw as Job;
+          job.legIndex ??= 0;
+          console.log(`order ${job.orderId} leg ${job.legIndex} · ${job.retailer} · ${job.lines.length} lines`);
+          await runJob(job);
+        }
       } catch (e) {
         console.error('  failed:', e instanceof Error ? e.message : e);
       }

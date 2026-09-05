@@ -35,6 +35,22 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const seq = useRef(0);
   const [scanning, setScanning] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [imp, setImp] = useState<{ status: string; orders?: number; products?: number; error?: string } | null>(null);
+  const firstRetailer = household.retailers?.[0];
+  useEffect(() => {
+    if (!firstRetailer) return;
+    let alive = true;
+    const poll = async () => {
+      const st = await api.importStatus(household.id, firstRetailer).catch(() => null);
+      if (!alive) return;
+      setImp(st);
+      if (st && ['queued', 'connecting', 'reading', 'resolving'].includes(st.status)) setTimeout(poll, 4000);
+      if (st?.status === 'done') api.memory(household.id).then(setMemory).catch(() => null);
+    };
+    void poll();
+    return () => { alive = false; };
+  }, [api, household.id, firstRetailer]);
+  const startImport = async () => { if (!firstRetailer) return; tap(); setImp({ status: 'queued' }); await api.requestImport(household.id, firstRetailer).catch(() => setImp({ status: 'failed', error: '' })); };
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
 
   useEffect(() => { void loadList().then(setLines); api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
@@ -137,6 +153,19 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           </View>
         ) : null}
 
+        {!showSearch && firstRetailer && (!memory || Object.keys(memory.products).length === 0) && imp?.status !== 'done' && (
+          <View style={[s.card, { backgroundColor: t.accentSoft }]}>
+            <Text style={[s.title, { color: t.accent, fontSize: 17 }]}>{tr('connectTitle', { r: firstRetailer })}</Text>
+            <Text style={[s.small, { marginBottom: 10 }]}>{tr('connectSub')}</Text>
+            <Text style={[s.faint, { fontFamily: 'Menlo', marginBottom: 10 }]}>KANILI_HOUSEHOLD={household.id} npm run link -w @fca/order-worker</Text>
+            {imp && ['queued', 'connecting', 'reading', 'resolving'].includes(imp.status) ? <Text style={s.small}>{tr('importing')}</Text>
+              : imp?.status === 'failed' ? <Text style={[s.small, { color: t.red }]}>{/no saved session/.test(imp.error ?? '') ? tr('importNeedsLink') : tr('importFailed', { e: imp.error ?? '' })}</Text>
+              : <Button title={tr('importBtn')} kind="secondary" onPress={startImport} />}
+          </View>
+        )}
+        {!showSearch && imp?.status === 'done' && (imp.orders ?? 0) > 0 && lines.length === 0 && Object.keys(memory?.products ?? {}).length > 0 && (
+          <Text style={[s.small, { marginBottom: 8 }]}>{tr('importDone', { o: imp.orders ?? 0, p: imp.products ?? 0 })}</Text>
+        )}
         {!showSearch && lines.length === 0 && usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length >= 5 && (
           <Pressable onPress={usualShop} style={({ pressed }) => [s.card, { backgroundColor: t.accent, marginBottom: 14 }, pressed && { opacity: 0.85 }]}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length })}</Text>

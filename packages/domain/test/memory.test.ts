@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  importHistory,
   applyMemory,
   confirm,
   emptyMemory,
@@ -162,4 +163,14 @@ test('an unconfirmed guess is still replaced by what was bought', () => {
   let m = recordShop(emptyMemory('h1'), [MILK], T0);
   m = recordShop(m, [{ ...MILK, gtin: 'tara', productName: 'חלב טרה' }], days(3));
   assert.equal(m.products[memoryKey('חלב 3%')]?.gtin, 'tara');
+});
+
+test('imported history replays as dated shops and learns the rhythm', () => {
+  const orders = [12, 8, 0, 4].map((d) => ({ at: days(d).toISOString(), lines: [MILK] })); // out of order on purpose
+  const m = importHistory(emptyMemory('h1'), orders);
+  const p = m.products[memoryKey('חלב 3%')]!;
+  assert.equal(p.orderCount, 4);
+  assert.equal(p.confirmedAt, undefined, 'bought is not confirmed');
+  assert.equal(usualInterval(p.purchaseHistory), 4, 'sorted before replay, so the gap is right');
+  assert.equal(suggestMissing(m, [], days(16))[0]?.reason, 'overdue');
 });

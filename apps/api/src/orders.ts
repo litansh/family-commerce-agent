@@ -129,3 +129,24 @@ export class OrderStore {
     return this.get(householdId, id);
   }
 }
+
+/** History imports ride the same queue; the worker tells them apart by `type`. */
+export class ImportStore {
+  readonly #doc: DynamoDBDocumentClient;
+  readonly #sqs = new SQSClient({});
+  constructor(private readonly table: string, private readonly queueUrl: string) {
+    this.#doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
+  }
+  async request(householdId: string, retailer: string): Promise<{ retailer: string; status: string }> {
+    if (!this.queueUrl) throw new HttpError(503, 'imports are not configured');
+    const now = new Date().toISOString();
+    await this.#doc.send(new PutCommand({ TableName: this.table, Item: { PK: `HOUSEHOLD#${householdId}`, SK: `IMPORT#${retailer}`, status: 'queued', requestedAt: now, updatedAt: now } }));
+    await this.#sqs.send(new SendMessageCommand({ QueueUrl: this.queueUrl, MessageBody: JSON.stringify({ type: 'import', householdId, retailer }) }));
+    return { retailer, status: 'queued' };
+  }
+  async status(householdId: string, retailer: string): Promise<Record<string, unknown>> {
+    const r = await this.#doc.send(new GetCommand({ TableName: this.table, Key: { PK: `HOUSEHOLD#${householdId}`, SK: `IMPORT#${retailer}` } }));
+    if (!r.Item) return { retailer, status: 'none' };
+    const { PK: _p, SK: _s, ...rest } = r.Item; return { retailer, ...rest };
+  }
+}

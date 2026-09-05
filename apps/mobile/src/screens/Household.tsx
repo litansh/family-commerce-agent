@@ -12,6 +12,10 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [country, setCountry] = useState<CountryCode>(currentRegion().country);
+  const [retailers, setRetailers] = useState<string[]>(['shufersal']);
+  const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup' | 'either'>('delivery');
+  const RETAILERS = ['shufersal', 'rami-levy', 'victory', 'carrefour', 'yochananof', 'tiv-taam'];
+  const toggle = (r: string) => setRetailers((xs) => (xs.includes(r) ? xs.filter((x) => x !== r) : [...xs, r]));
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -37,8 +41,21 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
             ))}
           </View>
           {!REGIONS[country].pricingAvailable ? <Text style={[s.faint, { marginTop: 6 }]}>{tr('noPricing', { country })}</Text> : null}
+          {country === 'IL' ? (
+            <>
+              <Text style={[s.small, { marginTop: 14 }]}>{tr('whereOrder')}</Text>
+              <Text style={[s.faint, { marginBottom: 6 }]}>{tr('whereOrderHint')}</Text>
+              <View style={[s.rowStart, { flexWrap: 'wrap' }]}>
+                {RETAILERS.map((r) => <Pressable key={r} onPress={() => toggle(r)} style={{ opacity: retailers.includes(r) ? 1 : 0.5 }}><Chip text={r} tone={retailers.includes(r) ? 'good' : 'neutral'} /></Pressable>)}
+              </View>
+              <Text style={[s.small, { marginTop: 14, marginBottom: 6 }]}>{tr('howGet')}</Text>
+              <View style={s.rowStart}>
+                {(['delivery', 'pickup', 'either'] as const).map((f) => <Pressable key={f} onPress={() => setFulfillment(f)} style={{ opacity: fulfillment === f ? 1 : 0.5 }}><Chip text={tr(`${f}_`)} tone={fulfillment === f ? 'good' : 'neutral'} /></Pressable>)}
+              </View>
+            </>
+          ) : null}
           <View style={{ height: 14 }} />
-          <Button title={tr('create')} onPress={() => run(() => api.createHousehold(name, address, country))} disabled={busy || !name || !address} />
+          <Button title={tr('create')} onPress={() => run(() => api.createHousehold(name, address, country, retailers, fulfillment))} disabled={busy || !name || !address} />
         </View>
         <View style={s.card}>
           <Text style={[s.title, { marginBottom: 4 }]}>{tr('haveFamily')}</Text>

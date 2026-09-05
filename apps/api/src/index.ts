@@ -38,12 +38,13 @@ import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
 import { ImageResolver } from '@fca/product-images';
-import { OrderStore } from './orders.ts';
+import { ImportStore, OrderStore } from './orders.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 const households = new HouseholdStore(TABLE);
 const images = new ImageResolver(TABLE);
 const orders = new OrderStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
+const imports = new ImportStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -66,7 +67,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const name = str(body['name'], 'name');
       const address = str(body['address'], 'address');
       const country = regionOf(typeof body['country'] === 'string' ? body['country'] : undefined).country;
-      return ok(await households.create(caller.userId, caller.email, name, address, country), 201);
+      const created = await households.create(caller.userId, caller.email, name, address, country);
+      const retailers = Array.isArray(body['retailers']) ? (body['retailers'] as unknown[]).filter((x): x is string => typeof x === 'string') : undefined;
+      const fulfillment = (['delivery', 'pickup', 'either'] as const).find((f) => f === body['fulfillment']);
+      return ok(retailers || fulfillment ? await households.update(created.id, { ...(retailers ? { retailers } : {}), ...(fulfillment ? { fulfillment } : {}) }) : created, 201);
     }
     if (method === 'POST' && seg[0] === 'invites' && seg[2] === 'accept' && seg[1]) {
       return ok(await households.acceptInvite(seg[1], caller.userId, caller.email));
@@ -120,6 +124,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
     }
     if (method === 'GET' && rest === 'region') return ok(region);
+    if (method === 'GET' && rest === '') return ok(household);
+    if (method === 'PATCH' && rest === '') {
+      const retailers = Array.isArray(body['retailers']) ? (body['retailers'] as unknown[]).filter((x): x is string => typeof x === 'string') : undefined;
+      const fulfillment = (['delivery', 'pickup', 'either'] as const).find((f) => f === body['fulfillment']);
+      return ok(await households.update(hid, { ...(typeof body['name'] === 'string' ? { name: body['name'] } : {}), ...(typeof body['address'] === 'string' ? { address: body['address'] } : {}), ...(retailers ? { retailers } : {}), ...(fulfillment ? { fulfillment } : {}) }));
+    }
+    if (method === 'POST' && rest === 'imports') return ok(await imports.request(hid, str(body['retailer'], 'retailer')), 202);
+    if (method === 'GET' && seg[2] === 'imports' && seg[3]) return ok(await imports.status(hid, seg[3]));
     if (method === 'GET' && rest === 'memory') return ok(await repo.load());
 
     if (method === 'POST' && rest === 'memory/confirm') {
@@ -178,7 +190,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         {
           lines,
           address: typeof body['address'] === 'string' ? body['address'] : household.address,
-          serviceType: body['pickup'] === true ? 'pickup' : 'delivery',
+          serviceType: body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery',
         },
         memory,
       );
