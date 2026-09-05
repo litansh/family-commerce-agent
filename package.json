@@ -1,0 +1,15 @@
+{
+  "name": "family-commerce-agent",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": ["packages/*", "services/*", "apps/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "node --test --experimental-strip-types \"packages/*/test/*.test.ts\" \"services/*/test/*.test.ts\"",
+    "typecheck": "tsc --build --force",
+    "shop": "node --experimental-strip-types apps/cli/src/index.ts"
+  },
+  "devDependencies": { "typescript": "^5.7.2", "@types/node": "^22.10.2" }
+}

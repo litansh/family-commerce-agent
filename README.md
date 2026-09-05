@@ -39,3 +39,32 @@ at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
 - [`OpenIsraeliSupermarkets/israeli-supermarket-scarpers`](https://github.com/OpenIsraeliSupermarkets/israeli-supermarket-scarpers) — 37 chain adapters for the statutory price feeds
 - [SuperMCP](https://supermcp.web.app) — free canonical catalogue, delivery terms and basket pricing
 - [`katzboaz/israeli-grocery-saving-split`](https://github.com/katzboaz/israeli-grocery-saving-split) (MIT) — household preference schema and hard-won retailer failure catalogue
+
+## Running it
+
+```bash
+npm install
+npm test          # 20 unit tests, no network
+npm run shop -- --list examples/weekly.json --address "your address, city"
+```
+
+`npm run shop` is the **Phase 1 measurement instrument**. It prices your real list, ranks the
+options with our own optimizer, and writes the whole run to `runs/` — which is simultaneously the
+resolution-accuracy evidence for the Phase 1 gate, a regression fixture, and the seed corpus for
+the preference store.
+
+### First measurement — 2026-09-05, 36-line basket, Ramat Gan
+
+```
+Option A — רמי לוי אונליין      items ₪800.30 + fee ₪35.90  =  ₪836.20   coverage 100%
+Option B — ויקטורי אונליין      items ₪878.80 + fee ₪35.90  =  ₪914.70   coverage 92%
+                                ⚠ not available: פמפרס, מגבונים לחים, שקיות זבל
+
+RESOLUTION  27/36 acceptable (75%)  ·  gate 85%, floor 70%
+            3 exact · 24 generic default · 9 suspect
+```
+
+**75% sits between the floor and the gate.** The reduced scope holds, and the preference store is
+necessary rather than optional: without confirmed barcodes, a quarter of the list is guessed.
+Nine lines (`סלמון`, `חזה עוף`, `בננות`, …) vary 3–7× across chains, which the optimizer flags as
+a probable resolution error rather than a bargain.
