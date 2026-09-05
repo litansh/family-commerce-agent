@@ -1,4 +1,4 @@
-import type { ListLine, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
+import type { HouseholdMemory, ListLine, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
 import { config } from './config';
 
 export interface Household { id: string; name: string; address: string; country?: string }
@@ -31,6 +31,7 @@ export class Api {
 
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
   createHousehold = (name: string, address: string, country: string) => this.#call<Household>('POST', '/households', { name, address, country });
+  memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);
   quote = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<QuoteResult>('POST', `/households/${hid}/quote`, { lines });
