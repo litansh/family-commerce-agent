@@ -14,6 +14,8 @@ export interface Household {
     readonly id: string;
     readonly name: string;
     readonly address: string;
+    /** ISO 3166-1 alpha-2. Everything region-specific follows from it. */
+    readonly country: string;
     readonly createdBy: string;
     readonly createdAt: string;
 }
@@ -27,7 +29,7 @@ export interface Membership {
 export declare class HouseholdStore {
     #private;
     constructor(table: string, client?: DynamoDBClient);
-    create(userId: string, email: string | undefined, name: string, address: string): Promise<Household>;
+    create(userId: string, email: string | undefined, name: string, address: string, country: string): Promise<Household>;
     listForUser(userId: string): Promise<Household[]>;
     get(id: string): Promise<Household | undefined>;
     /** The one authorisation check. Throws 404, not 403: an outsider learns nothing. */

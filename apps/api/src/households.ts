@@ -19,6 +19,8 @@ export interface Household {
   readonly id: string;
   readonly name: string;
   readonly address: string;
+  /** ISO 3166-1 alpha-2. Everything region-specific follows from it. */
+  readonly country: string;
   readonly createdBy: string;
   readonly createdAt: string;
 }
@@ -42,10 +44,10 @@ export class HouseholdStore {
     });
   }
 
-  async create(userId: string, email: string | undefined, name: string, address: string): Promise<Household> {
+  async create(userId: string, email: string | undefined, name: string, address: string, country: string): Promise<Household> {
     const id = randomBytes(6).toString('base64url');
     const now = new Date().toISOString();
-    const household: Household = { id, name, address, createdBy: userId, createdAt: now };
+    const household: Household = { id, name, address, country, createdBy: userId, createdAt: now };
     await this.#doc.send(new PutCommand({ TableName: this.#table, Item: { PK: `HOUSEHOLD#${id}`, SK: 'META', ...household } }));
     await this.#putMember({ householdId: id, userId, role: 'owner', ...(email ? { email } : {}), joinedAt: now });
     return household;

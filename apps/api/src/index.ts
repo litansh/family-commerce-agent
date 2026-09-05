@@ -30,17 +30,16 @@ import {
   type ListLine,
   type ProductChoice,
   type PurchasedLine,
+  regionOf,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
-import { SuperMcpCatalogProvider, SuperMcpQuoteProvider } from '@fca/retailer-connectors';
 import { quoteWithFallback } from '@fca/shopping-agent';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
+import { providersFor } from './providers.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 const households = new HouseholdStore(TABLE);
-const quoteProvider = new SuperMcpQuoteProvider();
-const catalog = new SuperMcpCatalogProvider();
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -62,7 +61,8 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (method === 'POST' && path === '/households') {
       const name = str(body['name'], 'name');
       const address = str(body['address'], 'address');
-      return ok(await households.create(caller.userId, caller.email, name, address), 201);
+      const country = regionOf(typeof body['country'] === 'string' ? body['country'] : undefined).country;
+      return ok(await households.create(caller.userId, caller.email, name, address, country), 201);
     }
     if (method === 'POST' && seg[0] === 'invites' && seg[2] === 'accept' && seg[1]) {
       return ok(await households.acceptInvite(seg[1], caller.userId, caller.email));
@@ -76,8 +76,15 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (!household) throw new HttpError(404, 'household not found');
     const repo = new DynamoMemoryRepository(hid, TABLE);
     const rest = seg.slice(2).join('/');
+    const region = regionOf(household.country);
+    const providers = providersFor(region);
+    const requirePricing = () => {
+      if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
+      return providers;
+    };
 
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
+    if (method === 'GET' && rest === 'region') return ok(region);
     if (method === 'GET' && rest === 'memory') return ok(await repo.load());
 
     if (method === 'POST' && rest === 'memory/confirm') {
@@ -104,6 +111,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     }
 
     if (method === 'POST' && rest === 'resolve') {
+      const { catalog } = requirePricing();
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const choices: Record<string, ProductChoice | null> = {};
@@ -126,6 +134,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     }
 
     if (method === 'POST' && rest === 'quote') {
+      const { quote: quoteProvider } = requirePricing();
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const lines = applied.map((a) => a.line);
@@ -142,6 +151,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const bestId = result.options[0]?.legs[0]?.storefrontId;
       const quotedLines = Object.fromEntries((res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? []).map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link }]));
       return ok({
+        currency: region.currency,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,

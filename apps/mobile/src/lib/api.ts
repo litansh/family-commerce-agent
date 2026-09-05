@@ -1,9 +1,10 @@
 import type { ListLine, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
 import { config } from './config';
 
-export interface Household { id: string; name: string; address: string }
+export interface Household { id: string; name: string; address: string; country?: string }
 
 export interface QuoteResult {
+  currency?: string;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
@@ -29,7 +30,7 @@ export class Api {
   }
 
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
-  createHousehold = (name: string, address: string) => this.#call<Household>('POST', '/households', { name, address });
+  createHousehold = (name: string, address: string, country: string) => this.#call<Household>('POST', '/households', { name, address, country });
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);
   quote = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<QuoteResult>('POST', `/households/${hid}/quote`, { lines });
@@ -41,4 +42,3 @@ export class Api {
   recordShop = (hid: string, bought: PurchasedLine[]) => this.#call<unknown>('POST', `/households/${hid}/memory/shop`, { bought });
 }
 
-export const ils = (agorot: number): string => `₪${(agorot / 100).toFixed(2)}`;

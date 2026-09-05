@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import type { PurchaseOption } from '@fca/domain';
-import { ils, type Api, type Household, type QuoteResult } from '../lib/api';
+import type { Api, Household, QuoteResult } from '../lib/api';
 import type { Line } from '../lib/store';
-import { Button, Chip, Header, Loading, Rank, s, t } from '../ui';
-import { reasonHe, rejectionHe } from '../lib/he';
+import { Button, Chip, Header, Loading, Rank, S, t } from '../ui';
+import { money, reasonT, rejectionT, t as tr } from '../lib/i18n';
 
 const LETTERS = 'אבגדה';
 
@@ -15,14 +15,15 @@ const LETTERS = 'אבגדה';
 export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
   api: Api; household: Household; lines: Line[]; onBack: () => void; onChoose: (opt: PurchaseOption, q: QuoteResult) => void;
 }) {
+  const s = S();
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
 
-  if (err) return <View style={s.screen}><Header title="משהו השתבש" onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
-  if (!q) return <View style={s.screen}><Header title="משווים…" subtitle={`${lines.length} פריטים בכל הרשתות שמגיעות ל${household.address}`} onBack={onBack} /><Loading label="בערך 20 שניות" /></View>;
+  if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
+  if (!q) return <View style={s.screen}><Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} /><Loading label={tr('about20s')} /></View>;
 
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
@@ -30,9 +31,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
 
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
-      <Header title="איך לקנות?" subtitle={`${q.lines.length} פריטים · ${q.fromMemory.length} זוהו מהזיכרון המשפחתי${spread > 0 ? ` · פער של ${ils(spread)} בין הרשתות` : ''}`} onBack={onBack} />
+      <Header title={tr('howToBuy')} subtitle={tr('optionsSub', { n: q.lines.length, m: q.fromMemory.length }) + (spread > 0 ? tr('spread', { x: money(spread) }) : '')} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}>
-        {q.options.length === 0 && <View style={s.card}><Text style={s.body}>אף רשת לא מצליחה לספק מספיק מהרשימה. נסו לשנות פריטים.</Text></View>}
+        {q.options.length === 0 && <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
         {q.options.map((o, i) => {
           const isBest = i === 0;
@@ -44,26 +45,26 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
                   <Rank letter={LETTERS[i] ?? '?'} best={isBest} />
                   <View style={{ flex: 1 }}>
                     <Text style={[s.title, { fontSize: 18 }]} numberOfLines={1}>{o.label}</Text>
-                    <Text style={s.small}>{reasonHe(o.explanation.reason)}</Text>
+                    <Text style={s.small}>{reasonT(o.explanation.reason)}</Text>
                   </View>
                 </View>
               </View>
               <View style={[s.row, { marginTop: 12, alignItems: 'flex-end' }]}>
-                <Text style={s.priceBig}>{ils(o.cashCost)}</Text>
-                {isBest ? <Chip text="הכי משתלם" tone="good" /> : extra > 0 ? <Text style={[s.small, { color: t.amber }]}>+{ils(extra)}</Text> : null}
+                <Text style={s.priceBig}>{money(o.cashCost)}</Text>
+                {isBest ? <Chip text={tr('best')} tone="good" /> : extra > 0 ? <Text style={[s.small, { color: t.amber }]}>+{money(extra)}</Text> : null}
               </View>
               <View style={s.hair} />
               {o.legs.map((leg) => (
                 <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>
-                  <Text style={s.small}>{leg.brand} · {leg.lineIds.length} פריטים</Text>
-                  <Text style={s.priceSmall}>{ils(leg.itemsSubtotal)} + {ils(leg.deliveryFee)} משלוח</Text>
+                  <Text style={s.small}>{leg.brand} · {leg.lineIds.length} {tr('items')}</Text>
+                  <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
                 </View>
               ))}
-              {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>זמן (מוצג בנפרד)</Text><Text style={s.priceSmall}>{ils(o.timeCost)}</Text></View>}
-              {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>לא זמין: {o.unpricedLineIds.map(nameOf).join(', ')}</Text>}
+              {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(o.timeCost)}</Text></View>}
+              {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}</Text>}
               <View style={[s.rowStart, { marginTop: 10 }]}>
-                <Chip text={`כיסוי ${Math.round(o.coverageRatio * 100)}%`} tone={o.coverageRatio >= 0.99 ? 'good' : 'neutral'} />
-                {o.substitutedLineCount > 0 && <Chip text={`${o.substitutedLineCount} תחליפים`} tone="warn" />}
+                <Chip text={tr('coverage', { p: Math.round(o.coverageRatio * 100) })} tone={o.coverageRatio >= 0.99 ? 'good' : 'neutral'} />
+                {o.substitutedLineCount > 0 && <Chip text={tr('subs', { n: o.substitutedLineCount })} tone="warn" />}
               </View>
             </Pressable>
           );
@@ -71,16 +72,16 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
 
         {q.warnings.length > 0 && (
           <View style={[s.card, { backgroundColor: t.amberSoft }]}>
-            <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>כדאי לאשר פעם אחת</Text>
-            <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>המחיר של הפריטים האלה משתנה מאוד בין רשתות — כנראה זוהו כמוצרים שונים. אישור ברקוד אחד מתקן את זה לתמיד.</Text>
+            <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>{tr('confirmOnce')}</Text>
+            <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>{tr('confirmOnceSub')}</Text>
             {q.warnings.map((w, i) => <Text key={i} style={[s.body, { color: t.amber }]}>• {/"([^"]+)"/.exec(w)?.[1] ?? w}</Text>)}
           </View>
         )}
 
         {q.rejected.length > 0 && (
           <View style={{ marginTop: 4 }}>
-            <Text style={[s.small, { marginBottom: 4 }]}>לא הוצעו — לא מספקות מספיק מהרשימה</Text>
-            {q.rejected.map((r, i) => <Text key={i} style={s.faint}>{r.brand} · {rejectionHe(r.reason)}</Text>)}
+            <Text style={[s.small, { marginBottom: 4 }]}>{tr('notOffered')}</Text>
+            {q.rejected.map((r, i) => <Text key={i} style={s.faint}>{r.brand} · {rejectionT(r.reason)}</Text>)}
           </View>
         )}
       </View>
@@ -92,6 +93,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
 export function CheckoutScreen({ api, household, option, quote, onDone, onBack }: {
   api: Api; household: Household; option: PurchaseOption; quote: QuoteResult; onDone: () => void; onBack: () => void;
 }) {
+  const s = S();
   const [busy, setBusy] = useState(false);
   const lineOf = (id: string) => quote.lines.find((l) => l.id === id);
   const done = async () => {
@@ -105,12 +107,12 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack }
   };
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
-      <Header title={option.label} subtitle="התשלום נעשה באתר הרשת. אנחנו מכינים — אתם מאשרים." onBack={onBack} />
+      <Header title={option.label} subtitle={tr('payAtStore')} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}>
-        <View style={[s.row, { marginBottom: 12 }]}><Text style={s.small}>סה״כ משוער</Text><Text style={s.priceBig}>{ils(option.cashCost)}</Text></View>
+        <View style={[s.row, { marginBottom: 12 }]}><Text style={s.small}>{tr('estTotal')}</Text><Text style={s.priceBig}>{money(option.cashCost)}</Text></View>
         {option.legs.map((leg) => (
           <View key={leg.storefrontId} style={s.card}>
-            <View style={s.row}><Text style={s.title}>{leg.brand}</Text><Text style={s.price}>{ils(leg.itemsSubtotal)}</Text></View>
+            <View style={s.row}><Text style={s.title}>{leg.brand}</Text><Text style={s.price}>{money(leg.itemsSubtotal)}</Text></View>
             {leg.lineIds.map((id, i) => {
               const l = lineOf(id); const ql = quote.quotedLines[id];
               return (
@@ -119,14 +121,14 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack }
                     <Text style={s.body}>{l?.query}</Text>
                     <Text style={s.small} numberOfLines={1}>{ql?.productName ?? ''}</Text>
                   </View>
-                  {ql?.link ? <Text style={s.link}>פתח ›</Text> : null}
+                  {ql?.link ? <Text style={s.link}>{tr('open')}</Text> : null}
                 </Pressable>
               );
             })}
           </View>
         ))}
-        <Button title="סיימתי — תזכרו את הקנייה הזו" onPress={done} disabled={busy} />
-        <Text style={[s.small, { marginTop: 10, textAlign: 'center' }]}>הזיכרון לומד רק מקנייה שהושלמה.</Text>
+        <Button title={tr('done')} onPress={done} disabled={busy} />
+        <Text style={[s.small, { marginTop: 10, textAlign: 'center' }]}>{tr('learnsOnly')}</Text>
       </View>
     </ScrollView>
   );

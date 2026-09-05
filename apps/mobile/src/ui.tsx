@@ -8,6 +8,7 @@
  */
 import React from 'react';
 import { Mark } from './Logo';
+import { isRTL, t as tr } from './lib/i18n';
 import {
   ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputProps, type TextStyle, type ViewStyle,
@@ -28,24 +29,34 @@ const shadow: ViewStyle = Platform.select({
 
 const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
-export const s = StyleSheet.create({
+function makeStyles(rtl: boolean) {
+  const ta = rtl ? ('right' as const) : ('left' as const);
+  const row = rtl ? ('row-reverse' as const) : ('row' as const);
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: t.bg },
   pad: { paddingHorizontal: 20, paddingVertical: 16 },
-  display: { fontSize: 30, fontWeight: '800', color: t.ink, textAlign: 'right', letterSpacing: -0.5 },
-  title: { fontSize: 20, fontWeight: '700', color: t.ink, textAlign: 'right' },
-  body: { fontSize: 16, color: t.ink, textAlign: 'right', lineHeight: 23 },
-  small: { fontSize: 13, color: t.muted, textAlign: 'right', lineHeight: 18 },
-  faint: { fontSize: 12, color: t.faint, textAlign: 'right' },
+  display: { fontSize: 30, fontWeight: '800', color: t.ink, textAlign: ta, letterSpacing: -0.5 },
+  title: { fontSize: 20, fontWeight: '700', color: t.ink, textAlign: ta },
+  body: { fontSize: 16, color: t.ink, textAlign: ta, lineHeight: 23 },
+  small: { fontSize: 13, color: t.muted, textAlign: ta, lineHeight: 18 },
+  faint: { fontSize: 12, color: t.faint, textAlign: ta },
   price: { fontSize: 22, fontWeight: '800', color: t.ink, ...tabular },
   priceBig: { fontSize: 34, fontWeight: '800', color: t.ink, letterSpacing: -1, ...tabular },
   priceSmall: { fontSize: 14, fontWeight: '600', color: t.muted, ...tabular },
   card: { backgroundColor: t.card, borderRadius: t.r, padding: 16, marginBottom: 12, ...shadow },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-  rowStart: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  row: { flexDirection: row, alignItems: 'center', justifyContent: 'space-between' },
+  rowStart: { flexDirection: row, alignItems: 'center', gap: 8 },
   hair: { height: StyleSheet.hairlineWidth, backgroundColor: t.line, marginVertical: 10 },
-  input: { backgroundColor: t.card, borderRadius: t.rs, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, textAlign: 'right', color: t.ink, borderWidth: 1, borderColor: t.line },
+  input: { backgroundColor: t.card, borderRadius: t.rs, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, textAlign: ta, color: t.ink, borderWidth: 1, borderColor: t.line },
   link: { color: t.accent, fontSize: 15, fontWeight: '600' },
-});
+  });
+}
+
+const cache = { rtl: makeStyles(true), ltr: makeStyles(false) };
+/** Styles for the current direction. Screens call `S()` at render so a region change re-lays out. */
+export const S = () => (isRTL() ? cache.rtl : cache.ltr);
+/** Back-compat alias used inside this file's components. */
+const s = new Proxy({} as ReturnType<typeof makeStyles>, { get: (_o, k) => (S() as never)[k as never] });
 
 type BtnKind = 'primary' | 'secondary' | 'quiet';
 export function Button({ title, kind = 'primary', disabled, style, ...p }: PressableProps & { title: string; kind?: BtnKind; style?: ViewStyle }) {
@@ -90,7 +101,7 @@ export const Loading = ({ label }: { label?: string }) => (
 export function Header({ title, subtitle, action, onAction, onBack }: { title: string; subtitle?: string; action?: string; onAction?: () => void; onBack?: () => void }) {
   return (
     <View style={[s.pad, { paddingBottom: 8 }]}>
-      {onBack ? <Pressable onPress={onBack} hitSlop={10} style={{ alignSelf: 'flex-end', marginBottom: 6 }}><Text style={s.link}>‹ חזרה</Text></Pressable> : null}
+      {onBack ? <Pressable onPress={onBack} hitSlop={10} style={{ alignSelf: isRTL() ? 'flex-end' : 'flex-start', marginBottom: 6 }}><Text style={s.link}>{tr('back')}</Text></Pressable> : null}
       <View style={s.row}>
         <View style={s.rowStart}><Mark size={26} /><Text style={s.display}>{title}</Text></View>
         {action && onAction ? <Pressable onPress={onAction} hitSlop={10}><Text style={s.link}>{action}</Text></Pressable> : null}

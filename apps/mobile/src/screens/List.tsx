@@ -3,7 +3,8 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import type { Suggestion } from '@fca/domain';
 import type { Api, Household } from '../lib/api';
 import { loadList, newId, saveList, type Line } from '../lib/store';
-import { Button, Chip, Empty, Header, Input, s, t } from '../ui';
+import { Button, Chip, Empty, Header, Input, S, t } from '../ui';
+import { t as tr } from '../lib/i18n';
 
 /**
  * The shared list. A brand on a line is honoured when given: "חלב 3%" with
@@ -13,6 +14,7 @@ import { Button, Chip, Empty, Header, Input, s, t } from '../ui';
 export function ListScreen({ api, household, onQuote, onInvite }: {
   api: Api; household: Household; onQuote: (lines: Line[]) => void; onInvite: () => void;
 }) {
+  const s = S();
   const [lines, setLines] = useState<Line[]>([]);
   const [query, setQuery] = useState('');
   const [brand, setBrand] = useState('');
@@ -34,7 +36,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
 
   return (
     <View style={s.screen}>
-      <Header title={household.name} subtitle={household.address} action="הזמנת בן משפחה" onAction={onInvite} />
+      <Header title={household.name} subtitle={household.address} action={tr('invite')} onAction={onInvite} />
 
       <FlatList
         data={lines}
@@ -43,20 +45,20 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         ListHeaderComponent={
           suggestions.length > 0 ? (
             <View style={[s.card, { backgroundColor: t.amberSoft, marginBottom: 16 }]}>
-              <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>שכחתם משהו?</Text>
-              <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>דברים שאתם קונים בדרך כלל ולא ברשימה. הקישו להוספה.</Text>
+              <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>{tr('forgot')}</Text>
+              <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>{tr('forgotSub')}</Text>
               {suggestions.slice(0, 5).map((sg) => (
                 <Pressable key={sg.preference.key} onPress={() => add(sg.preference.phrase, sg.preference.brand)} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: '#EFDDB6' }]}>
                   <Text style={s.body}>{sg.preference.phrase}</Text>
                   <Text style={[s.small, { color: t.amber }]}>
-                    {sg.reason === 'overdue' ? `כל ~${sg.usualIntervalDays} ימים · לפני ${sg.daysSince}` : `נקנה ${sg.preference.orderCount}×`}
+                    {sg.reason === 'overdue' ? tr('everyDays', { n: sg.usualIntervalDays ?? '', d: sg.daysSince }) : tr('boughtTimes', { n: sg.preference.orderCount })}
                   </Text>
                 </Pressable>
               ))}
             </View>
           ) : null
         }
-        ListEmptyComponent={<Empty title="הרשימה ריקה" hint="כתבו מה צריך — למשל ״חלב 3%״ או ״פמפרס מידה 4״. אפשר לציין מותג אם זה חשוב." />}
+        ListEmptyComponent={<Empty title={tr('emptyTitle')} hint={tr('emptyHint')} />}
         renderItem={({ item, index }) => (
           <View style={[s.row, { paddingVertical: 13, borderTopWidth: index === 0 ? 0 : 1, borderColor: t.line }]}>
             <View style={[s.rowStart, { flex: 1 }]}>
@@ -70,14 +72,14 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
 
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
         <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
-          <Input placeholder="מה צריך?" value={query} onChangeText={setQuery} onSubmitEditing={() => add(query, brand)} style={{ flex: 2, backgroundColor: t.bg, borderWidth: 0 }} returnKeyType="done" />
-          <Input placeholder="מותג" value={brand} onChangeText={setBrand} onSubmitEditing={() => add(query, brand)} style={{ flex: 1, backgroundColor: t.bg, borderWidth: 0 }} />
+          <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={() => add(query, brand)} style={{ flex: 2, backgroundColor: t.bg, borderWidth: 0 }} returnKeyType="done" />
+          <Input placeholder={tr('brandPh')} value={brand} onChangeText={setBrand} onSubmitEditing={() => add(query, brand)} style={{ flex: 1, backgroundColor: t.bg, borderWidth: 0 }} />
         </View>
         <View style={{ height: 10 }} />
         {query.trim() ? (
-          <Button title={`הוסף ${query.trim()}`} kind="secondary" onPress={() => add(query, brand)} />
+          <Button title={tr('add', { q: query.trim() })} kind="secondary" onPress={() => add(query, brand)} />
         ) : (
-          <Button title={lines.length === 0 ? 'השוואת מחירים' : `השוו ${lines.length} פריטים בכל הרשתות`} onPress={() => onQuote(lines)} disabled={lines.length === 0} />
+          <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} onPress={() => onQuote(lines)} disabled={lines.length === 0} />
         )}
       </View>
     </View>
