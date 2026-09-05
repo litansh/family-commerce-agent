@@ -27,6 +27,7 @@ import {
 import { SuperMcpQuoteProvider } from '@fca/retailer-connectors';
 import { applyMemory, suggestMissing } from '@fca/domain';
 import { memoryRepo } from './memory-repo.ts';
+import { quoteWithFallback } from '@fca/shopping-agent';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -85,11 +86,11 @@ async function main(): Promise<void> {
   console.log('   asking supermcp…');
 
   const provider = new SuperMcpQuoteProvider();
-  const res = await provider.quoteBasket({
-    lines,
-    address: args.address,
-    serviceType: args.pickup ? 'pickup' : 'delivery',
-  });
+  const res = await quoteWithFallback(
+    provider,
+    { lines, address: args.address, serviceType: args.pickup ? 'pickup' : 'delivery' },
+    memory,
+  );
   console.log(`   ${res.quotes.length} storefronts in ${(res.latencyMs / 1000).toFixed(1)}s\n`);
 
   const { options, rejected, warnings } = optimize({

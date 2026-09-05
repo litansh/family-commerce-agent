@@ -11,7 +11,11 @@
     "@fca/memory-store": "*",
     "@fca/retailer-connectors": "*",
     "@aws-sdk/client-dynamodb": "^3.700.0",
-    "@aws-sdk/lib-dynamodb": "^3.700.0"
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@fca/shopping-agent": "*"
   },
-  "devDependencies": { "esbuild": "^0.24.0", "@types/aws-lambda": "^8.10.145" }
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "@types/aws-lambda": "^8.10.145"
+  }
 }

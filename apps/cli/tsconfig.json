@@ -16,6 +16,9 @@
     },
     {
       "path": "../../services/memory-store"
+    },
+    {
+      "path": "../../services/shopping-agent"
     }
   ]
 }

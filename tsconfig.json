@@ -11,6 +11,9 @@
       "path": "services/memory-store"
     },
     {
+      "path": "services/shopping-agent"
+    },
+    {
       "path": "apps/cli"
     },
     {

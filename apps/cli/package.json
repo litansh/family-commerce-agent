@@ -9,6 +9,7 @@
   "dependencies": {
     "@fca/domain": "*",
     "@fca/retailer-connectors": "*",
-    "@fca/memory-store": "*"
+    "@fca/memory-store": "*",
+    "@fca/shopping-agent": "*"
   }
 }

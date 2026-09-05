@@ -33,6 +33,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository } from '@fca/memory-store';
 import { SuperMcpCatalogProvider, SuperMcpQuoteProvider } from '@fca/retailer-connectors';
+import { quoteWithFallback } from '@fca/shopping-agent';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 
@@ -125,11 +126,15 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const lines = applied.map((a) => a.line);
-      const res = await quoteProvider.quoteBasket({
-        lines,
-        address: typeof body['address'] === 'string' ? body['address'] : household.address,
-        serviceType: body['pickup'] === true ? 'pickup' : 'delivery',
-      });
+      const res = await quoteWithFallback(
+        quoteProvider,
+        {
+          lines,
+          address: typeof body['address'] === 'string' ? body['address'] : household.address,
+          serviceType: body['pickup'] === true ? 'pickup' : 'delivery',
+        },
+        memory,
+      );
       const result = optimize({ quotes: res.quotes, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
       const bestId = result.options[0]?.legs[0]?.storefrontId;
       const quotedLines = Object.fromEntries((res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? []).map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link }]));
