@@ -45,6 +45,9 @@ const catalog = new SuperMcpCatalogProvider();
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
 export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
+  // The browser's CORS preflight carries no token and must succeed without
+  // one. API Gateway adds the Access-Control-* headers on the way out.
+  if (event.requestContext.http.method === 'OPTIONS') return { statusCode: 204 };
   try {
     const caller = callerOf(event);
     const method = event.requestContext.http.method;

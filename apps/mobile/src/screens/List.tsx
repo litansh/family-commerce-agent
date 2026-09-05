@@ -3,14 +3,12 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import type { Suggestion } from '@fca/domain';
 import type { Api, Household } from '../lib/api';
 import { loadList, newId, saveList, type Line } from '../lib/store';
-import { Button, Input, Pill, c, s } from '../ui';
+import { Button, Chip, Empty, Header, Input, s, t } from '../ui';
 
 /**
- * The shared list. Brand is optional per line and is honoured when given:
- * "חלב 3%" with brand "תנובה" gets Tnuva, compared, with rivals shown.
- *
- * The forgetting check runs whenever the list changes and shows what the
- * household usually buys that is not on it.
+ * The shared list. A brand on a line is honoured when given: "חלב 3%" with
+ * brand "תנובה" gets Tnuva, compared, with rivals shown. The forgetting
+ * check runs whenever the list changes.
  */
 export function ListScreen({ api, household, onQuote, onInvite }: {
   api: Api; household: Household; onQuote: (lines: Line[]) => void; onInvite: () => void;
@@ -27,60 +25,60 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   }, [lines, api, household.id]);
 
   const add = (q: string, b?: string) => {
-    const t = q.trim();
-    if (!t) return;
-    setLines((xs) => [...xs, { id: newId(), query: t, ...(b?.trim() ? { brand: b.trim() } : {}) }]);
+    const txt = q.trim();
+    if (!txt) return;
+    setLines((xs) => [...xs, { id: newId(), query: txt, ...(b?.trim() ? { brand: b.trim() } : {}) }]);
     setQuery(''); setBrand('');
   };
   const remove = (id: string) => setLines((xs) => xs.filter((x) => x.id !== id));
 
   return (
     <View style={s.screen}>
-      <View style={s.pad}>
-        <View style={s.row}>
-          <Text style={s.h1}>{household.name}</Text>
-          <Pressable onPress={onInvite}><Text style={[s.muted, { color: c.accent }]}>הזמן בן משפחה</Text></Pressable>
-        </View>
-        <Text style={s.muted}>{household.address}</Text>
-      </View>
-
-      {suggestions.length > 0 && (
-        <View style={[s.card, { marginHorizontal: 16, borderColor: c.warn }]}>
-          <Text style={[s.h2, { color: c.warn }]}>שכחתם משהו?</Text>
-          {suggestions.slice(0, 5).map((sg) => (
-            <Pressable key={sg.preference.key} onPress={() => add(sg.preference.phrase, sg.preference.brand)} style={[s.row, { paddingVertical: 6 }]}>
-              <Text style={s.p}>{sg.preference.phrase}</Text>
-              <Text style={s.muted}>
-                {sg.reason === 'overdue' ? `כל ~${sg.usualIntervalDays} ימים · לפני ${sg.daysSince}` : `נקנה ${sg.preference.orderCount}×`}  +
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      <Header title={household.name} subtitle={household.address} action="הזמנת בן משפחה" onAction={onInvite} />
 
       <FlatList
         data={lines}
         keyExtractor={(l) => l.id}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-        ListEmptyComponent={<Text style={[s.muted, { textAlign: 'center', marginTop: 20 }]}>הרשימה ריקה. הוסיפו פריטים למטה.</Text>}
-        renderItem={({ item }) => (
-          <View style={[s.card, s.row]}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.p}>{item.query}</Text>
-              {item.brand ? <Pill text={item.brand} /> : null}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}
+        ListHeaderComponent={
+          suggestions.length > 0 ? (
+            <View style={[s.card, { backgroundColor: t.amberSoft, marginBottom: 16 }]}>
+              <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>שכחתם משהו?</Text>
+              <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>דברים שאתם קונים בדרך כלל ולא ברשימה. הקישו להוספה.</Text>
+              {suggestions.slice(0, 5).map((sg) => (
+                <Pressable key={sg.preference.key} onPress={() => add(sg.preference.phrase, sg.preference.brand)} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: '#EFDDB6' }]}>
+                  <Text style={s.body}>{sg.preference.phrase}</Text>
+                  <Text style={[s.small, { color: t.amber }]}>
+                    {sg.reason === 'overdue' ? `כל ~${sg.usualIntervalDays} ימים · לפני ${sg.daysSince}` : `נקנה ${sg.preference.orderCount}×`}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <Pressable onPress={() => remove(item.id)} hitSlop={10}><Text style={{ color: c.danger, fontSize: 18 }}>✕</Text></Pressable>
+          ) : null
+        }
+        ListEmptyComponent={<Empty title="הרשימה ריקה" hint="כתבו מה צריך — למשל ״חלב 3%״ או ״פמפרס מידה 4״. אפשר לציין מותג אם זה חשוב." />}
+        renderItem={({ item, index }) => (
+          <View style={[s.row, { paddingVertical: 13, borderTopWidth: index === 0 ? 0 : 1, borderColor: t.line }]}>
+            <View style={[s.rowStart, { flex: 1 }]}>
+              <Text style={[s.body, { fontSize: 17 }]}>{item.query}</Text>
+              {item.brand ? <Chip text={item.brand} tone="good" /> : null}
+            </View>
+            <Pressable onPress={() => remove(item.id)} hitSlop={12}><Text style={{ color: t.faint, fontSize: 20 }}>✕</Text></Pressable>
           </View>
         )}
       />
 
-      <View style={[s.pad, { borderTopWidth: 1, borderColor: c.line, backgroundColor: c.card }]}>
+      <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
         <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
-          <Input placeholder="מה צריך? (חלב 3%, פמפרס מידה 4…)" value={query} onChangeText={setQuery} onSubmitEditing={() => add(query, brand)} style={{ flex: 2 }} returnKeyType="done" />
-          <Input placeholder="מותג (אופציונלי)" value={brand} onChangeText={setBrand} style={{ flex: 1 }} />
+          <Input placeholder="מה צריך?" value={query} onChangeText={setQuery} onSubmitEditing={() => add(query, brand)} style={{ flex: 2, backgroundColor: t.bg, borderWidth: 0 }} returnKeyType="done" />
+          <Input placeholder="מותג" value={brand} onChangeText={setBrand} onSubmitEditing={() => add(query, brand)} style={{ flex: 1, backgroundColor: t.bg, borderWidth: 0 }} />
         </View>
-        <Button title="הוסף" onPress={() => add(query, brand)} ghost disabled={!query.trim()} />
-        <Button title={`השווה ${lines.length} פריטים`} onPress={() => onQuote(lines)} disabled={lines.length === 0} />
+        <View style={{ height: 10 }} />
+        {query.trim() ? (
+          <Button title={`הוסף ${query.trim()}`} kind="secondary" onPress={() => add(query, brand)} />
+        ) : (
+          <Button title={lines.length === 0 ? 'השוואת מחירים' : `השוו ${lines.length} פריטים בכל הרשתות`} onPress={() => onQuote(lines)} disabled={lines.length === 0} />
+        )}
       </View>
     </View>
   );

@@ -283,6 +283,17 @@ resource "aws_apigatewayv2_route" "all" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
+# Browsers send an unauthenticated OPTIONS preflight before any request that
+# carries an Authorization header. With only the JWT-protected catch-all, that
+# preflight got a 401 and the browser refused to send the real request. This
+# route lets API Gateway's built-in CORS answer it with 204.
+resource "aws_apigatewayv2_route" "preflight" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "OPTIONS /{proxy+}"
+  target             = "integrations/${aws_apigatewayv2_integration.api.id}"
+  authorization_type = "NONE"
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
   name        = "$default"
