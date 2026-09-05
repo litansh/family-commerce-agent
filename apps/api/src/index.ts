@@ -37,9 +37,11 @@ import { quoteWithFallback } from '@fca/shopping-agent';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
+import { ImageResolver } from '@fca/product-images';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 const households = new HouseholdStore(TABLE);
+const images = new ImageResolver(TABLE);
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -84,6 +86,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     };
 
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
+
+    // Search-as-you-type: catalogue candidates with pictures. Cheap and
+    // interactive, so it is a GET with a short limit.
+    if (method === 'GET' && rest === 'search') {
+      const { catalog } = requirePricing();
+      const q = (event.queryStringParameters?.['q'] ?? '').trim();
+      if (q.length < 2) return ok({ products: [] });
+      const found = await catalog.searchProducts({ query: q, limit: 12, location: household.address });
+      const buyable = found.filter((c) => c.pricedAtChains > 0).slice(0, 8);
+      const imgs = await images.resolveMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
+      return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+    }
     if (method === 'GET' && rest === 'region') return ok(region);
     if (method === 'GET' && rest === 'memory') return ok(await repo.load());
 
@@ -149,7 +163,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       );
       const result = optimize({ quotes: res.quotes, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
       const bestId = result.options[0]?.legs[0]?.storefrontId;
-      const quotedLines = Object.fromEntries((res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? []).map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link }]));
+      const bestLines = res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
+      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
+      const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       return ok({
         currency: region.currency,
         lines,

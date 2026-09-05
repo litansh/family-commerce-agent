@@ -32,7 +32,8 @@
     "plugins": [
       "expo-web-browser",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "expo-image"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",

@@ -2,7 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ListLine } from '@fca/domain';
 
-export type Line = Omit<ListLine, 'id'> & { id: string };
+export type Line = Omit<ListLine, 'id'> & { id: string; imageUrl?: string | null; productName?: string };
 const KEY = 'fca.list';
 
 export async function loadList(): Promise<Line[]> {

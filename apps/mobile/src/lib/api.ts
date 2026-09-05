@@ -1,4 +1,6 @@
-import type { HouseholdMemory, ListLine, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
+import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
+
+export type SearchHit = ProductCandidate & { imageUrl: string | null };
 import { config } from './config';
 
 export interface Household { id: string; name: string; address: string; country?: string }
@@ -11,7 +13,7 @@ export interface QuoteResult {
   rejected: { brand: string; reason: string }[];
   warnings: string[];
   assumptions: { lineId: string; query: string; selectedName: string; kind: string }[];
-  quotedLines: Record<string, { gtin?: string; productName: string; link?: string }>;
+  quotedLines: Record<string, { gtin?: string; productName: string; link?: string; imageUrl?: string | null }>;
   suggestions: Suggestion[];
 }
 
@@ -31,6 +33,7 @@ export class Api {
 
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
   createHousehold = (name: string, address: string, country: string) => this.#call<Household>('POST', '/households', { name, address, country });
+  search = (hid: string, q: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { PurchaseOption } from '@fca/domain';
 import type { Api, Household, QuoteResult } from '../lib/api';
 import type { Line } from '../lib/store';
 import { Button, Chip, Header, Loading, Rank, S, t } from '../ui';
+import { ProductImage } from '../ProductImage';
+import type { SearchHit } from '../lib/api';
 import { money, reasonT, rejectionT, t as tr } from '../lib/i18n';
 
 const LETTERS = 'אבגדה';
@@ -18,8 +20,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
   const s = S();
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [fixing, setFixing] = useState<string | null>(null);
   useEffect(() => {
-    api.quote(household.id, lines.map(({ id: _i, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
+    api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
 
   if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
@@ -73,10 +76,19 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
         {q.warnings.length > 0 && (
           <View style={[s.card, { backgroundColor: t.amberSoft }]}>
             <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>{tr('confirmOnce')}</Text>
-            <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>{tr('confirmOnceSub')}</Text>
-            {q.warnings.map((w, i) => <Text key={i} style={[s.body, { color: t.amber }]}>• {/"([^"]+)"/.exec(w)?.[1] ?? w}</Text>)}
+            <Text style={[s.small, { color: t.amber, marginBottom: 6 }]}>{tr('confirmOnceSub')} {tr('tapToFix')}</Text>
+            {q.warnings.map((w, i) => {
+              const phrase = /"([^"]+)"/.exec(w)?.[1] ?? w;
+              return (
+                <Pressable key={i} onPress={() => setFixing(phrase)} style={[s.row, { paddingVertical: 8, borderTopWidth: 1, borderColor: '#EFDDB6' }]}>
+                  <Text style={[s.body, { color: t.amber }]}>{phrase}</Text>
+                  <Text style={[s.link, { color: t.amber }]}>›</Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
+        {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
 
         {q.rejected.length > 0 && (
           <View style={{ marginTop: 4 }}>
@@ -117,9 +129,12 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack }
               const l = lineOf(id); const ql = quote.quotedLines[id];
               return (
                 <Pressable key={id} onPress={() => ql?.link && Linking.openURL(ql.link)} style={[s.row, { paddingVertical: 10, borderTopWidth: i === 0 ? 0 : 1, borderColor: t.line, marginTop: i === 0 ? 8 : 0 }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.body}>{l?.query}</Text>
-                    <Text style={s.small} numberOfLines={1}>{ql?.productName ?? ''}</Text>
+                  <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
+                    <ProductImage url={ql?.imageUrl} gtin={ql?.gtin} name={ql?.productName ?? l?.query ?? ''} size={44} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.body}>{l?.query}</Text>
+                      <Text style={s.small} numberOfLines={1}>{ql?.productName ?? ''}</Text>
+                    </View>
                   </View>
                   {ql?.link ? <Text style={s.link}>{tr('open')}</Text> : null}
                 </Pressable>
@@ -131,5 +146,43 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack }
         <Text style={[s.small, { marginTop: 10, textAlign: 'center' }]}>{tr('learnsOnly')}</Text>
       </View>
     </ScrollView>
+  );
+}
+
+
+/** Pick the exact product for a phrase, once. Photo cards; a tap writes memory. */
+function ConfirmSheet({ api, household, phrase, onClose, onConfirmed }: { api: Api; household: Household; phrase: string; onClose: () => void; onConfirmed: () => void }) {
+  const s = S();
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api.search(household.id, phrase).then((r) => setHits(r.products)).catch(() => setHits([])); }, [api, household.id, phrase]);
+  const pick = async (h: SearchHit) => {
+    if (!h.gtin) return;
+    setBusy(true);
+    try { await api.confirm(household.id, { phrase, gtin: h.gtin, productName: h.name, ...(h.brand ? { brand: h.brand } : {}) }); onConfirmed(); } finally { setBusy(false); }
+  };
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[s.screen, { paddingTop: 12 }]}>
+        <Header title={phrase} subtitle={tr('tapToFix')} onBack={onClose} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }}>
+          {!hits ? <Loading label={tr('searching')} /> : hits.map((h) => (
+            <Pressable key={h.productId} onPress={() => pick(h)} disabled={busy || !h.gtin} style={({ pressed }) => [s.card, s.row, pressed && { opacity: 0.6 }]}>
+              <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
+                <ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={56} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.body, { fontSize: 15 }]} numberOfLines={2}>{h.name}</Text>
+                  {h.brand ? <Chip text={h.brand} tone="good" /> : null}
+                </View>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                {h.fromPrice !== undefined ? <Text style={s.price}>{money(h.fromPrice)}</Text> : null}
+                <Text style={s.link}>{tr('pickThis')}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
