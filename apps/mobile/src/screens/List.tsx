@@ -78,6 +78,13 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   return (
     <View style={s.screen}>
       <Header title={household.name} subtitle={household.address} action={tr('invite')} onAction={onInvite} />
+      <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+        <View style={[s.rowStart, { backgroundColor: t.card, borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: t.line }]}>
+          <Text style={{ fontSize: 18, color: t.faint }}>⌕</Text>
+          <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 6 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
+          {query ? <Pressable onPress={() => setQuery('')} hitSlop={10}><Text style={{ color: t.faint, fontSize: 16 }}>✕</Text></Pressable> : null}
+        </View>
+      </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
 
         {showSearch ? (
@@ -153,8 +160,6 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       </ScrollView>
 
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
-        <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ backgroundColor: t.bg, borderWidth: 0, fontSize: 17 }} returnKeyType="done" blurOnSubmit={false} />
-        <View style={{ height: 10 }} />
         {query.trim() ? (
           <Button title={tr('addAsTyped', { q: query.trim() })} kind="secondary" onPress={addTyped} />
         ) : (
