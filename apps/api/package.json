@@ -1,0 +1,17 @@
+{
+  "name": "@fca/api",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --sourcemap --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && cp dist/index.mjs dist/index.js"
+  },
+  "dependencies": {
+    "@fca/domain": "*",
+    "@fca/memory-store": "*",
+    "@fca/retailer-connectors": "*",
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0"
+  },
+  "devDependencies": { "esbuild": "^0.24.0", "@types/aws-lambda": "^8.10.145" }
+}

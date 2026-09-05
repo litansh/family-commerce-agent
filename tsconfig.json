@@ -1,8 +1,20 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/domain" },
-    { "path": "services/retailer-connectors" },
-    { "path": "apps/cli" }
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "services/retailer-connectors"
+    },
+    {
+      "path": "services/memory-store"
+    },
+    {
+      "path": "apps/cli"
+    },
+    {
+      "path": "apps/api"
+    }
   ]
 }

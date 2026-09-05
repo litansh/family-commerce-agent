@@ -104,10 +104,15 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
     const quotes = (raw.plans ?? []).map<StorefrontQuote>((p) => {
       const lines = (p.lines ?? []).map<QuotedLine>((l) => {
         const src = byIndex.get(l.itemIndex);
+        // The line itself carries the canonical UUID; the GTIN is only in the
+        // retailer deep link (?item=7290004131074). Memory keys on GTIN, so
+        // recover it, preferring what the request already knew.
+        const gtin = src?.gtin ?? /[?&]item=(\d{8,14})/.exec(l.link ?? '')?.[1];
         return {
           lineId: src?.id ?? `idx-${l.itemIndex}`,
           query: src?.query ?? '',
           productName: l.name,
+          ...(gtin !== undefined ? { gtin } : {}),
           qty: l.qty,
           unitPrice: shekels(l.unitPrice),
           lineTotal: shekels(l.lineTotal),

@@ -16,7 +16,9 @@
     "test": "node --test --experimental-strip-types \"packages/*/test/*.test.ts\" \"services/*/test/*.test.ts\"",
     "typecheck": "tsc --build --force",
     "shop": "node --experimental-strip-types apps/cli/src/index.ts",
-    "resolve": "node --experimental-strip-types apps/cli/src/resolve-cli.ts"
+    "resolve": "node --experimental-strip-types apps/cli/src/resolve-cli.ts",
+    "memory": "node --experimental-strip-types apps/cli/src/memory-cli.ts",
+    "build:api": "npm run build -w @fca/api"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "bin": { "shop": "./src/index.ts" },
-  "dependencies": { "@fca/domain": "*", "@fca/retailer-connectors": "*" }
+  "bin": {
+    "shop": "./src/index.ts"
+  },
+  "dependencies": {
+    "@fca/domain": "*",
+    "@fca/retailer-connectors": "*",
+    "@fca/memory-store": "*"
+  }
 }

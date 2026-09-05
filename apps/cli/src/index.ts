@@ -25,6 +25,8 @@ import {
   type PurchaseOption,
 } from '@fca/domain';
 import { SuperMcpQuoteProvider } from '@fca/retailer-connectors';
+import { applyMemory, suggestMissing } from '@fca/domain';
+import { memoryRepo } from './memory-repo.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -62,9 +64,24 @@ async function main(): Promise<void> {
   const raw = JSON.parse(await readFile(resolve(ROOT, args.list), 'utf8')) as {
     lines: Omit<ListLine, 'id'>[];
   };
-  const lines: ListLine[] = raw.lines.map((l, i) => ({ id: `l${i}`, ...l }));
+  const typed: ListLine[] = raw.lines.map((l, i) => ({ id: `l${i}`, ...l }));
+
+  // Memory first: every phrase the household confirmed before becomes a
+  // barcode, and stops being guessed.
+  const memory = await memoryRepo().load();
+  const applied = applyMemory(typed, memory);
+  const lines = applied.map((a) => a.line);
+  const fromMemory = applied.filter((a) => a.fromMemory).length;
 
   console.log(`\n🛒 ${lines.length} lines → ${args.address}${args.pickup ? '  (pickup)' : ''}`);
+  if (fromMemory > 0) console.log(`   ${fromMemory} lines resolved from household memory`);
+
+  // The forgetting check, before anything is priced.
+  const missing = suggestMissing(memory, lines);
+  if (missing.length > 0) {
+    console.log(`\n   ⚠ you usually buy these and they are not on the list:`);
+    for (const m of missing.slice(0, 6)) console.log(`     • ${m.preference.phrase}  (${m.reason === 'overdue' ? `every ~${m.usualIntervalDays}d, last ${m.daysSince}d ago` : `${m.preference.orderCount}× before`})`);
+  }
   console.log('   asking supermcp…');
 
   const provider = new SuperMcpQuoteProvider();
@@ -100,9 +117,10 @@ async function main(): Promise<void> {
   );
   const assumedIds = new Set(res.assumptions.map((a) => a.lineId));
 
-  const exact = lines.filter((l) => !assumedIds.has(l.id) && !suspectIds.has(l.id));
-  const suspect = lines.filter((l) => suspectIds.has(l.id));
-  const generic = lines.filter((l) => assumedIds.has(l.id) && !suspectIds.has(l.id));
+  const memoryIds = new Set(applied.filter((a) => a.fromMemory).map((a) => a.line.id));
+  const exact = lines.filter((l) => memoryIds.has(l.id) || (!assumedIds.has(l.id) && !suspectIds.has(l.id)));
+  const suspect = lines.filter((l) => suspectIds.has(l.id) && !memoryIds.has(l.id));
+  const generic = lines.filter((l) => assumedIds.has(l.id) && !suspectIds.has(l.id) && !memoryIds.has(l.id));
 
   // What matters for the gate is "did we get a product the family would accept",
   // so a plausible generic counts as resolved. A suspect line does not.
@@ -112,7 +130,7 @@ async function main(): Promise<void> {
   console.log('─'.repeat(64));
   console.log(`RESOLUTION  ${acceptable}/${lines.length} lines acceptable (${pct}%)  ·  gate 85%, floor 70%`);
   console.log(
-    `            ${exact.length} exact  ·  ${generic.length} generic default  ·  ${suspect.length} suspect`,
+    `            ${exact.length} exact (${memoryIds.size} from memory)  ·  ${generic.length} generic default  ·  ${suspect.length} suspect`,
   );
 
   if (suspect.length > 0) {
@@ -160,6 +178,12 @@ async function main(): Promise<void> {
           warnings,
           rejected,
           options,
+          // gtin + name per line from the best storefront, so `memory done`
+          // can record what was actually bought.
+          quotedLines: Object.fromEntries(
+            (res.quotes.find((q) => q.storefrontId === options[0]?.legs[0]?.storefrontId)?.lines ?? [])
+              .map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName }]),
+          ),
           provider: { id: res.providerId, latencyMs: res.latencyMs },
           raw: res.raw,
         },
