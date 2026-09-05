@@ -1,0 +1,15 @@
+{
+  "_comment": "Same weekly shop, with brands named on the lines where the family cares. A named brand is honoured; alternatives are still shown.",
+  "lines": [
+    { "query": "חלב 3%", "brand": "תנובה", "amount": 6, "unit": "יח" },
+    { "query": "קוטג' 5%", "brand": "תנובה", "amount": 4, "unit": "יח" },
+    { "query": "יוגורט ביו", "brand": "דנונה", "amount": 8, "unit": "יח" },
+    { "query": "חמאה", "brand": "תנובה", "packQty": 2 },
+    { "query": "לחם אחיד פרוס", "brand": "אנג'ל", "packQty": 2 },
+    { "query": "חיתולי פמפרס מידה 4", "brand": "פמפרס", "packQty": 2 },
+    { "query": "שמן זית", "packQty": 1 },
+    { "query": "קפה נמס", "packQty": 1 },
+    { "query": "אורז", "amount": 2, "unit": "kg" },
+    { "query": "פסטה", "packQty": 3 }
+  ]
+}

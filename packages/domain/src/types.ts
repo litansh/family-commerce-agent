@@ -11,9 +11,79 @@ export interface ListLine {
   readonly query: string;
   /** A GTIN the household has confirmed before. Short-circuits resolution. */
   readonly gtin?: string;
+  /**
+   * The brand the family asked for, e.g. "תנובה".
+   *
+   * A named brand is an instruction, not a hint: resolution must return that
+   * brand. Cheaper alternatives are offered alongside it and never swapped in.
+   */
+  readonly brand?: string;
   readonly amount?: number;
   readonly unit?: string;
   readonly packQty?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Product choice — brand and size, decided by the family
+// ---------------------------------------------------------------------------
+
+/** A concrete product the line could resolve to. */
+export interface ProductCandidate {
+  readonly productId: string;
+  readonly gtin?: string;
+  readonly name: string;
+  /** Normalised brand, e.g. "תנובה" for all of תנובה / תנובה בע"מ / תנובה חלב. */
+  readonly brand?: string;
+  /** Brand exactly as the catalogue spells it. Kept for display and debugging. */
+  readonly rawBrand?: string;
+  readonly sizeQty?: number;
+  readonly sizeUnit?: string;
+  /** Cheapest price seen anywhere. Indicative only — the quote decides. */
+  readonly fromPrice?: Agorot;
+  /**
+   * Price per 100ml / 100g / piece. The only honest way to compare a 1L bag
+   * against a 2L carton, or a 100g pot against a 250g tub.
+   */
+  readonly unitPrice?: Agorot;
+  readonly unitBasis?: string;
+  /** How many chains currently price it. Zero means it cannot be bought. */
+  readonly pricedAtChains: number;
+}
+
+/** How an alternative relates to what the family asked for. */
+export type AlternativeRelation =
+  | 'same_brand_other_size'
+  | 'other_brand'
+  | 'same_brand_other_variant';
+
+export interface ProductAlternative {
+  readonly candidate: ProductCandidate;
+  readonly relation: AlternativeRelation;
+  /**
+   * Difference in unit price against the chosen product, per the shared basis.
+   * Negative means the alternative is cheaper per 100ml/100g/piece.
+   */
+  readonly unitPriceDelta?: Agorot;
+  /** Percent cheaper (positive) or dearer (negative), rounded. */
+  readonly percentDelta?: number;
+  readonly reason: string;
+}
+
+/**
+ * The resolution of one line: what we will buy, and what else the family could
+ * have. The chosen product always honours an explicitly named brand.
+ */
+export interface ProductChoice {
+  readonly lineId: string;
+  readonly query: string;
+  readonly requestedBrand?: string;
+  readonly chosen: ProductCandidate;
+  /** Ranked cheapest-per-unit first. Offered, never auto-applied. */
+  readonly alternatives: readonly ProductAlternative[];
+  readonly source: ResolutionSource;
+  /** True when the family named a brand and we honoured it. */
+  readonly brandHonoured: boolean;
+  readonly note?: string;
 }
 
 // ---------------------------------------------------------------------------

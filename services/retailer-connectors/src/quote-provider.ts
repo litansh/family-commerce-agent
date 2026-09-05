@@ -1,4 +1,4 @@
-import type { ListLine, StorefrontQuote } from '@fca/domain';
+import type { ListLine, ProductCandidate, StorefrontQuote } from '@fca/domain';
 
 export interface QuoteRequest {
   readonly lines: readonly ListLine[];
@@ -38,4 +38,30 @@ export interface ResolutionAssumption {
 export interface QuoteProvider {
   readonly id: string;
   quoteBasket(req: QuoteRequest): Promise<QuoteResponse>;
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue search — how a line becomes a brand-and-size choice
+// ---------------------------------------------------------------------------
+
+export interface CatalogSearchRequest {
+  readonly query: string;
+  /** Filter to a brand the family named. Partial match on the provider side. */
+  readonly brand?: string;
+  readonly gtin?: string;
+  readonly limit?: number;
+  /** Restricts results to products actually priced near the household. */
+  readonly location?: string;
+}
+
+/**
+ * Catalogue lookup, separate from basket pricing.
+ *
+ * Split from QuoteProvider because the two answer different questions and fail
+ * differently: search is interactive and cheap, quoting is a whole-basket
+ * operation that takes ~15 seconds.
+ */
+export interface CatalogProvider {
+  readonly id: string;
+  searchProducts(req: CatalogSearchRequest): Promise<readonly ProductCandidate[]>;
 }

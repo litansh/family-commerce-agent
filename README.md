@@ -34,6 +34,18 @@ at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
 - **Never complete a payment.** The agent prepares; a human checks out.
 - **Cash cost and time cost are shown separately.** Time has no objective monetary value.
 
+## AWS spend guard
+
+`infrastructure/terraform/bootstrap` puts a $50/month budget on the account with alerts at 50%, 80%,
+forecasted-100% and actual-100%, plus an independent CloudWatch billing alarm. It is applied once, by hand,
+before any product infrastructure exists:
+
+```bash
+cd infrastructure/terraform/bootstrap
+cp terraform.tfvars.example terraform.tfvars   # set alert_email
+AWS_PROFILE=personal-cfo terraform init && terraform apply
+```
+
 ## Credits
 
 - [`OpenIsraeliSupermarkets/israeli-supermarket-scarpers`](https://github.com/OpenIsraeliSupermarkets/israeli-supermarket-scarpers) — 37 chain adapters for the statutory price feeds
@@ -47,6 +59,10 @@ npm install
 npm test          # 20 unit tests, no network
 npm run shop -- --list examples/weekly.json --address "your address, city"
 ```
+
+`npm run resolve -- --list examples/weekly-brands.json --address "…"` shows, per line, what we'd buy and what
+else the family could have — compared on **price per 100ml/100g**, not sticker price. A line that names a brand
+(`"brand": "תנובה"`) always gets that brand; cheaper rivals are shown, never swapped in.
 
 `npm run shop` is the **Phase 1 measurement instrument**. It prices your real list, ranks the
 options with our own optimizer, and writes the whole run to `runs/` — which is simultaneously the

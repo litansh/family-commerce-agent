@@ -1,6 +1,21 @@
-import { shekels, type Agorot, type ListLine, type QuotedLine, type StorefrontQuote } from '@fca/domain';
+import {
+  resolveBrand,
+  shekels,
+  type Agorot,
+  type ListLine,
+  type ProductCandidate,
+  type QuotedLine,
+  type StorefrontQuote,
+} from '@fca/domain';
 import { McpClient } from './mcp-client.ts';
-import type { QuoteProvider, QuoteRequest, QuoteResponse, ResolutionAssumption } from './quote-provider.ts';
+import type {
+  CatalogProvider,
+  CatalogSearchRequest,
+  QuoteProvider,
+  QuoteRequest,
+  QuoteResponse,
+  ResolutionAssumption,
+} from './quote-provider.ts';
 
 export const SUPERMCP_URL = 'https://supermcp.web.app/mcp';
 
@@ -165,4 +180,67 @@ function quantityOf(l: ListLine): Record<string, unknown> {
 
 function confidenceOf(c: string | undefined): StorefrontQuote['deliveryTermsConfidence'] {
   return c === 'verified' ? 'verified' : c === 'assumed' ? 'assumed' : 'unknown';
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue search
+// ---------------------------------------------------------------------------
+
+interface RawProduct {
+  id: string;
+  gtin?: string | null;
+  name: string;
+  brand?: string | null;
+  sizeQty?: number | null;
+  sizeUnit?: string | null;
+  fromPrice?: number | null;
+  normalizedUnitPrice?: number | null;
+  normalizedUnitBasis?: string | null;
+  pricedAtChains?: number | null;
+}
+
+/**
+ * SuperMCP as a CatalogProvider.
+ *
+ * Brand comes back spelled several ways for one firm ("תנובה", "תנובה בע\"מ",
+ * "תנובה חלב"), so the raw spelling is preserved for display and a normalised
+ * key is attached for matching. Catalogue entries that no chain prices come back
+ * with a null price and zero chains; they are kept here and filtered in the
+ * domain, so the reason a product was dropped stays inspectable.
+ */
+export class SuperMcpCatalogProvider implements CatalogProvider {
+  readonly id = 'supermcp';
+  readonly #mcp: McpClient;
+
+  constructor(url: string = SUPERMCP_URL) {
+    this.#mcp = new McpClient(url, 60_000);
+  }
+
+  async searchProducts(req: CatalogSearchRequest): Promise<readonly ProductCandidate[]> {
+    const res = await this.#mcp.callTool<{ products?: RawProduct[] }>('search_products', {
+      query: req.query,
+      limit: req.limit ?? 20,
+      ...(req.brand !== undefined ? { brand: req.brand } : {}),
+      ...(req.gtin !== undefined ? { gtin: req.gtin } : {}),
+      ...(req.location !== undefined ? { location: req.location } : {}),
+    });
+
+    return (res.products ?? []).map<ProductCandidate>((p) => ({
+      productId: p.id,
+      ...(p.gtin ? { gtin: p.gtin } : {}),
+      name: p.name,
+      // The catalogue often leaves brand null on a product whose name carries
+      // it, so fall back to reading the name.
+      ...(resolveBrand(p.brand, p.name) !== undefined
+        ? { brand: resolveBrand(p.brand, p.name)! }
+        : {}),
+      ...(p.brand ? { rawBrand: p.brand } : {}),
+      ...(p.sizeQty != null ? { sizeQty: p.sizeQty } : {}),
+      ...(p.sizeUnit ? { sizeUnit: p.sizeUnit } : {}),
+      ...(p.fromPrice != null ? { fromPrice: shekels(p.fromPrice) } : {}),
+      ...(p.normalizedUnitPrice != null ? { unitPrice: shekels(p.normalizedUnitPrice) } : {}),
+      ...(p.normalizedUnitBasis ? { unitBasis: p.normalizedUnitBasis } : {}),
+      pricedAtChains: p.pricedAtChains ?? 0,
+    }));
+  }
 }

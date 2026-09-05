@@ -12,3 +12,6 @@ __pycache__/
 *.log
 .expo/
 runs/
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
