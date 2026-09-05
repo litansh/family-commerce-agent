@@ -1,8 +1,10 @@
 /**
  * A product picture that never shows a broken image.
  *
- * Tries the URL the API found, then Rami Levy's host by barcode, then falls
- * back to the aisle glyph on a soft tile. Sized for the row it sits in.
+ * The aisle glyph is always painted underneath; the photo is layered on top
+ * and simply stays transparent until it loads. That way a 404, a slow host
+ * or a web renderer that never fires onError all degrade to the same
+ * pleasant tile, with no state to get wrong.
  */
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -17,11 +19,17 @@ export function ProductImage({ url, gtin, name, size = 44, radius = 10 }: { url?
   const glyph = AISLES.find((a) => a.key === aisleOf(name))?.glyph ?? '🛒';
   return (
     <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#F1EEE6', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: size * 0.48, color: t.muted, position: 'absolute' }}>{glyph}</Text>
       {src ? (
-        <Image source={{ uri: src }} style={{ width: size, height: size }} contentFit="cover" transition={150} onError={() => setI((n) => n + 1)} cachePolicy="disk" />
-      ) : (
-        <Text style={{ fontSize: size * 0.5, color: t.muted }}>{glyph}</Text>
-      )}
+        <Image
+          source={{ uri: src }}
+          style={{ width: size, height: size, position: 'absolute' }}
+          contentFit="cover"
+          transition={120}
+          cachePolicy="disk"
+          onError={() => setI((n) => n + 1)}
+        />
+      ) : null}
     </View>
   );
 }
