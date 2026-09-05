@@ -18,7 +18,8 @@
     "shop": "node --experimental-strip-types apps/cli/src/index.ts",
     "resolve": "node --experimental-strip-types apps/cli/src/resolve-cli.ts",
     "memory": "node --experimental-strip-types apps/cli/src/memory-cli.ts",
-    "build:api": "npm run build -w @fca/api"
+    "build:api": "npm run build -w @fca/api",
+    "deploy:web": "cd apps/mobile && npx expo export --platform web --output-dir dist && aws s3 sync dist s3://fca-web-4b19ec --delete --region eu-central-1 && aws cloudfront create-invalidation --distribution-id E3EIDBCFZZDY4H --paths '/*' --query 'Invalidation.Id' --output text"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

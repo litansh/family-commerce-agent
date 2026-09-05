@@ -39,6 +39,7 @@
       "image": "./assets/splash-icon.png",
       "resizeMode": "cover",
       "backgroundColor": "#FAF8F3"
-    }
+    },
+    "owner": "litansh"
   }
 }
