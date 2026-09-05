@@ -92,8 +92,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (method === 'GET' && rest === 'search') {
       const { catalog } = requirePricing();
       const q = (event.queryStringParameters?.['q'] ?? '').trim();
-      if (q.length < 2) return ok({ products: [] });
-      const found = await catalog.searchProducts({ query: q, limit: 12, location: household.address });
+      const gtin = (event.queryStringParameters?.['gtin'] ?? '').trim();
+      if (!gtin && q.length < 2) return ok({ products: [] });
+      const found = gtin
+        ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
+        : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
       const buyable = found.filter((c) => c.pricedAtChains > 0).slice(0, 8);
       const imgs = await images.resolveMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });

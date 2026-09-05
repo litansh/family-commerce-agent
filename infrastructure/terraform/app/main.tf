@@ -179,6 +179,13 @@ resource "aws_dynamodb_table" "main" {
     projection_type = "ALL"
   }
 
+  # Invite codes and cached product images carry a `ttl` epoch; without this
+  # they would live forever.
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
   point_in_time_recovery { enabled = true }
   server_side_encryption { enabled = true }
 }

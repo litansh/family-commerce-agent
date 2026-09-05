@@ -2,7 +2,7 @@
 
 A household purchasing agent for Israel. Grocery is domain #1.
 
-**Status: Phase 0 (research) complete — recommendation is BUILD WITH REDUCED SCOPE. No application code yet.**
+**Status: live.** Web at https://d3lykvs28o7qrc.cloudfront.net · backend on AWS (Cognito, DynamoDB, Lambda, API Gateway) · Expo app for iOS/Android (EAS config in `apps/mobile`). Phases 0–4 done; Phase 5 (prepared carts) next.
 
 ## The short version
 

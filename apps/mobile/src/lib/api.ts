@@ -34,6 +34,7 @@ export class Api {
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
   createHousehold = (name: string, address: string, country: string) => this.#call<Household>('POST', '/households', { name, address, country });
   search = (hid: string, q: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
+  lookup = (hid: string, gtin: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?gtin=${encodeURIComponent(gtin)}`);
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);

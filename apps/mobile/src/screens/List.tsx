@@ -7,6 +7,7 @@ import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { loadList, newId, saveList, type Line } from '../lib/store';
 import { ProductImage } from '../ProductImage';
+import { Scanner } from '../Scanner';
 import { Button, Chip, Empty, Header, Input, S, t } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
@@ -32,6 +33,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const [memory, setMemory] = useState<HouseholdMemory | null>(null);
   const pricing = currentRegion().pricingAvailable;
   const seq = useRef(0);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => { void loadList().then(setLines); api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
   useEffect(() => {
@@ -83,8 +85,18 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           <Text style={{ fontSize: 18, color: t.faint }}>⌕</Text>
           <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 6 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
           {query ? <Pressable onPress={() => setQuery('')} hitSlop={10}><Text style={{ color: t.faint, fontSize: 16 }}>✕</Text></Pressable> : null}
+          {pricing ? <Pressable onPress={() => setScanning(true)} hitSlop={10} style={{ paddingVertical: 10, paddingHorizontal: 6 }}><Text style={[s.link, { fontSize: 14 }]}>▣ {tr('scan')}</Text></Pressable> : null}
         </View>
       </View>
+      {scanning ? (
+        <Scanner
+          onClose={() => setScanning(false)}
+          onScan={(gtin) => {
+            setScanning(false);
+            api.lookup(household.id, gtin).then((r) => { const h = r.products[0]; if (h) addHit(h); else addLine({ query: gtin, gtin }); }).catch(() => addLine({ query: gtin, gtin }));
+          }}
+        />
+      ) : null}
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
 
         {showSearch ? (
