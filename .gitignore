@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.tfstate
+*.tfstate.*
+.terraform/
+__pycache__/
+.venv/
+.DS_Store
+*.log
+.expo/
