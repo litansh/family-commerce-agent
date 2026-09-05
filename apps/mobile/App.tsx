@@ -45,7 +45,7 @@ export default function App() {
   else if (!tokens || !api) body = <SignIn onSignedIn={setTokens} />;
   else if (household === undefined) body = <Loading label={tr('loadingHousehold')} />;
   else if (!household) body = <HouseholdSetup api={api} onDone={(h) => { setRegion(regionOf(h.country)); setHousehold(h); }} />;
-  else if (screen.name === 'options') body = <OptionsScreen api={api} household={household} lines={screen.lines} onBack={() => setScreen({ name: 'list' })} onChoose={(option, quote) => setScreen({ name: 'checkout', option, quote })} />;
+  else if (screen.name === 'options') body = <OptionsScreen api={api} household={household} lines={screen.lines} onBack={() => setScreen({ name: 'list' })} onChoose={(option, quote) => setScreen({ name: 'checkout', option, quote })} onOrder={(orderId) => setScreen({ name: 'order', orderId })} />;
   else if (screen.name === 'checkout') body = <CheckoutScreen api={api} household={household} option={screen.option} quote={screen.quote} onBack={() => setScreen({ name: 'options', lines: [] })} onDone={() => setScreen({ name: 'list' })} onOrder={(orderId) => setScreen({ name: 'order', orderId })} />;
   else if (screen.name === 'order') body = <OrderScreen api={api} household={household} orderId={screen.orderId} onBack={() => setScreen({ name: 'list' })} />;
   else body = <ListScreen api={api} household={household} onQuote={(lines) => setScreen({ name: 'options', lines })} onInvite={invite} />;

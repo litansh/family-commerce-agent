@@ -14,9 +14,30 @@ const LETTERS = 'אבגדה';
  * The costed ways to buy the list. Cash is the headline; time cost is shown
  * separately and never merged. Anything a storefront cannot supply is named.
  */
-export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
-  api: Api; household: Household; lines: Line[]; onBack: () => void; onChoose: (opt: PurchaseOption, q: QuoteResult) => void;
+const WORKERS: Record<string, RegExp> = { shufersal: /shufersal/i };
+const retailerOf = (storefrontId: string) => Object.entries(WORKERS).find(([, re]) => re.test(storefrontId))?.[0];
+
+/** Build order legs from an option: every leg the worker can drive. */
+function legsFor(option: PurchaseOption, quote: QuoteResult) {
+  const lineOf = (id: string) => quote.lines.find((l) => l.id === id);
+  return option.legs.filter((leg) => retailerOf(leg.storefrontId) !== undefined).map((leg) => ({
+    retailer: retailerOf(leg.storefrontId)!,
+    lines: leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; }),
+  }));
+}
+
+export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder }: {
+  api: Api; household: Household; lines: Line[]; onBack: () => void; onChoose: (opt: PurchaseOption, q: QuoteResult) => void; onOrder: (orderId: string) => void;
 }) {
+  const [ordering, setOrdering] = useState(false);
+  const orderBest = async (best: PurchaseOption, q: QuoteResult) => {
+    const legs = legsFor(best, q);
+    if (legs.length === 0) { onChoose(best, q); return; }
+    setOrdering(true);
+    try { const o = await api.createOrder(household.id, legs); onOrder(o.id); }
+    catch { onChoose(best, q); }
+    finally { setOrdering(false); }
+  };
   const s = S();
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -113,7 +134,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
     </ScrollView>
     {best ? (
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
-        <Button title={tr('orderNow', { x: money(best.cashCost) })} onPress={() => onChoose(best, q)} />
+        <Button title={tr('orderNow', { x: money(best.cashCost) })} onPress={() => orderBest(best, q)} disabled={ordering} />
+        <Pressable onPress={() => onChoose(best, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
       </View>
     ) : null}
     </View>
@@ -136,22 +158,12 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
     });
     try { await api.recordShop(household.id, bought); onDone(); } finally { setBusy(false); }
   };
-  // Retailers the worker can drive. Everything else stays on deep links.
-  const WORKERS: Record<string, RegExp> = { shufersal: /shufersal/i };
-  const retailerOf = (storefrontId: string) => Object.entries(WORKERS).find(([, re]) => re.test(storefrontId))?.[0];
-  const orderable = option.legs.filter((leg) => retailerOf(leg.storefrontId) !== undefined);
+  const orderable = legsFor(option, quote);
   const [ordering, setOrdering] = useState(false);
   const orderViaKanili = async () => {
     if (orderable.length === 0) return;
     setOrdering(true);
-    try {
-      const legs = orderable.map((leg) => ({
-        retailer: retailerOf(leg.storefrontId)!,
-        lines: leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; }),
-      }));
-      const o = await api.createOrder(household.id, legs);
-      onOrder(o.id);
-    } finally { setOrdering(false); }
+    try { const o = await api.createOrder(household.id, orderable); onOrder(o.id); } finally { setOrdering(false); }
   };
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
