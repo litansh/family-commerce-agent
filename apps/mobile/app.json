@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Family Shop",
+    "slug": "family-commerce-agent",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.litansh.familyshop"
+    },
+    "android": {
+      "package": "com.litansh.familyshop",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "fca",
+    "extra": {
+      "apiUrl": "https://buc8pe49g0.execute-api.eu-central-1.amazonaws.com",
+      "userPoolId": "eu-central-1_8yomKtNCE",
+      "userPoolClientId": "1t7e0himh3heckpassvg0q0e0o",
+      "cognitoDomain": "https://fca-4b19ec.auth.eu-central-1.amazoncognito.com",
+      "region": "eu-central-1"
+    }
+  }
+}
