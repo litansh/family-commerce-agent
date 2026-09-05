@@ -8,7 +8,7 @@ import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { loadList, newId, saveList, type Line } from '../lib/store';
 import { ProductImage } from '../ProductImage';
 import { Scanner } from '../Scanner';
-import { Button, Chip, Empty, Header, Input, S, t } from '../ui';
+import { Button, Chip, Empty, Header, Input, S, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -34,6 +34,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const pricing = currentRegion().pricingAvailable;
   const seq = useRef(0);
   const [scanning, setScanning] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
 
   useEffect(() => { void loadList().then(setLines); api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
   useEffect(() => {
@@ -61,14 +63,24 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       .sort((a, b) => Number(due.has(b.key)) - Number(due.has(a.key)) || b.orderCount - a.orderCount)
       .slice(0, 16), [memory, onList, due]);
 
-  const addLine = (l: Omit<Line, 'id'>) => { tap(); setLines((xs) => [...xs, { id: newId(), ...l }]); setQuery(''); setHits(null); };
-  const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
-  const addHit = (h: SearchHit) => addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), imageUrl: h.imageUrl });
-  const addUsual = (p: ProductPreference) => addLine({
+  const addLine = (l: Omit<Line, 'id'>) => { tap(); setLines((xs) => [...xs, { id: newId(), ...l }]); setQuery(''); setHits(null); say(tr('added')); };
+  const lineFromPref = (p: ProductPreference): Omit<Line, 'id'> => ({
     query: p.phrase, productName: p.productName, gtin: p.gtin, ...(p.brand ? { brand: p.brand } : {}),
     ...(p.defaultAmount !== undefined && p.defaultUnit ? { amount: p.defaultAmount, unit: p.defaultUnit } : {}),
     ...(p.defaultPackQty !== undefined ? { packQty: p.defaultPackQty } : {}),
   });
+  // One tap for the whole usual shop: everything due plus everything bought
+  // at least twice. The family removes the two they don't want.
+  const usualShop = () => {
+    const picks = usuals.filter((p) => due.has(p.key) || p.orderCount >= 2);
+    if (picks.length === 0) return;
+    tap();
+    setLines((xs) => [...xs, ...picks.map((p) => ({ id: newId(), ...lineFromPref(p) }))]);
+    say(tr('addedN', { n: picks.length }));
+  };
+  const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
+  const addHit = (h: SearchHit) => addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), imageUrl: h.imageUrl });
+  const addUsual = (p: ProductPreference) => addLine(lineFromPref(p));
   const remove = (id: string) => { tap(); setLines((xs) => xs.filter((x) => x.id !== id)); };
   const bump = (id: string, d: number) => { tap(); setLines((xs) => xs.map((x) => x.id !== id ? x : (x.amount !== undefined && x.unit) ? { ...x, amount: Math.max(0.5, x.amount + d) } : { ...x, packQty: Math.max(1, (x.packQty ?? 1) + d) })); };
 
@@ -125,6 +137,12 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           </View>
         ) : null}
 
+        {!showSearch && lines.length === 0 && usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length >= 5 && (
+          <Pressable onPress={usualShop} style={({ pressed }) => [s.card, { backgroundColor: t.accent, marginBottom: 14 }, pressed && { opacity: 0.85 }]}>
+            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length })}</Text>
+            <Text style={{ color: '#D9EBDF', marginTop: 4, textAlign: rtl ? 'right' : 'left' }}>{tr('usualsHint')}</Text>
+          </Pressable>
+        )}
         {!showSearch && usuals.length > 0 && (
           <View style={{ marginBottom: 14 }}>
             <View style={s.row}><Text style={s.title}>{tr('usuals')}</Text><Text style={s.faint}>{tr('usualsHint')}</Text></View>
@@ -151,7 +169,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
             {items.map((item) => (
               <View key={item.id} style={[s.row, { paddingVertical: 8, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
-                  <Pressable onPress={() => remove(item.id)} hitSlop={12} style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
+                  <Pressable onPress={() => remove(item.id)} hitSlop={14} style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: t.accent, fontSize: 13, fontWeight: '800' }}>✓</Text>
                   </Pressable>
                   <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
@@ -161,9 +179,9 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                   </View>
                 </View>
                 <View style={[s.rowStart, { gap: 0, backgroundColor: t.bg, borderRadius: 999 }]}>
-                  <Pressable onPress={() => bump(item.id, -1)} hitSlop={8} style={{ paddingHorizontal: 12, paddingVertical: 6 }}><Text style={{ color: t.muted, fontSize: 18 }}>−</Text></Pressable>
+                  <Pressable onPress={() => bump(item.id, -1)} hitSlop={10} style={{ paddingHorizontal: 14, paddingVertical: 9 }}><Text style={{ color: t.muted, fontSize: 20 }}>−</Text></Pressable>
                   <Text style={[s.priceSmall, { color: t.ink, minWidth: 44, textAlign: 'center' }]}>{qtyLabel(item)}</Text>
-                  <Pressable onPress={() => bump(item.id, 1)} hitSlop={8} style={{ paddingHorizontal: 12, paddingVertical: 6 }}><Text style={{ color: t.accent, fontSize: 18 }}>+</Text></Pressable>
+                  <Pressable onPress={() => bump(item.id, 1)} hitSlop={10} style={{ paddingHorizontal: 14, paddingVertical: 9 }}><Text style={{ color: t.accent, fontSize: 20 }}>+</Text></Pressable>
                 </View>
               </View>
             ))}
@@ -178,6 +196,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} />
         )}
       </View>
+      <Toast text={toast} />
     </View>
   );
 }

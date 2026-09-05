@@ -124,3 +124,24 @@ export const Empty = ({ title, hint }: { title: string; hint: string }) => (
     <Text style={[s.small, { textAlign: 'center', marginTop: 6 }]}>{hint}</Text>
   </View>
 );
+
+/** A brief confirmation that fades. Kept tiny on purpose. */
+export function Toast({ text }: { text: string | null }) {
+  if (!text) return null;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', bottom: 110, left: 0, right: 0, alignItems: 'center' }}>
+      <View style={{ backgroundColor: t.ink, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 }}>
+        <Text style={{ color: '#fff', fontWeight: '600' }}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
+/** Placeholder card while a real one is on its way. */
+export const Skeleton = ({ lines = 3 }: { lines?: number }) => (
+  <View style={[s.card, { opacity: 0.6 }]}>
+    {Array.from({ length: lines }, (_, i) => (
+      <View key={i} style={{ height: i === 0 ? 20 : 12, borderRadius: 6, backgroundColor: '#ECE8DF', marginBottom: 10, width: i === 0 ? '55%' : i === 1 ? '35%' : '80%', alignSelf: 'flex-end' }} />
+    ))}
+  </View>
+);

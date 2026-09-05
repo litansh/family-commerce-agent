@@ -3,7 +3,7 @@ import { Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import type { PurchaseOption } from '@fca/domain';
 import type { Api, Household, QuoteResult } from '../lib/api';
 import type { Line } from '../lib/store';
-import { Button, Chip, Header, Loading, Rank, S, t } from '../ui';
+import { Button, Chip, Header, Loading, Rank, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
 import { money, reasonT, rejectionT, t as tr } from '../lib/i18n';
@@ -21,24 +21,34 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [fixing, setFixing] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
 
   if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
-  if (!q) return <View style={s.screen}><Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} /><Loading label={tr('about20s')} /></View>;
+  if (!q) return (
+    <View style={s.screen}>
+      <Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} />
+      <View style={{ paddingHorizontal: 20 }}><Skeleton lines={4} /><Skeleton /><Skeleton /></View>
+      <Text style={[s.small, { textAlign: 'center' }]}>{tr('about20s')}</Text>
+    </View>
+  );
 
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
   const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
+  const shown = showAll ? q.options : q.options.slice(0, 1);
 
   return (
-    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
+    <View style={s.screen}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }}>
       <Header title={tr('howToBuy')} subtitle={tr('optionsSub', { n: q.lines.length, m: q.fromMemory.length }) + (spread > 0 ? tr('spread', { x: money(spread) }) : '')} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}>
         {q.options.length === 0 && <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
-        {q.options.map((o, i) => {
+        {best ? <Text style={[s.small, { marginBottom: 6 }]}>{tr('bestWay')}</Text> : null}
+        {shown.map((o, i) => {
           const isBest = i === 0;
           const extra = best && !isBest ? o.cashCost - best.cashCost : 0;
           return (
@@ -73,6 +83,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
           );
         })}
 
+        {q.options.length > 1 && !showAll ? (
+          <Pressable onPress={() => setShowAll(true)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('otherWays')} ({q.options.length - 1}) ›</Text></Pressable>
+        ) : null}
         {q.warnings.length > 0 && (
           <View style={[s.card, { backgroundColor: t.amberSoft }]}>
             <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>{tr('confirmOnce')}</Text>
@@ -90,7 +103,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
         )}
         {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
 
-        {q.rejected.length > 0 && (
+        {q.rejected.length > 0 && showAll && (
           <View style={{ marginTop: 4 }}>
             <Text style={[s.small, { marginBottom: 4 }]}>{tr('notOffered')}</Text>
             {q.rejected.map((r, i) => <Text key={i} style={s.faint}>{r.brand} · {rejectionT(r.reason)}</Text>)}
@@ -98,6 +111,12 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose }: {
         )}
       </View>
     </ScrollView>
+    {best ? (
+      <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
+        <Button title={tr('orderNow', { x: money(best.cashCost) })} onPress={() => onChoose(best, q)} />
+      </View>
+    ) : null}
+    </View>
   );
 }
 

@@ -20,7 +20,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
       <View style={{ alignSelf: isRTL() ? 'flex-end' : 'flex-start', marginBottom: 18 }}><Tile size={72} /></View>
       <Text style={[s.display, { fontSize: 44, marginBottom: 2 }]}>{tr('appName')}</Text>
       {isRTL() ? <Text style={[s.small, { fontSize: 15, marginBottom: 10 }]}>Kanili</Text> : null}
-      <Text style={[s.body, { color: t.muted, marginBottom: 28 }]}>{tr('tagline')}</Text>
+      <Text style={[s.body, { color: t.muted, marginBottom: 28 }]}>{tr('taglineShort')}</Text>
       <Button title={tr('continueGoogle')} onPress={() => go('Google')} disabled={busy} />
       <View style={{ height: 10 }} />
       <Button title={tr('continueEmail')} kind="secondary" onPress={() => go()} disabled={busy} />
