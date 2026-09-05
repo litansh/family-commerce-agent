@@ -34,6 +34,14 @@ at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
 - **Never complete a payment.** The agent prepares; a human checks out.
 - **Cash cost and time cost are shown separately.** Time has no objective monetary value.
 
+## Onboarding: learn from where you already shop
+
+Setup asks where the family usually orders and whether they prefer delivery, pickup or whichever
+is cheaper. Once a chain is linked (below), **Import past orders** has the worker read the account's
+order history through the retailer's own account pages, resolve each product to a barcode, and
+replay the orders into memory *dated* — so "your usuals" and purchase rhythms exist before the
+first shop. Nothing imported is marked confirmed; the family still says "yes, that one" once.
+
 ## Ordering through Kanili (the worker)
 
 Retailers have no ordering API, so a small worker on the family's own Mac does the retailer work
