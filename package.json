@@ -21,7 +21,8 @@
     "build:api": "npm run build -w @fca/api"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@types/node": "^22.10.2"
+    "@types/node": "^22.10.2",
+    "sharp": "^0.35.4",
+    "typescript": "^5.7.2"
   }
 }

@@ -7,6 +7,7 @@
  * number on any screen and always tabular so columns align in Hebrew.
  */
 import React from 'react';
+import { Mark } from './Logo';
 import {
   ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputProps, type TextStyle, type ViewStyle,
@@ -91,7 +92,7 @@ export function Header({ title, subtitle, action, onAction, onBack }: { title: s
     <View style={[s.pad, { paddingBottom: 8 }]}>
       {onBack ? <Pressable onPress={onBack} hitSlop={10} style={{ alignSelf: 'flex-end', marginBottom: 6 }}><Text style={s.link}>‹ חזרה</Text></Pressable> : null}
       <View style={s.row}>
-        <Text style={s.display}>{title}</Text>
+        <View style={s.rowStart}><Mark size={26} /><Text style={s.display}>{title}</Text></View>
         {action && onAction ? <Pressable onPress={onAction} hitSlop={10}><Text style={s.link}>{action}</Text></Pressable> : null}
       </View>
       {subtitle ? <Text style={[s.small, { marginTop: 2 }]}>{subtitle}</Text> : null}

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+<rect width="1200" height="700" fill="#FAF8F3"/>
+<g transform="translate(60 60) scale(3.6)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#1F6B45" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#1F6B45"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#1F6B45" mask="url(#tick)"/>
+</g>
+<rect x="520" y="60" width="180" height="180" rx="40" fill="#1F6B45"/><g transform="translate(548 88) scale(1.24)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#FAF8F3" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#FAF8F3"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#FAF8F3" mask="url(#tick)"/>
+</g>
+<rect x="740" y="60" width="64" height="64" rx="14" fill="#1F6B45"/><g transform="translate(750 70) scale(0.44)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#FAF8F3" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#FAF8F3"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#FAF8F3" mask="url(#tick)"/>
+</g>
+<rect x="830" y="60" width="32" height="32" rx="7" fill="#1F6B45"/><g transform="translate(835 65) scale(0.22)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#FAF8F3" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#FAF8F3"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#FAF8F3" mask="url(#tick)"/>
+</g>
+<g transform="translate(560 300) scale(1.1)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#1F6B45" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#1F6B45"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#1F6B45" mask="url(#tick)"/>
+</g>
+<text x="1140" y="380" font-family="Arial Hebrew, Arial" font-size="110" font-weight="700" fill="#1B1B1A" text-anchor="end" direction="rtl">קנילי</text>
+<text x="1140" y="440" font-family="Arial Hebrew, Arial" font-size="30" fill="#6F6B63" text-anchor="end" direction="rtl">רשימה אחת. כל הרשתות. שום דבר לא נשכח.</text>
+<text x="1140" y="580" font-family="Helvetica Neue, Arial" font-size="78" font-weight="700" fill="#1B1B1A" text-anchor="end" letter-spacing="-3">Kanili</text>
+<text x="1140" y="630" font-family="Helvetica Neue, Arial" font-size="26" fill="#6F6B63" text-anchor="end">One list. Every chain. Nothing forgotten.</text>
+</svg>

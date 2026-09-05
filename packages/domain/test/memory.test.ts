@@ -143,3 +143,23 @@ test('ranks overdue items before merely usual ones, most overdue first', () => {
     [[MILK.gtin, 'overdue'], ['eggs', 'overdue'], ['oil', 'usual']],
   );
 });
+
+test('buying a substitute never overwrites a confirmed preference', () => {
+  // Real: Rami Levy had no Tnuva bag, delivered Yotvata 2L, and the confirmed
+  // Tnuva preference vanished after one shop.
+  let m = confirm(emptyMemory('h1'), MILK, T0);
+  m = recordShop(m, [{ phrase: 'חלב 3%', gtin: 'yotvata-2l', productName: 'חלב יטבתה 2 ליטר' }], days(1));
+  const p = m.products[memoryKey('חלב 3%')]!;
+  assert.equal(p.gtin, MILK.gtin, 'the confirmed product stands');
+  assert.equal(p.confirmedAt, T0.toISOString(), 'and stays confirmed');
+  assert.equal(p.orderCount, 1, 'the family did buy milk, so the rhythm still learns');
+  assert.equal(p.lastSubstitute?.gtin, 'yotvata-2l', 'what actually arrived is remembered separately');
+  const [applied] = applyMemory([line('חלב 3%')], m);
+  assert.equal(applied?.line.gtin, MILK.gtin, 'next week still asks for Tnuva');
+});
+
+test('an unconfirmed guess is still replaced by what was bought', () => {
+  let m = recordShop(emptyMemory('h1'), [MILK], T0);
+  m = recordShop(m, [{ ...MILK, gtin: 'tara', productName: 'חלב טרה' }], days(3));
+  assert.equal(m.products[memoryKey('חלב 3%')]?.gtin, 'tara');
+});

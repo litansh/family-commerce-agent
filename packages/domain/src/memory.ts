@@ -54,6 +54,8 @@ export interface ProductPreference {
   readonly substitution: SubstitutionPolicy;
   /** Seasonal items are remembered but not suggested out of season. */
   readonly excludeFromSuggestions?: boolean;
+  /** What was actually bought the last time the confirmed product was unavailable. */
+  readonly lastSubstitute?: { readonly gtin: string; readonly productName: string; readonly at: string };
 }
 
 export type BrandStance = 'prefer' | 'accept' | 'never';
@@ -234,6 +236,23 @@ export function recordShop(
     const key = memoryKey(b.phrase);
     const existing = products[key];
     const sameProduct = existing?.gtin === b.gtin;
+
+    // A confirmed preference is the family's stated choice. Buying something
+    // else this week — because the storefront was out, or a substitute was
+    // accepted — must not overwrite it. The first live run did exactly that:
+    // a confirmed Tnuva bag became an unconfirmed Yotvata 2L carton after one
+    // delivery. Record the purchase against the confirmed product (the family
+    // did buy "milk"), but keep what they said milk means.
+    if (existing?.confirmedAt !== undefined && !sameProduct) {
+      products[key] = {
+        ...existing,
+        orderCount: existing.orderCount + 1,
+        lastOrderedAt: at,
+        purchaseHistory: [...existing.purchaseHistory, at].slice(-HISTORY_LIMIT),
+        lastSubstitute: { gtin: b.gtin, productName: b.productName, at },
+      };
+      continue;
+    }
 
     products[key] = {
       key,

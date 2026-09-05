@@ -1,27 +1,27 @@
 {
   "expo": {
-    "name": "Family Shop",
-    "slug": "family-commerce-agent",
+    "name": "Kanili",
+    "slug": "kanili",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.litansh.familyshop"
+      "bundleIdentifier": "com.litansh.kanili"
     },
     "android": {
-      "package": "com.litansh.familyshop",
+      "package": "com.litansh.kanili",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1F6B45"
       }
     },
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "fca",
+    "scheme": "kanili",
     "extra": {
       "apiUrl": "https://buc8pe49g0.execute-api.eu-central-1.amazonaws.com",
       "userPoolId": "eu-central-1_8yomKtNCE",
@@ -32,6 +32,11 @@
     "plugins": [
       "expo-web-browser",
       "expo-secure-store"
-    ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#FAF8F3"
+    }
   }
 }

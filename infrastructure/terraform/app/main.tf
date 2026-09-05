@@ -49,7 +49,7 @@ variable "google_client_secret" {
 # built app uses its own scheme; both are listed.
 variable "callback_urls" {
   type    = list(string)
-  default = ["fca://auth", "exp://127.0.0.1:8081/--/auth", "http://localhost:8081/auth"]
+  default = ["kanili://auth", "exp://127.0.0.1:8081/--/auth", "http://localhost:8081/auth"]
 }
 
 locals {
