@@ -30,15 +30,17 @@ const SEL = {
 
 export class ShufersalConnector implements RetailerConnector {
   readonly id = 'shufersal';
-  #browser?: Browser;
+  #browser: Browser | undefined;
   #ctx?: BrowserContext;
   #page?: Page;
   #preparedTotal?: Agorot;
+  readonly #householdId: string;
+  readonly #traceDir: string;
 
-  constructor(
-    private readonly householdId: string,
-    private readonly traceDir = 'trace',
-  ) {}
+  constructor(householdId: string, traceDir = 'trace') {
+    this.#householdId = householdId;
+    this.#traceDir = traceDir;
+  }
 
   async #launch(): Promise<Browser> {
     // Headed on purpose: the WAF is far gentler with a real window, and the
@@ -50,7 +52,7 @@ export class ShufersalConnector implements RetailerConnector {
   }
 
   async #shot(name: string): Promise<string> {
-    const path = `${this.traceDir}/${Date.now()}-${this.id}-${name}.png`;
+    const path = `${this.#traceDir}/${Date.now()}-${this.id}-${name}.png`;
     await this.#page?.screenshot({ path }).catch(() => undefined);
     return path;
   }
@@ -71,15 +73,15 @@ export class ShufersalConnector implements RetailerConnector {
       await this.#page.waitForTimeout(1000);
     }
     if (!(await this.#signedIn(this.#page))) throw new Error('shufersal: sign-in did not complete within 10 minutes');
-    await saveSession(this.householdId, this.id, this.#ctx);
+    await saveSession(this.#householdId, this.id, this.#ctx);
     console.log('  Session saved. You will not need to sign in again until Shufersal expires it.\n');
     return this.#ctx;
   }
 
   async resume(): Promise<void> {
-    if (!hasSession(this.householdId, this.id)) throw new Error('shufersal: no saved session — run `npm run link -w @fca/order-worker`');
+    if (!hasSession(this.#householdId, this.id)) throw new Error('shufersal: no saved session — run `npm run link -w @fca/order-worker`');
     const browser = await this.#launch();
-    this.#ctx = await browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 }, storageState: loadSession(this.householdId, this.id) });
+    this.#ctx = await browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 }, storageState: loadSession(this.#householdId, this.id) });
     this.#page = await this.#ctx.newPage();
     await this.#page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
     await this.#page.waitForTimeout(2500);
