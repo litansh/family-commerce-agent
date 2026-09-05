@@ -202,11 +202,17 @@ Building those anyway would mean spending the first three months reaching parity
 
 But the two things a family actually feels — *"the system knows what we buy"* and *"I didn't have to type 60 items"* — are **absent from every product in this market, without exception.** That gap is real, it is where the weekly hours go, and it is defensible precisely because it is unglamorous: household memory is worth little to a price-comparison startup and a lot to one family.
 
-One finding should temper expectations, and it argues for the reduced scope rather than against building:
+One early finding was **measured again at real family scale and reversed** — recorded in full in `basket-economics.md`:
 
-> **Multi-store splitting rarely wins for delivery.** A 12-line basket run through `split_order` for Ramat Gan returned `splitOrder: null` — no split beat the single best store, because a second ₪30–40 delivery fee exceeds the item-level savings on a normal family basket. Splitting pays off for **pickup and driving**, not delivery.
+> A 12-line test basket showed no benefit from splitting. A **36-line basket — this household's actual weekly shop, ~₪1,000** — at the same address showed a two-store split saving **₪67/week (~₪3,500/year)**. Basket size was the whole variable. **Splitting is in the MVP**, capped at two stores; a third delivery fee never paid for itself in testing.
 
-Half of the headline feature in the brief — Option D, the optimal split — is mostly a *pickup and driving* feature. That makes the driving-vs-delivery model (gap #2, which nobody has built) more valuable than the split optimizer (which several have), and it is a good argument for building the honest travel model rather than another splitter.
+The same measurement produced the number that actually justifies the project:
+
+> **The identical 36-line basket costs ₪836 at Rami Levy and ₪1,083 at Shufersal — a ₪247 spread, 30%, on one week's shop. ≈₪12,800/year on chain choice alone**, requiring no splitting, no driving and no automation.
+
+And the household's own stated pain reframed the priority order:
+
+> *"we mostly forget something and then we need to buy expensively in a nearby super"* — a **completeness problem, not an optimization problem**. Nothing in this market solves it, because solving it requires knowing what this household normally buys. That moves household memory from "differentiator #1 of four" to **the feature the MVP is built around**.
 
 ### What we reuse
 

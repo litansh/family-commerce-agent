@@ -24,7 +24,7 @@ Everything below the household layer is rented (see `data-sources.md`). We build
 
 **Weekly shop**
 5. Any member adds to the shared list — typed, or in natural language ("we're out of milk and nappies").
-6. On open, the app proposes staples the household usually buys and hasn't added, ranked by how often they buy them.
+6. **The forgetting check — the reason this product exists.** On open, the app surfaces what this household normally buys and has *not* added, ranked by how often they buy it and how overdue it is against its own consumption interval (milk every 4 days, nappies every 11, olive oil every 6 weeks). Before the shop is submitted it asks once more about anything conspicuously missing for a basket this size. The household's stated pain is forgetting an item and then paying makolet prices for it; this step is the fix.
 7. **Resolve** — each line becomes a specific product. Lines the household has confirmed before resolve silently to a known GTIN. New or ambiguous lines are shown for one-tap confirmation, and that confirmation is remembered forever. *This step is the product.*
 8. **Quote** — the resolved basket is priced across every storefront serving the address, plus the nearest physical branches of the household's preferred chains.
 9. **Decide** — three or four costed options:
@@ -32,6 +32,7 @@ Everything below the household layer is rented (see `data-sources.md`). We build
    - Cheapest delivered — single retailer, lowest delivered total
    - Collect yourself — click-and-collect, with travel cost and time shown
    - Drive yourself — physical branch, with travel cost and time shown
+   Options are ranked on delivered total **and coverage together** — a storefront pricing under ~95% of the list is not offered at all, however cheap it looks, because a partial basket causes the top-up trip we are trying to eliminate. Splitting is capped at two stores; a third delivery fee never paid for itself in testing.
    Each option shows **cash cost** and **time-inclusive cost as a separate figure**, never merged. Each carries a plain-language explanation of why it ranks where it does, generated from the optimizer's own numbers.
 10. **Prepare** — the family picks an option. We hand over a prepared cart:
     - *Shufersal*: a populated wishlist, one tap from becoming a cart
@@ -193,6 +194,7 @@ No phase passes because code exists. Each needs a demonstration.
 **Phase 1 — Prove the rented layer** *(2 weeks, mostly measurement)*
 Log the family's real weekly list; run it through SuperMCP; record every resolution error a human had to fix.
 > **Accept when:** 3 real family lists have been run and ≥ 85% of lines resolved to the product the family meant, with every error catalogued. **If below 70%, the reduced scope is wrong — stop and re-plan.** This is a real gate.
+> **Also baseline here, and it is the project's headline metric:** the **forgotten-item rate** — how many items per week the family buys on an unplanned top-up trip. Everything in Phase 2 is judged against this number.
 
 **Phase 2 — Household + memory**
 Cognito/Google sign-in, households, invites, the preference model, invoice bootstrap.
@@ -204,7 +206,7 @@ Deterministic total-cost engine; travel model; explanations.
 
 **Phase 4 — Real shop, deep links**
 End-to-end on the household's actual weekly shop, ending in deep links.
-> **Accept when:** the family does its **real** weekly shop through the app three weeks running, and reports it took less effort than their current method. If they quietly revert to the Shufersal app, that is the answer.
+> **Accept when:** the family does its **real** weekly shop through the app three weeks running, reports it took less effort than their current method, **and the forgotten-item rate has at least halved against the Phase 1 baseline.** If they quietly revert to the Shufersal app, that is the answer.
 
 **Phase 5 — Cart preparation**
 Shufersal wishlist automation on the home worker.

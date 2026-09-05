@@ -10,14 +10,18 @@ Israel already has at least eight grocery price-comparison products, and a free 
 resolves products across 16 chains, prices a whole basket per address, and knows every storefront's
 verified delivery terms. Building another price engine would mean arriving ninth.
 
-What no product in this market has: **memory of what a particular family actually buys**, an honest
-**drive-vs-collect-vs-deliver** cost model, and **not having to re-type 60 items**. That is what this builds.
+What no product in this market has: **memory of what a particular family actually buys** — so the shop is
+complete and nobody pays makolet prices for the thing they forgot — and **not having to re-type 40 items**.
+
+Measured on this household's real 36-line weekly basket: the same list costs **₪836 at Rami Levy and ₪1,083
+at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
 
 ## Documents
 
 | Document | What it answers |
 |---|---|
 | [`docs/product-landscape.md`](docs/product-landscape.md) | What exists, what doesn't, and the BUILD decision |
+| [`docs/basket-economics.md`](docs/basket-economics.md) | **Measured savings at real family scale — ₪247/week chain spread** |
 | [`docs/data-sources.md`](docs/data-sources.md) | Every data source, verified live |
 | [`docs/retailer-integration-matrix.md`](docs/retailer-integration-matrix.md) | Per-retailer feasibility + review of `israeli-grocery-saving-split` |
 | [`docs/mvp-proposal.md`](docs/mvp-proposal.md) | Journey, scope, AWS cost, risks, phase gates |

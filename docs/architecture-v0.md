@@ -137,7 +137,13 @@ TimeCost   = round_trip_minutes × household.value_of_time_per_hour / 60
 ```
 Requires branch-level prices, which only the transparency feed has — the reason that feed stays in the architecture even though SuperMCP covers everything online.
 
-**Known economic finding, and it shapes the UI:** a 12-line basket run through `split_order` returned no split at all, because a second ₪30–40 delivery fee exceeds typical item-level savings. **Splitting is mostly a pickup-and-driving feature, not a delivery feature.** The UI should not lead with a split option for delivery when the arithmetic rarely supports one.
+**Measured economics, and they shape the UI** (full detail in `basket-economics.md`):
+
+- At **36 lines / ~₪1,000** — this household's real weekly shop — a two-store split saves **₪67**. Capping at three stores changed nothing; the optimizer still chose two. **Two stores is the ceiling.**
+- The spread between the cheapest and most expensive chain for the same basket was **₪247 (30%)**. Chain choice dwarfs every other lever and must be re-evaluated every week, since promotions move the ranking.
+- **Pickup lost to delivery outright** — lower fees but higher item prices, and Rami Levy has no pickup storefront at this address. Pickup and drive-yourself stay in the model but are demoted from headline options.
+
+**Coverage is a ranking input, not a display field.** Four Wolt-hosted storefronts showed the lowest totals in raw ranking while pricing only 10–15 of 36 lines. They are not cheap, they are incomplete — and presenting one as "cheapest" would cause exactly the top-up trip this household is trying to avoid. **Anything below ~95% coverage is not an option.**
 
 ---
 
