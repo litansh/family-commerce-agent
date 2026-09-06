@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Text, View } from 'react-native';
 import { STORES } from '../lib/stores';
 import { t as tr } from '../lib/i18n';
-import { Button, Header, S, t } from '../ui';
+import { Button, S, t } from '../ui';
+import { Pressable } from 'react-native';
+import { isRTL } from '../lib/i18n';
 
 /**
  * Connect a store, entirely inside Kanili.
@@ -39,10 +41,20 @@ export function StoreLink({ storeId, onClose, onLinked }: { storeId: string; onC
   if (!store) return null;
   const hint = store.loginKind === 'otp' ? tr('linkHintOtp', { s: store.name }) : tr('linkHintPw', { s: store.name });
 
+  const rtl = isRTL();
   return (
-    <Modal visible animationType="slide" onRequestClose={onClose}>
+    <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
       <View style={[s.screen, { paddingTop: 8 }]}>
-        <Header title={tr('connectStore', { s: store.name })} subtitle={hint} onBack={onClose} />
+        {/* Solid close bar, always on top of the WebView. */}
+        <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]}>{tr('connectStore', { s: store.name })}</Text>
+            <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{hint}</Text>
+          </View>
+          <Pressable onPress={onClose} hitSlop={16} style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }}>
+            <Text style={{ fontSize: 20, color: t.ink, fontWeight: '700' }}>✕</Text>
+          </Pressable>
+        </View>
         {!WebView ? (
           <View style={[s.pad, { flex: 1, justifyContent: 'center' }]}>
             <Text style={[s.body, { textAlign: 'center', marginBottom: 16 }]}>{tr('linkNeedsApp')}</Text>
