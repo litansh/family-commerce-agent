@@ -57,7 +57,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         </View>
         <Button title={tr('showIntro')} kind="quiet" onPress={onShowIntro} />
         <Button title={tr('signOut')} kind="quiet" onPress={onSignOut} />
-        {linking ? <StoreLink storeId={linking} onClose={() => setLinking(null)} onLinked={(id) => { markLinked(id); setLinking(null); }} /> : null}
+        {linking ? <StoreLink storeId={linking} api={api} householdId={household.id} onClose={() => setLinking(null)} onLinked={(id) => { markLinked(id); setLinking(null); }} /> : null}
         <View style={{ alignItems: 'center', marginTop: 24, opacity: 0.5 }}><Mark size={28} /><Text style={[s.faint, { marginTop: 6 }]}>{tr('taglineShort')}</Text></View>
       </ScrollView>
     </View>
