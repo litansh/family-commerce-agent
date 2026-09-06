@@ -104,6 +104,15 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 source={{ uri: store.loginUrl }}
                 sharedCookiesEnabled
                 thirdPartyCookiesEnabled
+                domStorageEnabled
+                javaScriptCanOpenWindowsAutomatically
+                // The login page's "reset password" and OTP steps use target=_blank;
+                // keep them in this same WebView instead of dropping them.
+                setSupportMultipleWindows={false}
+                originWhitelist={['*']}
+                // A real mobile Safari UA so the store serves its normal phone flow
+                // (and iOS offers the saved-password / SMS-code autofill).
+                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:1') { setSignedIn(true); if (!didImport.current && storeId === 'shufersal') { didImport.current = true; setImporting(true); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(HISTORY_JS); } }
