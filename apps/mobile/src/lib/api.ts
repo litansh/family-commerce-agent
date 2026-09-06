@@ -1,6 +1,6 @@
 import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
 
-export type SearchHit = ProductCandidate & { imageUrl: string | null };
+export type SearchHit = ProductCandidate & { imageUrl: string | null; priceMin?: number; priceMax?: number; bought?: boolean };
 import { config } from './config';
 
 export interface Household { id: string; name: string; address: string; country?: string; retailers?: string[]; fulfillment?: 'delivery' | 'pickup' | 'either' }
@@ -50,7 +50,7 @@ export class Api {
   createOrder = (hid: string, legs: { retailer: string; lines: Omit<ListLine, 'id'>[] }[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { legs });
   orders = (hid: string) => this.#call<{ orders: Order[] }>('GET', `/households/${hid}/orders`);
   browse = (hid: string, aisle: string, sub?: string, page = 0) => this.#call<{ aisle: string; sub: string; subs: string[]; page: number; total: number; hasMore: boolean; products: SearchHit[] }>('GET', `/households/${hid}/browse?aisle=${encodeURIComponent(aisle)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}&page=${page}`);
-  product = (hid: string, gtin: string) => this.#call<{ gtin: string; name: string; brand?: string; listings: { chainId: string; chainName: string; name: string }[]; imageUrl: string | null }>('GET', `/households/${hid}/product?gtin=${encodeURIComponent(gtin)}`);
+  product = (hid: string, gtin: string) => this.#call<{ gtin: string; name: string; brand?: string; listings: { chainId: string; chainName: string; name: string }[]; imageUrl: string | null; prices: { storefrontId: string; brand: string; price: number }[]; priceMin?: number; priceMax?: number }>('GET', `/households/${hid}/product?gtin=${encodeURIComponent(gtin)}`);
   order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
   approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
   cancelOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/cancel`);

@@ -76,10 +76,12 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
                 <Pressable key={h.productId} onPress={() => setOpen(h)} style={({ pressed }) => [s.card, { width: '47%', flexGrow: 1, marginBottom: 0, padding: 12 }, pressed && { opacity: 0.8 }]}>
                   <View style={{ alignItems: 'center', marginBottom: 8 }}><ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={96} radius={14} /></View>
                   <Text style={[s.body, { fontSize: 14, lineHeight: 19, minHeight: 38 }]} numberOfLines={2}>{h.name}</Text>
-                  <View style={[s.rowStart, { marginTop: 4 }]}>{h.brand ? <Chip text={h.brand} tone="good" /> : null}</View>
+                  <View style={[s.rowStart, { marginTop: 4, flexWrap: 'wrap' }]}>{h.brand ? <Chip text={h.brand} tone="good" /> : null}{h.bought ? <Chip text={tr('boughtBefore')} tone="warn" /> : null}</View>
                   <View style={[s.row, { marginTop: 8, alignItems: 'flex-end' }]}>
                     <View>
-                      {h.fromPrice !== undefined ? <Text style={s.price}>{money(h.fromPrice)}</Text> : null}
+                      {h.priceMin !== undefined && h.priceMax !== undefined && h.priceMax > h.priceMin
+                        ? <Text style={s.price}>{money(h.priceMin)}<Text style={s.priceSmall}>–{money(h.priceMax)}</Text></Text>
+                        : h.fromPrice !== undefined ? <Text style={s.price}>{money(h.fromPrice)}</Text> : null}
                       <Text style={s.faint}>{h.pricedAtChains > 1 ? `${tr('from')} · ${tr('atChains', { n: h.pricedAtChains })}` : tr('atChains', { n: 1 })}</Text>
                     </View>
                     <Pressable onPress={() => add(h)} disabled={have} hitSlop={8} style={{ backgroundColor: have ? t.accentSoft : t.accent, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
@@ -102,7 +104,7 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
 /** Every chain that carries the product, in one place. */
 function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Api; household: Household; hit: SearchHit; onAdd: () => void; onClose: () => void; inList: boolean }) {
   const s = S();
-  const [detail, setDetail] = useState<{ listings: { chainName: string; name: string }[] } | null>(null);
+  const [detail, setDetail] = useState<{ listings: { chainName: string; name: string }[]; prices?: { storefrontId: string; brand: string; price: number }[]; priceMin?: number; priceMax?: number } | null>(null);
   useEffect(() => { if (hit.gtin) api.product(household.id, hit.gtin).then(setDetail).catch(() => setDetail({ listings: [] })); else setDetail({ listings: [] }); }, [api, household.id, hit.gtin]);
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -114,13 +116,31 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
             <Text style={s.small}>{hit.sizeQty ? `${hit.sizeQty}${hit.sizeUnit ?? ''}` : ''}{hit.unitPrice !== undefined ? ` · ${money(hit.unitPrice)}/${(hit.unitBasis ?? '').replace('per_', '')}` : ''}</Text>
             {hit.fromPrice !== undefined ? <Text style={s.priceBig}>{money(hit.fromPrice)}</Text> : null}
           </View>
-          <Text style={[s.title, { marginBottom: 6 }]}>{tr('carriedBy')}</Text>
-          {!detail ? <Loading /> : detail.listings.length === 0 ? <Text style={s.small}>{tr('atChains', { n: hit.pricedAtChains })}</Text> : detail.listings.map((l, i) => (
-            <View key={i} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
-              <Text style={s.body}>{l.chainName}</Text>
-              <Text style={[s.faint, { flexShrink: 1 }]} numberOfLines={1}>{l.name}</Text>
-            </View>
-          ))}
+          {!detail ? <Loading /> : (
+            <>
+              {detail.prices && detail.prices.length > 0 ? (
+                <>
+                  <View style={s.row}><Text style={s.title}>{tr('priceAt')}</Text>{detail.priceMin !== undefined && detail.priceMax !== undefined ? <Text style={s.priceSmall}>{money(detail.priceMin)}–{money(detail.priceMax)}</Text> : null}</View>
+                  {detail.prices.map((p, i) => (
+                    <View key={p.storefrontId} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
+                      <View style={s.rowStart}><Text style={s.body}>{p.brand}</Text>{i === 0 ? <Chip text={tr('cheapestHere')} tone="good" /> : null}</View>
+                      <Text style={[s.price, i === 0 && { color: t.accent }]}>{money(p.price)}</Text>
+                    </View>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <Text style={[s.title, { marginBottom: 6 }]}>{tr('carriedBy')}</Text>
+                  {detail.listings.map((l, i) => (
+                    <View key={i} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
+                      <Text style={s.body}>{l.chainName}</Text>
+                      <Text style={[s.faint, { flexShrink: 1 }]} numberOfLines={1}>{l.name}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+            </>
+          )}
           <Text style={[s.faint, { marginTop: 10 }]}>{tr('pricesAtCompare')}</Text>
           <View style={{ height: 16 }} />
           <Button title={inList ? tr('inList') : tr('addToList')} onPress={onAdd} disabled={inList} />

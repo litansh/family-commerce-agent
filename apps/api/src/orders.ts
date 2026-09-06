@@ -157,3 +157,8 @@ export async function readRow(table: string, householdId: string, sk: string): P
   const r = await doc.send(new GetCommand({ TableName: table, Key: { PK: `HOUSEHOLD#${householdId}`, SK: sk } }));
   return r.Item;
 }
+
+export async function writeRow(table: string, householdId: string, sk: string, item: Record<string, unknown>): Promise<void> {
+  const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
+  await doc.send(new PutCommand({ TableName: table, Item: { PK: `HOUSEHOLD#${householdId}`, SK: sk, ...item } }));
+}

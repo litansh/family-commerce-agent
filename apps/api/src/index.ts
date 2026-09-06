@@ -31,6 +31,7 @@ import {
   type ProductChoice,
   type PurchasedLine,
   regionOf,
+  normalizeBrand,
   applyCoupons,
   type Coupon,
   type StorefrontQuote,
@@ -42,9 +43,22 @@ import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
 import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
-import { ImportStore, OrderStore, readRow } from './orders.ts';
+import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
+
+/**
+ * Rank catalogue candidates for one household: what they have bought first,
+ * then brands they buy, then how widely the product is stocked. Memory-driven,
+ * so the order sharpens with every completed shop.
+ */
+function rankForHousehold<T extends { gtin?: string; brand?: string; pricedAtChains: number }>(items: T[], memory: { products: Record<string, { gtin: string; brand?: string; orderCount: number }> }): T[] {
+  const bought = new Map<string, number>();
+  const brands = new Set<string>();
+  for (const p of Object.values(memory.products)) { bought.set(p.gtin, p.orderCount); if (p.brand) brands.add(normalizeBrand(p.brand) ?? p.brand); }
+  const score = (c: T) => (c.gtin && bought.has(c.gtin) ? 1000 + (bought.get(c.gtin) ?? 0) * 10 : 0) + (c.brand && brands.has(normalizeBrand(c.brand) ?? c.brand) ? 100 : 0) + c.pricedAtChains;
+  return [...items].sort((a, b) => score(b) - score(a));
+}
 
 /** The store map: aisle → sub-aisles → catalogue queries. */
 const AISLES: Record<string, { key: string; queries: string[] }[]> = {
@@ -208,11 +222,19 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const chosen = subs.find((x) => x.key === sub) ?? subs[0]!;
       const results = await Promise.all(chosen.queries.map((q) => catalog.searchProducts({ query: q, limit: 20, location: household.address }).catch(() => [])));
       const seen = new Set<string>();
-      const all = results.flat().filter((c) => c.pricedAtChains > 0 && !seen.has(c.productId) && seen.add(c.productId));
+      const memory = await repo.load();
+      const all = rankForHousehold(results.flat().filter((c) => c.pricedAtChains > 0 && !seen.has(c.productId) && seen.add(c.productId)), memory);
       const PAGE = 24;
       const slice = all.slice(page * PAGE, page * PAGE + PAGE);
-      const imgs = await images.resolveMany(slice.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8);
-      return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products: slice.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+      const [imgs, ranges] = await Promise.all([
+        images.resolveMany(slice.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8),
+        Promise.all(slice.map((c) => (c.gtin ? readRow(TABLE, 'CATALOG', `PRICE#${c.gtin}`) : Promise.resolve(undefined)))),
+      ]);
+      const products = slice.map((c, i) => {
+        const r = ranges[i] as { min?: number; max?: number } | undefined;
+        return { ...c, imageUrl: imgs[c.productId]?.url ?? null, ...(r?.min !== undefined && r.max !== undefined ? { priceMin: r.min, priceMax: r.max } : {}), bought: !!c.gtin && !!Object.values(memory.products).find((p) => p.gtin === c.gtin) };
+      });
+      return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products });
     }
 
     // One product, every chain that carries it. The catalogue's canonical
@@ -221,9 +243,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       requirePricing();
       const gtin = (event.queryStringParameters?.['gtin'] ?? '').trim();
       if (!gtin) throw new HttpError(400, 'gtin is required');
-      const detail = await productDetail(gtin);
-      const img = await images.resolve({ gtin, ...(detail?.name ? { name: detail.name } : {}) });
-      return ok({ ...(detail ?? { gtin, name: '', listings: [] }), imageUrl: img?.url ?? null });
+      const { quote: qp } = requirePricing();
+      const [detail, img, prices] = await Promise.all([
+        productDetail(gtin),
+        images.resolve({ gtin }),
+        chainPrices(gtin, household.address, qp),
+      ]);
+      return ok({ ...(detail ?? { gtin, name: '', listings: [] }), imageUrl: img?.url ?? null, prices, ...(prices.length ? { priceMin: Math.min(...prices.map((p) => p.price)), priceMax: Math.max(...prices.map((p) => p.price)) } : {}) });
     }
 
     // Search-as-you-type: catalogue candidates with pictures. Cheap and
@@ -236,7 +262,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = found.filter((c) => c.pricedAtChains > 0).slice(0, 14);
+      const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
       const imgs = await images.resolveMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
     }
@@ -349,6 +375,20 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     console.error(e);
     return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
   }
+}
+
+/**
+ * The item's price at every storefront serving the address: one single-line
+ * quote, cached six hours under a catalogue-wide key so aisles can show the
+ * range without paying for the quote each time.
+ */
+async function chainPrices(gtin: string, address: string, qp: { quoteBasket: (r: { lines: ListLine[]; address: string }) => Promise<{ quotes: readonly StorefrontQuote[] }> }): Promise<{ storefrontId: string; brand: string; price: number }[]> {
+  const cached = (await readRow(TABLE, 'CATALOG', `PRICE#${gtin}`)) as { prices?: { storefrontId: string; brand: string; price: number }[]; at?: string } | undefined;
+  if (cached?.prices && cached.at && Date.now() - Date.parse(cached.at) < 6 * 3600_000) return cached.prices;
+  const res = await qp.quoteBasket({ lines: [{ id: 'x', query: gtin, gtin }], address }).catch(() => null);
+  const prices = (res?.quotes ?? []).flatMap((q) => { const l = q.lines.find((x) => x.lineId === 'x'); return l && !l.substituted ? [{ storefrontId: q.storefrontId, brand: q.brand, price: l.unitPrice }] : []; }).sort((a, b) => a.price - b.price);
+  if (prices.length) await writeRow(TABLE, 'CATALOG', `PRICE#${gtin}`, { prices, min: prices[0]!.price, max: prices[prices.length - 1]!.price, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 7 * 86400 });
+  return prices;
 }
 
 const JSON_H = { 'content-type': 'application/json' };
