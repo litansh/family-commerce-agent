@@ -258,8 +258,15 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           const named = await Promise.all(top.map(async (p) => {
             const gtin = p.itemCodes.find((c) => /^\d{8,14}$/.test(c));
             if (!gtin) return p;
-            const hit = (await catalog.searchProducts({ query: gtin, gtin, limit: 1, location: household.address }).catch(() => []))[0];
-            return hit?.name ? { ...p, description: hit.name } : p;
+            const hit = (await catalog.searchProducts({ query: gtin, gtin, limit: 1 }).catch(() => []))[0];
+            // Till-speak cleanup: "2ב30 מגבוני האגיס 56*4 -מות-75ישיר" → "מגבוני האגיס 56*4".
+            const cleaned = p.description
+              .replace(/^קו קופה\s*-?\s*/, '').replace(/^קטיף\s+/, '').replace(/^\d+ב\d+(\.\d+)?\s*/, '').replace(/^\d+(\.\d+)?\s+/, '')
+              .replace(/\s*-?\s*(מות|LU|XPO)?\s*-?\s*\d*\s*ישיר\s*$/, '').replace(/\s+ב\s*\d+(\.\d+)?\s*$/, '').replace(/\s{2,}/g, ' ').trim();
+            const catalogName = hit?.name?.trim() ?? '';
+            // The catalogue sometimes truncates ("לה מ"); take whichever reads as a full name.
+            const name = catalogName.length >= 14 || cleaned.length < 6 ? catalogName || cleaned : cleaned;
+            return name ? { ...p, description: name } : p;
           }));
           const byId = new Map(named.map((p) => [p.itemCodes.join(',') + p.chainName, p]));
           promos = fresh.map((p) => byId.get(p.itemCodes.join(',') + p.chainName) ?? p);
