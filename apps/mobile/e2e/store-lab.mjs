@@ -36,7 +36,7 @@ for (const id of ids) {
         email: q('input[type="email"],input[name*="mail" i],input[name="j_username"]').length,
         password: q('input[type="password"]').length,
         tel: q('input[type="tel"]').length,
-        emailValue: (q('input[type="email"],input[name="j_username"]')[0] || {}).value || '',
+        emailValue: (q('input[type="email"],input[name="j_username"],#userName')[0] || {}).value || '',
         otpText: /קוד חד פעמי|שלח קוד|קוד אימות|SMS/.test(text),
         loginText: /כניסה|התחברות/.test(text),
         cookieBanner: /cookies|קובצי cookie/i.test(text),

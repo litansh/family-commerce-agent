@@ -102,7 +102,7 @@ export const STORES: Record<string, StoreDef> = {
     loginKind: 'password',
     signedInCheck: genericSignedIn,
     // Their "e-mail / ID" box is a plain text field above the password.
-    prefillEmailJs: (email) => setInput('input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
+    prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
   },
 };
