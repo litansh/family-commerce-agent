@@ -8,7 +8,7 @@ import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { newId, setLines, useList, type Line } from '../lib/store';
 import { ProductImage } from '../ProductImage';
 import { Scanner } from '../Scanner';
-import { Button, Chip, Empty, Header, Input, S, t, Toast } from '../ui';
+import { Button, Chip, Empty, Header, Icon, Input, S, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -115,11 +115,11 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     <View style={s.screen}>
       <Header title={household.name} subtitle={household.address} action={tr('invite')} onAction={onInvite} />
       <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-        <View style={[s.rowStart, { backgroundColor: t.card, borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: t.line }]}>
-          <Text style={{ fontSize: 18, color: t.faint }}>⌕</Text>
-          <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 6 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
-          {query ? <Pressable onPress={() => setQuery('')} hitSlop={10}><Text style={{ color: t.faint, fontSize: 16 }}>✕</Text></Pressable> : null}
-          {pricing ? <Pressable onPress={() => setScanning(true)} hitSlop={10} style={{ paddingVertical: 10, paddingHorizontal: 6 }}><Text style={[s.link, { fontSize: 14 }]}>▣ {tr('scan')}</Text></Pressable> : null}
+        <View style={[s.rowStart, { backgroundColor: t.card, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5, borderColor: t.line }]}>
+          <Icon name="search" size={19} color={t.faint} weight={2.2} />
+          <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 8 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
+          {query ? <Pressable onPress={() => setQuery('')} hitSlop={10} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: t.inkSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: t.muted, fontSize: 13, fontWeight: '700' }}>✕</Text></Pressable> : null}
+          {pricing ? <Pressable onPress={() => setScanning(true)} hitSlop={10} style={{ backgroundColor: t.accentSoft, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12, marginLeft: 4 }}><Text style={[s.link, { fontSize: 13 }]}>{tr('scan')}</Text></Pressable> : null}
         </View>
       </View>
       {scanning ? (
@@ -204,8 +204,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
             {items.map((item) => (
               <View key={item.id} style={[s.row, { paddingVertical: 8, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
-                  <Pressable onPress={() => remove(item.id)} hitSlop={14} style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: t.accent, fontSize: 13, fontWeight: '800' }}>✓</Text>
+                  <Pressable onPress={() => remove(item.id)} hitSlop={14} style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="check" size={14} color={t.faint} />
                   </Pressable>
                   <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
                   <View style={{ flex: 1 }}>
@@ -213,10 +213,10 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                     {item.brand ? <Text style={s.faint}>{item.brand}</Text> : null}
                   </View>
                 </View>
-                <View style={[s.rowStart, { gap: 0, backgroundColor: t.bg, borderRadius: 999 }]}>
-                  <Pressable onPress={() => bump(item.id, -1)} hitSlop={10} style={{ paddingHorizontal: 14, paddingVertical: 9 }}><Text style={{ color: t.muted, fontSize: 20 }}>−</Text></Pressable>
-                  <Text style={[s.priceSmall, { color: t.ink, minWidth: 44, textAlign: 'center' }]}>{qtyLabel(item)}</Text>
-                  <Pressable onPress={() => bump(item.id, 1)} hitSlop={10} style={{ paddingHorizontal: 14, paddingVertical: 9 }}><Text style={{ color: t.accent, fontSize: 20 }}>+</Text></Pressable>
+                <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
+                  <Pressable onPress={() => bump(item.id, -1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="minus" size={16} color={t.muted} /></Pressable>
+                  <Text style={[s.priceSmall, { color: t.ink, minWidth: 40, textAlign: 'center', fontWeight: '700' }]}>{qtyLabel(item)}</Text>
+                  <Pressable onPress={() => bump(item.id, 1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="plus" size={16} color={t.ink} /></Pressable>
                 </View>
               </View>
             ))}
@@ -224,11 +224,11 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         )))}
       </ScrollView>
 
-      <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: Platform.OS === 'web' ? 96 : 88, backgroundColor: t.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, borderTopWidth: 1, borderColor: t.line, shadowColor: '#0E2E1F', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: -6 } }}>
         {query.trim() ? (
-          <Button title={tr('addAsTyped', { q: query.trim() })} kind="secondary" onPress={addTyped} />
+          <Button title={tr('addAsTyped', { q: query.trim() })} kind="secondary" icon="plus" onPress={addTyped} />
         ) : (
-          <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} />
+          <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} />
         )}
       </View>
       <Toast text={toast} />

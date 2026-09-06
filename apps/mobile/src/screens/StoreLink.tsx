@@ -41,12 +41,17 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     return () => clearInterval(id);
   }, [WebView, store]);
 
+  const [diag, setDiag] = useState<string | null>(null);
   const postHistory = async (json: string): Promise<void> => {
     try {
-      const orders = JSON.parse(json) as unknown[];
+      const parsed = JSON.parse(json) as unknown;
+      const env = Array.isArray(parsed) ? { orders: parsed, diag: undefined } : (parsed as { orders?: unknown[]; diag?: Record<string, unknown> });
+      const orders = Array.isArray(env.orders) ? env.orders : [];
+      if (env.diag) setDiag(JSON.stringify(env.diag));
+      if (orders.length === 0) { setImported(0); return; }
       const r = await api.importHistory(householdId, storeId, orders as never);
       setImported(r.orders);
-    } catch { setImported(0); } finally { setImporting(false); }
+    } catch (e) { setImported(0); setDiag(String(e)); } finally { setImporting(false); }
   };
 
   if (!store) return null;
@@ -76,7 +81,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
             <Text style={{ fontSize: 48 }}>✓</Text>
             <Text style={[s.title, { marginTop: 12, textAlign: 'center' }]}>{tr('linked', {})}</Text>
             <Text style={[s.body, { color: t.muted, textAlign: 'center', marginTop: 6 }]}>{tr('linkedSub', { s: store.name })}</Text>
-            {importing ? <Text style={[s.small, { marginTop: 10 }]}>{tr('importingHistory')}</Text> : imported != null ? <Text style={[s.small, { color: t.accent, marginTop: 10 }]}>{tr('importedHistory', { n: imported })}</Text> : null}
+            {importing ? <Text style={[s.small, { marginTop: 10 }]}>{tr('importingHistory')}</Text>
+              : imported != null && imported > 0 ? <Text style={[s.small, { color: t.accent, marginTop: 10 }]}>{tr('importedHistory', { n: imported })}</Text>
+              : imported === 0 ? <Text style={[s.faint, { marginTop: 10, textAlign: 'center' }]} selectable>{tr('importedNone', { d: diag ?? '—' })}</Text> : null}
             <View style={{ height: 16 }} />
             <Button title={tr('done')} onPress={() => onLinked(store.id)} />
           </View>
@@ -109,12 +116,36 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
 }
 
 
-/** Injected into the logged-in Shufersal WebView: pull recent orders (same-origin session) and post them back. */
+/**
+ * Injected into the logged-in Shufersal WebView: pull recent orders through
+ * the same-origin session and post them back.
+ *
+ * Shufersal's storefront has shipped several shapes for the orders JSON, so
+ * the script reads every one it has seen (closedOrders / orders / results /
+ * data; entries / orderEntries / lines; product.ean / barcode / code) and
+ * falls back gracefully. It always posts a small `diag` alongside the orders
+ * — the HTTP status, the top-level keys it found, and how many orders it
+ * read — so a run that finds nothing tells us exactly why instead of
+ * silently doing nothing.
+ */
 const HISTORY_JS = `(async()=>{try{
   const H={accept:'application/json','x-requested-with':'XMLHttpRequest'};
-  const list=await fetch('/online/he/my-account/orders',{credentials:'include',headers:H}).then(r=>r.json()).catch(()=>({}));
-  const codes=(list.closedOrders||[]).slice(0,20).map(o=>({code:o.code,at:o.placed||o.created||''}));
+  const j=async(u)=>{const r=await fetch(u,{credentials:'include',headers:H});const t=await r.text();try{return {s:r.status,d:JSON.parse(t)}}catch(e){return {s:r.status,d:null,h:t.slice(0,400)}}};
+  const L=await j('/online/he/my-account/orders');
+  const root=(L.d&&typeof L.d==='object')?L.d:{};
+  let arr=root.closedOrders||root.orders||root.results||root.data||root.orderHistory||[];
+  if(arr&&!Array.isArray(arr)&&Array.isArray(arr.orders))arr=arr.orders;
+  if(arr&&!Array.isArray(arr)&&Array.isArray(arr.results))arr=arr.results;
+  if(!Array.isArray(arr))arr=[];
+  const codes=arr.slice(0,20).map(o=>({code:o.code||o.orderCode||o.orderNumber||o.id||o.number,at:o.placed||o.created||o.date||o.orderDate||''})).filter(o=>o.code);
   const out=[];
-  for(const o of codes){ const d=await fetch('/online/he/my-account/orders/'+o.code,{credentials:'include',headers:H}).then(r=>r.json()).catch(()=>({})); const lines=(d.entries||[]).filter(e=>e.product&&e.product.name&&!/משלוח|דמי/.test(e.product.name)).map(e=>({name:e.product.name,code:e.product.ean||e.product.code,qty:e.quantity||1})); if(lines.length)out.push({at:o.at,lines}); }
-  window.ReactNativeWebView.postMessage('history:'+JSON.stringify(out));
-}catch(e){window.ReactNativeWebView.postMessage('history:[]');}})();true;`;
+  for(const o of codes){
+    const D=await j('/online/he/my-account/orders/'+encodeURIComponent(o.code));
+    const d=(D.d&&typeof D.d==='object')?D.d:{};
+    const ents=d.entries||d.orderEntries||d.lines||d.items||(d.order&&(d.order.entries||d.order.lines))||[];
+    const lines=(Array.isArray(ents)?ents:[]).map(e=>{const p=e.product||e;const n=p.name||p.productName||p.title||e.name;const c=p.ean||p.barcode||p.gtin||p.code||e.code;return n?{name:String(n),code:c?String(c):undefined,qty:Number(e.quantity||e.qty||1)||1}:null}).filter(x=>x&&!/משלוח|דמי/.test(x.name));
+    if(lines.length)out.push({at:o.at,lines});
+  }
+  const diag={status:L.s,keys:Object.keys(root).slice(0,12),html:!!L.h,htmlHead:L.h?L.h.slice(0,120):undefined,found:codes.length,orders:out.length};
+  window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag}));
+}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`;

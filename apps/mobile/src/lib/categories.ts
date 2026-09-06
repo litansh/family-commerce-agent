@@ -5,17 +5,17 @@
  */
 export type Aisle = 'dairy' | 'produce' | 'bakery' | 'meat' | 'pantry' | 'frozen' | 'drinks' | 'baby' | 'household' | 'other';
 
-export const AISLES: { key: Aisle; glyph: string; he: string; en: string }[] = [
-  { key: 'dairy', glyph: '🥛', he: 'חלב וביצים', en: 'Dairy & eggs' },
-  { key: 'produce', glyph: '🥬', he: 'ירקות ופירות', en: 'Produce' },
-  { key: 'bakery', glyph: '🍞', he: 'לחם ומאפים', en: 'Bakery' },
-  { key: 'meat', glyph: '🍗', he: 'בשר ודגים', en: 'Meat & fish' },
-  { key: 'pantry', glyph: '🫙', he: 'מזווה', en: 'Pantry' },
-  { key: 'frozen', glyph: '🧊', he: 'קפואים', en: 'Frozen' },
-  { key: 'drinks', glyph: '🧃', he: 'משקאות', en: 'Drinks' },
-  { key: 'baby', glyph: '🍼', he: 'תינוקות', en: 'Baby' },
-  { key: 'household', glyph: '🧴', he: 'ניקיון ובית', en: 'Household' },
-  { key: 'other', glyph: '🛒', he: 'עוד', en: 'Other' },
+export const AISLES: { key: Aisle; glyph: string; he: string; en: string; tint: string; ink: string }[] = [
+  { key: 'dairy', glyph: '🥛', he: 'חלב וביצים', en: 'Dairy & eggs', tint: '#EAF2FB', ink: '#2F6DB3' },
+  { key: 'produce', glyph: '🥬', he: 'ירקות ופירות', en: 'Produce', tint: '#E8F5EA', ink: '#3B8A4B' },
+  { key: 'bakery', glyph: '🍞', he: 'לחם ומאפים', en: 'Bakery', tint: '#FaF1E2', ink: '#B37E33' },
+  { key: 'meat', glyph: '🍗', he: 'בשר ודגים', en: 'Meat & fish', tint: '#FCECEC', ink: '#B34848' },
+  { key: 'pantry', glyph: '🫙', he: 'מזווה', en: 'Pantry', tint: '#F3EEF8', ink: '#7A55A8' },
+  { key: 'frozen', glyph: '🧊', he: 'קפואים', en: 'Frozen', tint: '#E7F4F7', ink: '#2E8C9E' },
+  { key: 'drinks', glyph: '🧃', he: 'משקאות', en: 'Drinks', tint: '#FDF0E8', ink: '#C06A33' },
+  { key: 'baby', glyph: '🍼', he: 'תינוקות', en: 'Baby', tint: '#FBECF3', ink: '#B24C86' },
+  { key: 'household', glyph: '🧴', he: 'ניקיון ובית', en: 'Household', tint: '#EAF1F0', ink: '#3F857D' },
+  { key: 'other', glyph: '🛒', he: 'עוד', en: 'Other', tint: '#EFF1EF', ink: '#5C6862' },
 ];
 
 const RULES: [Aisle, RegExp][] = [

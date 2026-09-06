@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, PanResponder, Platform, View } from 'react-native';
 import { t as theme } from './src/ui';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import type { PurchaseOption } from '@fca/domain';
 import { regionOf } from '@fca/domain';
 import { Api, type Household, type QuoteResult } from './src/lib/api';
 import { loadTokens, signOut, type Tokens } from './src/lib/auth';
-import { loadLanguage, setRegion, t as tr, useLanguage } from './src/lib/i18n';
+import { isRTL, loadLanguage, setRegion, t as tr, useLanguage } from './src/lib/i18n';
 import { clearList, useList, type Line } from './src/lib/store';
 import { HouseholdSetup } from './src/screens/Household';
 import { HomeScreen } from './src/screens/Home';
@@ -40,6 +40,37 @@ export default function App() {
   const lines = useList();
   useLanguage();
   const api = useMemo(() => (tokens ? new Api(tokens.idToken) : null), [tokens]);
+
+  // Sliding between the four windows. Only the active one is mounted; on a
+  // change it slides in from the side it lives on (mirrored for Hebrew), and
+  // a clear horizontal swipe moves to the neighbour. Vertical scrolls pass
+  // through untouched because the gesture is only claimed when it is
+  // unmistakably sideways.
+  const TAB_ORDER: Tab[] = ['home', 'list', 'orders', 'me'];
+  const slide = useRef(new Animated.Value(0)).current;
+  const frameW = useRef(360);
+  const tabRef = useRef<Tab>('home');
+  tabRef.current = tab;
+  const goTab = (next: Tab) => {
+    const from = TAB_ORDER.indexOf(tabRef.current), to = TAB_ORDER.indexOf(next);
+    if (to === from) return;
+    const sign = (to > from ? 1 : -1) * (isRTL() ? -1 : 1);
+    slide.setValue(sign * frameW.current);
+    setTab(next);
+    Animated.spring(slide, { toValue: 0, useNativeDriver: Platform.OS !== 'web', damping: 26, stiffness: 240, mass: 0.7 }).start();
+  };
+  const goTabRef = useRef(goTab);
+  goTabRef.current = goTab;
+  const pan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 16 && Math.abs(g.dx) > Math.abs(g.dy) * 1.8,
+    onPanResponderRelease: (_e, g) => {
+      if (Math.abs(g.dx) < 56) return;
+      const i = TAB_ORDER.indexOf(tabRef.current);
+      const advance = isRTL() ? g.dx > 0 : g.dx < 0;
+      const n = advance ? i + 1 : i - 1;
+      if (n >= 0 && n < TAB_ORDER.length) goTabRef.current(TAB_ORDER[n]!);
+    },
+  })).current;
 
   useEffect(() => { void loadLanguage().then(() => loadTokens()).then((t) => setTokens(t)); }, []);
   useEffect(() => {
@@ -79,11 +110,13 @@ export default function App() {
   const frame = Platform.OS === 'web' ? { width: '100%' as const, maxWidth: 430, alignSelf: 'center' as const, flex: 1, backgroundColor: theme.bg } : { flex: 1 };
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[S().screen, Platform.OS === 'web' && { backgroundColor: '#ECE8DF' }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[S().screen, Platform.OS === 'web' && { backgroundColor: '#E5EAE7' }]} edges={['top', 'bottom']}>
         <StatusBar style="dark" />
-        <View style={frame}>
-          <View style={{ flex: 1 }}>{body}</View>
-          {showTabs ? <TabBar active={tab} onChange={setTab} badge={lines.length || undefined} /> : null}
+        <View style={frame} onLayout={(e) => { frameW.current = e.nativeEvent.layout.width || 360; }}>
+          {showTabs
+            ? <Animated.View {...pan.panHandlers} style={{ flex: 1, transform: [{ translateX: slide }] }}>{body}</Animated.View>
+            : <View style={{ flex: 1 }}>{body}</View>}
+          {showTabs ? <TabBar active={tab} onChange={goTab} badge={lines.length || undefined} /> : null}
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

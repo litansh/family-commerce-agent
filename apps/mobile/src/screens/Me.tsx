@@ -24,7 +24,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   return (
     <View style={s.screen}>
       <Header title={tr('meTitle')} subtitle={household.name} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
         <View style={[s.card, s.row]}><Text style={s.title}>{tr('language')}</Text><LanguagePicker /></View>
         <View style={s.card}>
           <Text style={s.small}>{household.address}</Text>
@@ -44,7 +44,10 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
               <View key={r} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={s.rowStart}><Text style={s.body}>{STORES[r]?.name ?? r}</Text><Chip text={on ? tr('linked', {}) : tr('notLinked')} tone={on ? 'good' : 'warn'} /></View>
                 {on
-                  ? <Pressable onPress={() => markUnlinked(r)} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>
+                  ? <View style={[s.rowStart, { gap: 14 }]}>
+                      <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('sync')}</Text></Pressable>
+                      <Pressable onPress={() => markUnlinked(r)} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>
+                    </View>
                   : <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('connect')}</Text></Pressable>}
               </View>
             );
