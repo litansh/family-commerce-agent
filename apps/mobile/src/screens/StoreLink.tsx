@@ -5,6 +5,7 @@ import { t as tr } from '../lib/i18n';
 import { Button, S, t } from '../ui';
 import { Pressable } from 'react-native';
 import { isRTL } from '../lib/i18n';
+import { BUILD } from '../lib/config';
 
 /**
  * Connect a store, entirely inside Kanili.
@@ -139,7 +140,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                     if (!didImport.current) { didImport.current = true; inject(PROBE_JS); if (storeId === 'shufersal') { setImporting(true); inject(HISTORY_JS); } }
                   }
                   else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
-                  else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
+                  else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { build: BUILD, probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
                 }}
               />
             </View>

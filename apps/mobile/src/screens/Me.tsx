@@ -9,6 +9,7 @@ import { STORE_ORDER, STORES } from '../lib/stores';
 import { useLinked, markLinked, markUnlinked } from '../lib/linked';
 import { StoreLink } from './StoreLink';
 import { Mark } from '../Logo';
+import { BUILD } from '../lib/config';
 
 export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api; household: Household; onSignOut: () => void; onShowIntro: () => void }) {
   const s = S();
@@ -66,7 +67,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         <Button title={tr('showIntro')} kind="quiet" onPress={onShowIntro} />
         <Button title={tr('signOut')} kind="quiet" onPress={onSignOut} />
         {linking ? <StoreLink storeId={linking} api={api} householdId={household.id} onClose={() => setLinking(null)} onLinked={(id) => { markLinked(id); setLinking(null); }} /> : null}
-        <View style={{ alignItems: 'center', marginTop: 24, opacity: 0.5 }}><Mark size={28} /><Text style={[s.faint, { marginTop: 6 }]}>{tr('taglineShort')}</Text></View>
+        <View style={{ alignItems: 'center', marginTop: 24, opacity: 0.5 }}><Mark size={28} /><Text style={[s.faint, { marginTop: 6 }]}>{tr('taglineShort')}</Text><Text style={[s.faint, { marginTop: 4, fontSize: 10 }]}>build {BUILD}</Text></View>
       </ScrollView>
     </View>
   );
