@@ -32,14 +32,19 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const WebView = Platform.OS === 'web' ? null : (() => { try { return require('react-native-webview').WebView as typeof import('react-native-webview').WebView; } catch { return null; } })();
 
   // Poll the store's own signed-in check through the WebView.
+  const ticks = useRef(0);
   useEffect(() => {
     if (!WebView) return;
     const id = setInterval(() => {
+      ticks.current += 1;
       const js = `(async()=>{try{const ok=await (${store!.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`;
       (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js);
+      // Once, after a few seconds: report what the check actually sees, so a
+      // silent "connected but nothing happens" is debuggable from the server log.
+      if (ticks.current === 4 && storeId === 'shufersal') (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(PROBE_JS);
     }, 2500);
     return () => clearInterval(id);
-  }, [WebView, store]);
+  }, [WebView, store, storeId]);
 
   const [diag, setDiag] = useState<string | null>(null);
   const postHistory = async (json: string): Promise<void> => {
@@ -103,6 +108,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:1') { setSignedIn(true); if (!didImport.current && storeId === 'shufersal') { didImport.current = true; setImporting(true); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(HISTORY_JS); } }
                   else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
+                  else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
                 }}
               />
             </View>
@@ -129,6 +135,15 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
  * read — so a run that finds nothing tells us exactly why instead of
  * silently doing nothing.
  */
+/** What the signed-in check sees: page URL, the orders request's status and final URL, and whether the page looks logged in. */
+const PROBE_JS = `(async()=>{try{
+  const r=await fetch('/online/he/my-account/orders',{credentials:'include'});
+  const t=await r.text();
+  const body=document.body?document.body.innerText.slice(0,300).replace(/\\s+/g,' '):'';
+  const out={href:location.href,status:r.status,url:r.url,len:t.length,title:(t.match(/<title>([^<]*)/)||[])[1]||'',loginInPage:/login|התחבר|כניסה/i.test(t.slice(0,6000)),logoutLink:!!document.querySelector('a[href*="logout"]'),bodyHead:body};
+  window.ReactNativeWebView.postMessage('probe:'+JSON.stringify(out));
+}catch(e){window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({error:String(e),href:location.href}));}})();true;`;
+
 const HISTORY_JS = `(async()=>{let diagHtml;try{
   const H={accept:'application/json','x-requested-with':'XMLHttpRequest'};
   const j=async(u)=>{const r=await fetch(u,{credentials:'include',headers:H});const t=await r.text();try{return {s:r.status,d:JSON.parse(t)}}catch(e){return {s:r.status,d:null,h:t.slice(0,400)}}};
