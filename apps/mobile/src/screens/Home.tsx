@@ -6,6 +6,7 @@ import type { Api, Deal, Household } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { addLine, newId, setLines, useList } from '../lib/store';
+import { carouselProps } from '../lib/gesture';
 import { ProductImage } from '../ProductImage';
 import { Button, GRAD_INK, GradientCard, Header, Icon, S, t, Toast } from '../ui';
 
@@ -48,6 +49,7 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
   const [deals, setDeals] = useState<Deal[]>([]);
   // A Hebrew carousel starts at its right edge, where the first card is.
   const dealsRef = useRef<ScrollView | null>(null);
+  const usualsRef = useRef<ScrollView | null>(null);
   useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
   useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
 
@@ -100,6 +102,28 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
               </View>
             </View>
           )}
+          {usuals.length > 0 && (
+            <View style={{ marginBottom: 6, marginHorizontal: -20 }}>
+              <View style={[s.row, { paddingHorizontal: 20 }]}>
+                <View style={s.rowStart}><Icon name="heart" size={18} color={t.ink} /><Text style={s.title}>{tr('forHome')}</Text></View>
+                <Text style={s.faint}>{tr('forHomeSub')}</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
+                {...carouselProps} ref={(r) => { usualsRef.current = r; }} onContentSizeChange={() => { if (rtl) usualsRef.current?.scrollToEnd({ animated: false }); }}>
+                {usuals.slice(0, 16).map((p) => {
+                  const isDue = due.has(p.key);
+                  return (
+                    <Pressable key={p.key} onPress={() => { addLine(lineFromPref(p)); tap(); say(tr('added')); }}
+                      style={({ pressed }) => [{ width: 132, backgroundColor: isDue ? t.amberSoft : t.card, borderRadius: 18, padding: 10, borderWidth: 1, borderColor: isDue ? '#EFDDB6' : t.line }, pressed && { opacity: 0.6 }]}>
+                      <View style={{ alignItems: 'center' }}><ProductImage gtin={p.gtin} name={p.phrase} size={84} radius={12} /></View>
+                      <Text style={[s.body, { fontSize: 13, lineHeight: 17, marginTop: 8, minHeight: 34, fontWeight: '600' }]} numberOfLines={2}>{p.productName || p.phrase}</Text>
+                      <Text style={[s.faint, { fontSize: 11, marginTop: 4, color: isDue ? t.amber : t.faint }]} numberOfLines={1}>{isDue ? tr('dueNow') : tr('boughtNTimes', { n: p.orderCount })}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
           {deals.length > 0 && (
             <View style={{ marginBottom: 6, marginHorizontal: -20 }}>
               <View style={[s.row, { paddingHorizontal: 20 }]}>
@@ -107,7 +131,7 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
                 <Text style={s.faint}>{tr('dealsNearSub')}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
-                ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
+                {...carouselProps} ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
                 {deals.slice(0, 14).map((d) => (
                   <Pressable key={`${d.gtin}-${d.chainName}`} onPress={() => { addLine({ query: d.name, productName: d.name, gtin: d.gtin, ...(d.brand ? { brand: d.brand } : {}), imageUrl: d.imageUrl ?? undefined }); tap(); say(tr('added')); }}
                     style={({ pressed }) => [{ width: 148, backgroundColor: t.card, borderRadius: 18, padding: 10, borderWidth: 1, borderColor: d.usual ? t.accent2 : t.line }, pressed && { opacity: 0.6 }]}>

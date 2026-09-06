@@ -48,8 +48,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       const env = Array.isArray(parsed) ? { orders: parsed, diag: undefined } : (parsed as { orders?: unknown[]; diag?: Record<string, unknown> });
       const orders = Array.isArray(env.orders) ? env.orders : [];
       if (env.diag) setDiag(JSON.stringify(env.diag));
-      if (orders.length === 0) { setImported(0); return; }
-      const r = await api.importHistory(householdId, storeId, orders as never);
+      // Always post, even with nothing: the diagnostic reaches the server log
+      // so a wrong shape can be fixed without a phone in hand.
+      const r = await api.importHistory(householdId, storeId, orders as never, env.diag);
       setImported(r.orders);
     } catch (e) { setImported(0); setDiag(String(e)); } finally { setImporting(false); }
   };

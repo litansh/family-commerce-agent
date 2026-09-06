@@ -6,6 +6,8 @@ import type { Api, Deal, Household, SearchHit } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { newId, setLines, useList, type Line } from '../lib/store';
+import { carouselProps } from '../lib/gesture';
+import { MODES, setMode, useMode } from '../lib/prefs';
 import { ProductImage } from '../ProductImage';
 import { Scanner } from '../Scanner';
 import { Button, Chip, Empty, Header, Icon, Input, S, t, Toast } from '../ui';
@@ -26,6 +28,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const s = S();
   const rtl = isRTL();
   const lines = useList();
+  const mode = useMode();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -210,7 +213,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
               <Text style={s.faint}>{tr('dealsNearSub')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
-              ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
+              {...carouselProps} ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
               {deals.slice(0, 20).map((d) => {
                 const on = onList.has(d.name.trim().toLowerCase());
                 return (
@@ -263,7 +266,15 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         {query.trim() ? (
           <Button title={tr('addAsTyped', { q: query.trim() })} kind="secondary" icon="plus" onPress={addTyped} />
         ) : (
-          <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} />
+          <View style={[s.rowStart, { gap: 10 }]}>
+            {/* Buying mode: set here, remembered, and the compare screen opens in it. */}
+            <Pressable onPress={() => { tap(); setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]!); }} hitSlop={8}
+              style={{ backgroundColor: t.inkSoft, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 14, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="sliders" size={16} color={t.ink} />
+              <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14 }}>{tr(`mode_${mode}`)}</Text>
+            </Pressable>
+            <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} style={{ flex: 1 }} />
+          </View>
         )}
       </View>
       <Toast text={toast} />
