@@ -88,24 +88,31 @@ export class ShufersalConnector implements RetailerConnector {
     // Shufersal Online signs in with email + password (or Facebook). The
     // "club member identification" link on this page is for people who do
     // NOT shop online, so it is not offered here.
-    console.log('\n  Sign in to Shufersal Online in the window that just opened (email + password; the password is usually saved in iPhone Settings > Passwords).');
-    console.log('  Kanili saves the session automatically once it sees you are in.');
-    console.log('  If the window shows you signed in but nothing happens here, press Enter in this terminal.\n');
-    // Poll for the signed-in state, but also accept a manual confirmation:
-    // a missed detection must never cost the person their sign-in.
-    let manual = false;
+    console.log('\n  Sign in to Shufersal Online in the window that just opened - any way that works for you.');
+    console.log('  When the site shows you signed in, press Enter here. Kanili then checks with Shufersal and saves only a session that really is signed in.\n');
+    // Loop: wait for Enter (or automatic detection), verify against the
+    // site, and either save or explain what Shufersal reported and wait again.
     const stdin = process.stdin;
-    const onData = () => { manual = true; };
-    stdin.resume(); stdin.on('data', onData);
-    try {
-      for (let i = 0; i < 900; i += 1) {
-        if (manual || (await this.#signedIn(this.#page))) break;
-        await this.#page.waitForTimeout(1000);
-      }
-    } finally {
-      stdin.off('data', onData); stdin.pause();
+    for (let attempt = 1; ; attempt += 1) {
+      let manual = false;
+      const onData = () => { manual = true; };
+      stdin.resume(); stdin.on('data', onData);
+      try {
+        for (let i = 0; i < 900; i += 1) {
+          if (manual || (await this.#signedIn(this.#page))) break;
+          await this.#page.waitForTimeout(1000);
+        }
+      } finally { stdin.off('data', onData); stdin.pause(); }
+      const verdict = await this.#verify(this.#page);
+      if (verdict.ok) break;
+      console.log(`\n  Not signed in to Shufersal Online yet (attempt ${attempt}):`);
+      console.log(`    auth status endpoint: ${verdict.status}`);
+      console.log(`    /my-account/orders  : ${verdict.ordersPage}`);
+      console.log(`    cookies on the site : ${verdict.cookies}`);
+      console.log('  The club "הזדהות חברי מועדון" identifies you for club prices but does not log into the store.');
+      console.log('  Sign in to Online in the window (email + password, or Facebook), then press Enter again.\n');
+      await this.#page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
     }
-    if (!manual && !(await this.#signedIn(this.#page))) throw new Error('shufersal: sign-in did not complete within 15 minutes');
     await saveSession(this.#householdId, this.id, this.#ctx);
     console.log('  Session saved. You will not need to sign in again until Shufersal expires it.\n');
     return this.#ctx;
@@ -122,6 +129,19 @@ export class ShufersalConnector implements RetailerConnector {
       await this.#shot('session-expired');
       throw new Error('shufersal: saved session expired — run `npm run link -w @fca/order-worker` again');
     }
+  }
+
+  /** The evidence: what the site itself says about this session. */
+  async #verify(page: Page): Promise<{ ok: boolean; status: string; ordersPage: string; cookies: string }> {
+    const status = await page.evaluate(async () => {
+      try { const r = await fetch('/online/he/authentication/get-status-includes-otp', { credentials: 'include', headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' } }); return (await r.text()).trim().slice(0, 60); } catch (e) { return `error ${String(e)}`; }
+    }).catch(() => 'unreachable');
+    const ordersPage = await page.evaluate(async () => {
+      try { const r = await fetch('/online/he/my-account/orders', { credentials: 'include', redirect: 'follow', headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' } }); return `${r.status} ${r.url.replace(location.origin, '')}`.slice(0, 80); } catch (e) { return `error ${String(e)}`; }
+    }).catch(() => 'unreachable');
+    const cookies = (await page.context().cookies('https://www.shufersal.co.il')).map((c) => c.name).filter((n) => !/^_|^ga|gtm|cf_|^AWS/i.test(n)).slice(0, 12).join(', ');
+    const ok = status === 'true' || (ordersPage.startsWith('200') && !ordersPage.includes('/login'));
+    return { ok, status, ordersPage, cookies };
   }
 
   #page$(): Page {
