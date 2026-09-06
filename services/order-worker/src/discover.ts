@@ -30,7 +30,7 @@ for (const p of PAGES) {
   await page.waitForTimeout(2500);
   const stamp = p.replace(/\W+/g, '_');
   await page.screenshot({ path: `trace/discover${stamp}.png` }).catch(() => undefined);
-  const links = await page.evaluate(() => [...document.querySelectorAll('a[href*="my-account"], a[href*="order"], a[href*="coupon"]')].map((a) => (a as HTMLAnchorElement).href).filter((h, i, arr) => arr.indexOf(h) === i).slice(0, 40));
+  const links = await page.evaluate(() => Array.from(document.querySelectorAll('a[href*="my-account"], a[href*="order"], a[href*="coupon"]')).map((a) => (a as HTMLAnchorElement).href).filter((h, i, arr) => arr.indexOf(h) === i).slice(0, 40));
   const text = await page.evaluate(() => (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 1500));
   writeFileSync(`trace/discover${stamp}.txt`, `URL: ${page.url()}\nLINKS:\n${links.join('\n')}\n\nTEXT:\n${text}`);
   console.log(`${p} -> ${page.url()}  links=${links.length}`);
