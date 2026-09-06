@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain';
@@ -46,6 +46,8 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
   // Deals from every store nearby, the household's products first. Home is
   // a store window, not a menu: there is always something to look at.
   const [deals, setDeals] = useState<Deal[]>([]);
+  // A Hebrew carousel starts at its right edge, where the first card is.
+  const dealsRef = useRef<ScrollView | null>(null);
   useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
   useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
 
@@ -104,7 +106,8 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
                 <View style={s.rowStart}><Icon name="tag" size={18} color={t.ink} /><Text style={s.title}>{tr('dealsNear')}</Text></View>
                 <Text style={s.faint}>{tr('dealsNearSub')}</Text>
               </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
+                ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
                 {deals.slice(0, 14).map((d) => (
                   <Pressable key={`${d.gtin}-${d.chainName}`} onPress={() => { addLine({ query: d.name, productName: d.name, gtin: d.gtin, ...(d.brand ? { brand: d.brand } : {}), imageUrl: d.imageUrl ?? undefined }); tap(); say(tr('added')); }}
                     style={({ pressed }) => [{ width: 148, backgroundColor: t.card, borderRadius: 18, padding: 10, borderWidth: 1, borderColor: d.usual ? t.accent2 : t.line }, pressed && { opacity: 0.6 }]}>

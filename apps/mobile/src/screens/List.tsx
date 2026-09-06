@@ -57,6 +57,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   // Deals across every store nearby — not only the connected ones. You can
   // browse and compare everything; connecting is only needed to buy.
   const [deals, setDeals] = useState<Deal[]>([]);
+  const dealsRef = useRef<ScrollView | null>(null);
   useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
   useEffect(() => {
     api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([]));
@@ -208,7 +209,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
               <View style={s.rowStart}><Icon name="tag" size={18} color={t.ink} /><Text style={s.title}>{tr('dealsNear')}</Text></View>
               <Text style={s.faint}>{tr('dealsNearSub')}</Text>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
+              ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
               {deals.slice(0, 20).map((d) => {
                 const on = onList.has(d.name.trim().toLowerCase());
                 return (
