@@ -66,7 +66,12 @@ export class ShufersalConnector implements RetailerConnector {
     this.#ctx = await browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 } });
     this.#page = await this.#ctx.newPage();
     await this.#page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-    console.log('\n  Sign in to Shufersal in the window that just opened. Kanili is waiting…\n');
+    // Nobody remembers a retailer password. The SMS route lives under
+    // "club member identification"; open it so the window lands on
+    // "enter the code we sent to your phone".
+    await this.#page.waitForTimeout(1200);
+    await this.#page.getByText('הזדהות חברי מועדון').first().click({ timeout: 4000 }).catch(() => undefined);
+    console.log('\n  Sign in to Shufersal in the window that just opened - with the SMS code, no password needed. Kanili is waiting…\n');
     // Poll rather than waitForURL: the site sometimes signs in without leaving /login.
     for (let i = 0; i < 600; i += 1) {
       if (await this.#signedIn(this.#page)) break;
