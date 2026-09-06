@@ -41,7 +41,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js);
       // Once, after a few seconds: report what the check actually sees, so a
       // silent "connected but nothing happens" is debuggable from the server log.
-      if (ticks.current === 4 && storeId === 'shufersal') (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(PROBE_JS);
+      if (ticks.current === 4 || ticks.current === 24) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(PROBE_JS);
     }, 2500);
     return () => clearInterval(id);
   }, [WebView, store, storeId]);
@@ -134,7 +134,10 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 onLoadEnd={settle}
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
-                  if (d === 'signedin:1') { setSignedIn(true); if (!didImport.current && storeId === 'shufersal') { didImport.current = true; setImporting(true); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(HISTORY_JS); } }
+                  if (d === 'signedin:1') {
+                    setSignedIn(true);
+                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); if (storeId === 'shufersal') { setImporting(true); inject(HISTORY_JS); } }
+                  }
                   else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
                   else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
                 }}
@@ -165,10 +168,11 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
  */
 /** What the signed-in check sees: page URL, the orders request's status and final URL, and whether the page looks logged in. */
 const PROBE_JS = `(async()=>{try{
-  const r=await fetch('/online/he/my-account/orders',{credentials:'include'});
-  const t=await r.text();
-  const body=document.body?document.body.innerText.slice(0,300).replace(/\\s+/g,' '):'';
-  const out={href:location.href,status:r.status,url:r.url,len:t.length,title:(t.match(/<title>([^<]*)/)||[])[1]||'',loginInPage:/login|התחבר|כניסה/i.test(t.slice(0,6000)),logoutLink:!!document.querySelector('a[href*="logout"]'),bodyHead:body};
+  const out={href:location.href,title:document.title};
+  // Every same-origin API call the page has made so far - the map of the store's real endpoints.
+  out.api=[...new Set(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.startsWith(location.origin)&&/\\/api\\/|\\/rest\\/|json|my-account|order|cart|history|user|auth|login/i.test(u)).map(u=>u.replace(location.origin,'').slice(0,140)))].slice(0,40);
+  if(location.hostname.includes('shufersal')){const r=await fetch('/online/he/my-account/orders',{credentials:'include'});const t=await r.text();Object.assign(out,{status:r.status,url:r.url,len:t.length,loginInPage:/login|התחבר|כניסה/i.test(t.slice(0,6000)),logoutLink:!!document.querySelector('a[href*="logout"]')});}
+  out.bodyHead=document.body?document.body.innerText.slice(0,240).replace(/\\s+/g,' '):'';
   window.ReactNativeWebView.postMessage('probe:'+JSON.stringify(out));
 }catch(e){window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({error:String(e),href:location.href}));}})();true;`;
 
