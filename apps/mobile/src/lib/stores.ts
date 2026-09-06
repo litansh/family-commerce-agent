@@ -51,7 +51,9 @@ const platform = (id: string, name: string, host: string, storefront: RegExp, ot
   // If no login form is on screen yet, open it from the header ("כניסה" /
   // "התחברות" / "כניסה לחשבון"); then, where the chain offers it, prefer the
   // SMS tab so the person never meets a password field.
-  openLoginJs: `(()=>{const has=document.querySelector('input[type="password"],input[type="tel"],input[type="email"]');if(!has){const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(כניסה|התחברות|כניסה לחשבון|התחברות לחשבון)\\s*$/.test(x.textContent||''));if(b)b.click();}${otp ? `const o=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(o&&!document.querySelector('input[type="tel"]'))o.click();` : ''}})();true;`,
+  // The platform is stor.ai. On the phone the login lives in the side menu
+  // ("כניסת משתמש"); on desktop it is a header link. Open whichever exists.
+  openLoginJs: `(()=>{const has=document.querySelector('input[type="password"],input[type="tel"],input[type="email"]');if(!has){let b=document.querySelector('button.login')||[...document.querySelectorAll('button,a')].find(x=>/^\\s*(כניסת משתמש|כניסה|התחברות|כניסה לחשבון|התחברות לחשבון)\\s*$/.test(x.textContent||''));const vis=b&&b.getBoundingClientRect().width>0;if(b&&vis){b.click();}else{const m=document.querySelector('.btn-toggle-side-nav,button[class*="side-nav"]');if(m){m.click();setTimeout(()=>{const l=document.querySelector('button.login')||[...document.querySelectorAll('button,a')].find(x=>/כניסת משתמש|^\\s*כניסה\\s*$/.test(x.textContent||''));if(l)l.click();},700);}}}${otp ? `setTimeout(()=>{const o=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(o&&!document.querySelector('input[type="tel"]'))o.click();},1600);` : ''}})();true;`,
   prefillEmailJs: (email) => setInput('input[type="email"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחת/.test(x.textContent||''));if(a)a.click();})();true;`,
 });
@@ -67,7 +69,8 @@ export const STORES: Record<string, StoreDef> = {
     // back to the header, which reads "כניסה" (phone) / "התחברות" (desktop)
     // while logged out and shows the person's name or "התנתקות" once in.
     signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}return ${genericSignedIn};})()`,
-    openLoginJs: `(()=>{if(document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"]'))return;const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
+    // On the phone the trigger is a <div aria-label="התחברות">, not a button.
+    openLoginJs: `(()=>{if(document.querySelector('input[type="email"]'))return;const b=document.querySelector('[aria-label="התחברות"],[aria-label="כניסה"]')||[...document.querySelectorAll('button,a,div,span')].find(x=>x.children.length<3&&/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => setInput('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]', email),
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
@@ -75,8 +78,9 @@ export const STORES: Record<string, StoreDef> = {
     id: 'wolt', name: 'וולט (Wolt Market, ויקטורי, קשת, מחסני השוק)', group: 'code', storefront: /wolt/i,
     loginUrl: 'https://wolt.com/he/isr',
     loginKind: 'otp',
-    signedInCheck: `(()=>{const h=((document.querySelector('header')||document.body).innerText||'').slice(0,600);return !/(^|\\s)(התחברות|כניסה|Log in|Login)(\\s|$)/.test(h)&&!!document.querySelector('[data-test-id*="user" i],[aria-label*="פרופיל" i],[aria-label*="profile" i],img[alt*="avatar" i]');})()`,
-    openLoginJs: `(()=>{const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(התחברות|כניסה|Log in)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
+    // Logged out, the page invites you to "log in to see your addresses"; logged in it shows them.
+    signedInCheck: `(()=>{const t=(document.body.innerText||'').slice(0,4000);return !/אפשר להתחבר|להתחבר כדי|Log in to see|התחברות\\s*$/.test(t)&&/הכתובות שלך|ההזמנות שלי|My orders|Profile|פרופיל/.test(t)&&!document.querySelector('input[type="email"]');})()`,
+    openLoginJs: `(()=>{if(document.querySelector('input[type="email"],input[type="tel"]'))return;const b=[...document.querySelectorAll('a,button')].find(x=>/להתחבר|התחברות|Log in|Login/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => setInput('input[type="email"]', email),
   },
   shufersal: {
@@ -97,7 +101,8 @@ export const STORES: Record<string, StoreDef> = {
     loginUrl: 'https://shop.hazi-hinam.co.il/authentication/login',
     loginKind: 'password',
     signedInCheck: genericSignedIn,
-    prefillEmailJs: (email) => setInput('input[type="email"],input[name*="mail" i],input[name*="user" i]', email),
+    // Their "e-mail / ID" box is a plain text field above the password.
+    prefillEmailJs: (email) => setInput('input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
   },
 };
