@@ -38,15 +38,16 @@ export class SessionExpired extends Error {
 }
 
 export class ShufersalCloud {
-  constructor(private readonly session: CapturedSession) {}
+  readonly #session: CapturedSession;
+  constructor(session: CapturedSession) { this.#session = session; }
 
   #headers(json = true): Record<string, string> {
-    const csrf = cookieValue(this.session, 'XSRF-TOKEN');
+    const csrf = cookieValue(this.#session, 'XSRF-TOKEN');
     return {
       'user-agent': UA,
       accept: 'application/json, text/plain, */*',
       'x-requested-with': 'XMLHttpRequest',
-      cookie: cookieHeader(this.session, HOST),
+      cookie: cookieHeader(this.#session, HOST),
       ...(json ? { 'content-type': 'application/json' } : {}),
       ...(csrf ? { 'x-xsrf-token': csrf, 'csrf-token': csrf } : {}),
     };
