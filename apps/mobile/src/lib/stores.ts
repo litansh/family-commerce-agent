@@ -43,13 +43,15 @@ const genericSignedIn = `(()=>{const h=((document.querySelector('header')||docum
 /** The shared platform (Victory, Bitan, Keshet, MCK, Tiv Taam). */
 const platform = (id: string, name: string, host: string, storefront: RegExp, otp: boolean): StoreDef => ({
   id, name, group: 'platform', storefront,
-  loginUrl: `https://${host}/?loginOrRegister=1`,
+  // The platform serves a separate phone app ("mobileZuz"); its login lives at
+  // /login (desktop uses ?loginOrRegister=1, which the phone version ignores).
+  loginUrl: `https://${host}/login`,
   loginKind: otp ? 'otp' : 'password',
   signedInCheck: genericSignedIn,
-  // Prefer the SMS tab when the chain offers it; otherwise stay on e-mail + password.
-  openLoginJs: otp
-    ? `(()=>{const b=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(b&&!document.querySelector('input[type="tel"]'))b.click();})();true;`
-    : undefined,
+  // If no login form is on screen yet, open it from the header ("כניסה" /
+  // "התחברות" / "כניסה לחשבון"); then, where the chain offers it, prefer the
+  // SMS tab so the person never meets a password field.
+  openLoginJs: `(()=>{const has=document.querySelector('input[type="password"],input[type="tel"],input[type="email"]');if(!has){const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(כניסה|התחברות|כניסה לחשבון|התחברות לחשבון)\\s*$/.test(x.textContent||''));if(b)b.click();}${otp ? `const o=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(o&&!document.querySelector('input[type="tel"]'))o.click();` : ''}})();true;`,
   prefillEmailJs: (email) => setInput('input[type="email"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחת/.test(x.textContent||''));if(a)a.click();})();true;`,
 });
