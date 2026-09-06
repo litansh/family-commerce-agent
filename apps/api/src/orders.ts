@@ -150,3 +150,10 @@ export class ImportStore {
     const { PK: _p, SK: _s, ...rest } = r.Item; return { retailer, ...rest };
   }
 }
+
+/** Read one household-scoped row by sort key. Small helper for status rows. */
+export async function readRow(table: string, householdId: string, sk: string): Promise<Record<string, unknown> | undefined> {
+  const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+  const r = await doc.send(new GetCommand({ TableName: table, Key: { PK: `HOUSEHOLD#${householdId}`, SK: sk } }));
+  return r.Item;
+}

@@ -61,3 +61,5 @@ export declare class ImportStore {
     }>;
     status(householdId: string, retailer: string): Promise<Record<string, unknown>>;
 }
+/** Read one household-scoped row by sort key. Small helper for status rows. */
+export declare function readRow(table: string, householdId: string, sk: string): Promise<Record<string, unknown> | undefined>;

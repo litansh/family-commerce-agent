@@ -98,6 +98,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}</Text>}
               <View style={[s.rowStart, { marginTop: 10 }]}>
                 <Chip text={tr('coverage', { p: Math.round(o.coverageRatio * 100) })} tone={o.coverageRatio >= 0.99 ? 'good' : 'neutral'} />
+                {(() => { const cs = o.legs.reduce((sum, leg) => sum + (q.couponSavings?.[leg.storefrontId] ?? 0), 0); return cs > 0 ? <Chip text={tr('couponChip', { x: money(cs) })} tone="good" /> : null; })()}
                 {o.substitutedLineCount > 0 && <Chip text={tr('subs', { n: o.substitutedLineCount })} tone="warn" />}
               </View>
             </Pressable>

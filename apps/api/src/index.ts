@@ -31,6 +31,9 @@ import {
   type ProductChoice,
   type PurchasedLine,
   regionOf,
+  applyCoupons,
+  type Coupon,
+  type StorefrontQuote,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback } from '@fca/shopping-agent';
@@ -38,7 +41,7 @@ import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
 import { ImageResolver } from '@fca/product-images';
-import { ImportStore, OrderStore } from './orders.ts';
+import { ImportStore, OrderStore, readRow } from './orders.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 const households = new HouseholdStore(TABLE);
@@ -150,6 +153,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
     }
     if (method === 'GET' && rest === 'region') return ok(region);
+    if (method === 'GET' && rest === 'worker') {
+      const w = await readRow(TABLE, hid, 'WORKER') as { lastSeen?: string; linked?: Record<string, boolean> } | undefined;
+      const online = !!w?.lastSeen && Date.now() - Date.parse(w.lastSeen) < 120_000;
+      return ok({ online, lastSeen: w?.lastSeen ?? null, linked: w?.linked ?? {} });
+    }
     if (method === 'GET' && rest === '') return ok(household);
     if (method === 'PATCH' && rest === '') {
       const retailers = Array.isArray(body['retailers']) ? (body['retailers'] as unknown[]).filter((x): x is string => typeof x === 'string') : undefined;
@@ -220,7 +228,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         },
         memory,
       );
-      const result = optimize({ quotes: res.quotes, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
+      // Personal coupons the worker read from the family's accounts change
+      // which chain wins; apply them before ranking.
+      const couponRows = await Promise.all((household.retailers ?? []).map(async (r) => (await readRow(TABLE, hid, `COUPONS#${r}`)) as { coupons?: Coupon[] } | undefined));
+      const coupons = couponRows.flatMap((r) => r?.coupons ?? []);
+      const couponed: StorefrontQuote[] = res.quotes.map((q) => applyCoupons(q, coupons));
+      const result = optimize({ quotes: couponed, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
+      const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
       const bestLines = res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
       const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
@@ -230,6 +244,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,
+        couponSavings,
         rejected: result.rejected,
         warnings: result.warnings,
         assumptions: res.assumptions,

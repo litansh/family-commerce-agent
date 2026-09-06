@@ -10,7 +10,7 @@
  * DOM dump in trace/, so the fix is one look rather than a guessing round.
  */
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import { shekels, type Agorot } from '@fca/domain';
+import { shekels, type Agorot, type Coupon } from '@fca/domain';
 import type { CartLineResult, DeliverySlot, OrderLine, PastOrderRaw, PlacedOrder, PreparedOrder, RetailerConnector } from './connector.ts';
 import { hasSession, loadSession, saveSession } from './session.ts';
 import { writeFileSync } from 'node:fs';
@@ -177,6 +177,8 @@ export class RamiLevyConnector implements RetailerConnector {
       lines: (o.items ?? []).filter((i) => i.name).map((i) => ({ name: i.name!, code: i.barcode !== undefined ? String(i.barcode) : undefined, qty: i.quantity ?? 1 })),
     }));
   }
+
+  async coupons(): Promise<readonly Coupon[]> { return []; }
 
   get preparedTotal(): Agorot | undefined { return this.#preparedTotal; }
 

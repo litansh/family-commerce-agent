@@ -19,6 +19,8 @@ export function OrderScreen({ api, household, orderId, onBack }: { api: Api; hou
   const [order, setOrder] = useState<Order | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [online, setOnline] = useState<boolean | null>(null);
+  useEffect(() => { const tick = () => api.worker(household.id).then((w) => setOnline(w.online)).catch(() => null); tick(); const h = setInterval(tick, 15000); return () => clearInterval(h); }, [api, household.id]);
 
   useEffect(() => {
     let alive = true;
@@ -97,7 +99,8 @@ export function OrderScreen({ api, household, orderId, onBack }: { api: Api; hou
             <Text style={[s.small, { marginTop: 6 }]}>{tr('failedSub')}</Text>
           </View>
         )}
-        {!terminal && !awaiting && <Text style={[s.small, { textAlign: 'center', marginTop: 6 }]}>{tr('workerNote')}</Text>}
+        {!terminal && !awaiting && online === false && <View style={[s.card, { backgroundColor: t.amberSoft }]}><Text style={[s.small, { color: t.amber }]}>{tr('workerOffline')}</Text></View>}
+        {!terminal && !awaiting && online !== false && <Text style={[s.small, { textAlign: 'center', marginTop: 6 }]}>{tr('workerNote')}</Text>}
         {order.lines.length > 0 && (
           <View style={[s.card, { marginTop: 8 }]}>
             {order.lines.map((l) => <View key={l.id} style={[s.row, { paddingVertical: 4 }]}><Text style={s.body}>{l.query}</Text><Chip text={l.gtin ? '✓' : '~'} tone={l.gtin ? 'good' : 'neutral'} /></View>)}

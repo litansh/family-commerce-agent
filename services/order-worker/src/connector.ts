@@ -6,7 +6,7 @@
  * careful; it may never place an order unless `placeOrder` is called with an
  * approval token the family created.
  */
-import type { Agorot } from '@fca/domain';
+import type { Agorot, Coupon } from '@fca/domain';
 import type { BrowserContext } from 'playwright';
 
 export interface OrderLine {
@@ -55,6 +55,8 @@ export interface RetailerConnector {
   readonly id: string;
   /** Past orders from the signed-in account, newest first. Names and quantities; barcodes if the site has them. */
   orderHistory(limit?: number): Promise<readonly PastOrderRaw[]>;
+  /** Personal coupons loaded on the account. Empty when the retailer has none or the page is unknown. */
+  coupons(): Promise<readonly Coupon[]>;
   /** Open the retailer's login page and resolve once the person has signed in. */
   interactiveLogin(): Promise<BrowserContext>;
   /** Attach to a saved session. Rejects if the retailer no longer accepts it. */

@@ -10,7 +10,7 @@
  * four" is only useful if we can see step four.
  */
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import { shekels, type Agorot } from '@fca/domain';
+import { shekels, type Agorot, type Coupon } from '@fca/domain';
 import type { CartLineResult, DeliverySlot, OrderLine, PastOrderRaw, PlacedOrder, PreparedOrder, RetailerConnector } from './connector.ts';
 import { hasSession, loadSession, saveSession } from './session.ts';
 
@@ -190,6 +190,47 @@ export class ShufersalConnector implements RetailerConnector {
     }
     if (out.length === 0) await this.#shot('history-empty');
     return out;
+  }
+
+  /**
+   * My Shufersal coupons. The account exposes them as JSON to a signed-in
+   * session; the exact path is confirmed on the first real run (the trace
+   * keeps the raw body), so this tries the known candidates and parses the
+   * common shape: title, discount, optional product code, expiry.
+   */
+  async coupons(): Promise<readonly Coupon[]> {
+    const page = this.#page$();
+    await page.goto(`${BASE}/my-account/coupons`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await page.waitForTimeout(1500);
+    const raw = await page.evaluate(async () => {
+      for (const path of ['/online/he/my-account/coupons', '/online/he/coupons', '/online/he/my-account/my-coupons']) {
+        try {
+          const r = await fetch(path, { headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' }, credentials: 'include' });
+          if (!r.ok) continue;
+          const d = (await r.json()) as unknown;
+          return { path, d };
+        } catch { /* next */ }
+      }
+      return null;
+    }).catch(() => null);
+    if (!raw) { await this.#shot('coupons-unknown'); return []; }
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(`${this.#traceDir}/${Date.now()}-shufersal-coupons.json`, JSON.stringify(raw).slice(0, 200_000));
+    const list = ((raw.d as { coupons?: unknown[]; results?: unknown[] }).coupons ?? (raw.d as { results?: unknown[] }).results ?? []) as {
+      code?: string; id?: string; name?: string; title?: string; description?: string; discountValue?: number; value?: number; percent?: number; discountPercent?: number; productCode?: string; ean?: string; barcode?: string; endDate?: string; expiryDate?: string;
+    }[];
+    return list.flatMap((c, i) => {
+      const amount = c.discountValue ?? c.value;
+      const pct = c.discountPercent ?? c.percent;
+      if (amount === undefined && pct === undefined) return [];
+      const gtin = c.ean ?? c.barcode;
+      return [{
+        id: c.code ?? c.id ?? `sh-${i}`, retailer: 'shufersal', title: c.title ?? c.name ?? c.description ?? 'קופון',
+        ...(gtin ? { gtin: String(gtin) } : c.name ? { nameMatch: c.name.split(' ').slice(0, 2).join(' ') } : {}),
+        ...(amount !== undefined ? { amountOff: shekels(amount) } : {}), ...(pct !== undefined ? { percentOff: pct } : {}),
+        ...(c.endDate ?? c.expiryDate ? { expiresAt: String(c.endDate ?? c.expiryDate) } : {}),
+      } satisfies Coupon];
+    });
   }
 
   get preparedTotal(): Agorot | undefined {

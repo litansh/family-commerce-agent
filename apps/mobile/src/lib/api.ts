@@ -17,6 +17,7 @@ export interface QuoteResult {
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
+  couponSavings?: Record<string, number>;
   rejected: { brand: string; reason: string }[];
   warnings: string[];
   assumptions: { lineId: string; query: string; selectedName: string; kind: string }[];
@@ -51,6 +52,7 @@ export class Api {
   order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
   approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
   cancelOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/cancel`);
+  worker = (hid: string) => this.#call<{ online: boolean; lastSeen: string | null; linked: Record<string, boolean> }>('GET', `/households/${hid}/worker`);
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);

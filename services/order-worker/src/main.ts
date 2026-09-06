@@ -15,7 +15,8 @@
  */
 import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { hasSession } from './session.ts';
 import { mkdirSync } from 'node:fs';
 import { ShufersalConnector } from './shufersal.ts';
 import { RamiLevyConnector } from './rami-levy.ts';
@@ -111,6 +112,7 @@ async function runJob(job: Job): Promise<void> {
   try {
     await setStatus(job, 'connecting');
     await c.resume();
+    await syncCoupons(job.householdId, c).catch(() => undefined);
     await setStatus(job, 'filling_cart');
     const lines = await c.fillCart(job.lines);
     await setStatus(job, 'choosing_slot', { lines });
@@ -153,6 +155,7 @@ async function runImport(job: ImportJob): Promise<void> {
     await mark('connecting');
     await c.resume();
     await mark('reading');
+    await syncCoupons(job.householdId, c);
     const history = await c.orderHistory(30);
     await mark('resolving', { orders: history.length });
     const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
@@ -184,6 +187,13 @@ async function runImport(job: ImportJob): Promise<void> {
   }
 }
 
+/** Personal coupons from the account, stored where the quote can apply them. */
+async function syncCoupons(householdId: string, c: RetailerConnector): Promise<void> {
+  const coupons = await c.coupons().catch(() => []);
+  await doc.send(new PutCommand({ TableName: TABLE, Item: { PK: `HOUSEHOLD#${householdId}`, SK: `COUPONS#${c.id}`, coupons, updatedAt: new Date().toISOString() } }));
+  console.log(`  coupons ${c.id}: ${coupons.length}`);
+}
+
 async function link(): Promise<void> {
   const householdId = process.env['KANILI_HOUSEHOLD'];
   const retailer = (process.env['KANILI_RETAILER'] ?? 'shufersal') as Job['retailer'];
@@ -196,9 +206,23 @@ async function link(): Promise<void> {
   }
 }
 
+/**
+ * Tell the app the home computer is listening, and which stores are linked.
+ * One row per household, refreshed every 30s; the app treats anything older
+ * than two minutes as offline.
+ */
+async function heartbeat(): Promise<void> {
+  const householdId = process.env['KANILI_HOUSEHOLD'];
+  if (!householdId) return;
+  const linked = Object.fromEntries((['shufersal', 'rami-levy'] as const).map((r) => [r, hasSession(householdId, r)]));
+  await doc.send(new PutCommand({ TableName: TABLE, Item: { PK: `HOUSEHOLD#${householdId}`, SK: 'WORKER', lastSeen: new Date().toISOString(), linked, host: process.env['HOSTNAME'] ?? 'home' } })).catch(() => undefined);
+}
+
 async function run(): Promise<void> {
   if (!QUEUE) throw new Error('KANILI_QUEUE_URL is required');
   console.log('kanili worker: waiting for orders on', QUEUE);
+  await heartbeat();
+  setInterval(() => void heartbeat(), 30_000);
   for (;;) {
     const r = await sqs.send(new ReceiveMessageCommand({ QueueUrl: QUEUE, MaxNumberOfMessages: 1, WaitTimeSeconds: 20, VisibilityTimeout: 45 * 60 }));
     for (const m of r.Messages ?? []) {

@@ -17,6 +17,7 @@ import { OrderScreen } from './src/screens/Order';
 import { OrdersScreen } from './src/screens/Orders';
 import { MeScreen } from './src/screens/Me';
 import { SignIn } from './src/screens/SignIn';
+import { Intro, introSeen } from './src/screens/Intro';
 import { TabBar, type Tab } from './src/TabBar';
 import { Loading, S } from './src/ui';
 
@@ -31,6 +32,8 @@ export default function App() {
   const [tokens, setTokens] = useState<Tokens | null | undefined>(undefined);
   const [household, setHousehold] = useState<Household | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>('home');
+  const [intro, setIntro] = useState<boolean | null>(null);
+  useEffect(() => { void introSeen().then((seen) => setIntro(!seen)); }, []);
   const [screen, setScreen] = useState<Screen>({ name: 'tabs' });
   const lines = useList();
   const api = useMemo(() => (tokens ? new Api(tokens.idToken) : null), [tokens]);
@@ -53,6 +56,7 @@ export default function App() {
   let showTabs = false;
   if (tokens === undefined) body = <Loading />;
   else if (!tokens || !api) body = <SignIn onSignedIn={setTokens} />;
+  else if (intro) body = <Intro onDone={() => setIntro(false)} />;
   else if (household === undefined) body = <Loading label={tr('loadingHousehold')} />;
   else if (!household) body = <HouseholdSetup api={api} onDone={(h) => { setRegion(regionOf(h.country)); setHousehold(h); }} />;
   else if (screen.name === 'aisle') body = <AisleScreen api={api} household={household} aisle={screen.aisle} onBack={() => setScreen({ name: 'tabs' })} />;
@@ -64,7 +68,7 @@ export default function App() {
     body = tab === 'home' ? <HomeScreen api={api} household={household} onAisle={(aisle) => setScreen({ name: 'aisle', aisle })} onList={() => setTab('list')} />
       : tab === 'list' ? <ListScreen api={api} household={household} onQuote={(ls) => setScreen({ name: 'options', lines: ls })} onInvite={invite} />
       : tab === 'orders' ? <OrdersScreen api={api} household={household} onOpen={(orderId) => setScreen({ name: 'order', orderId })} />
-      : <MeScreen api={api} household={household} onSignOut={doSignOut} />;
+      : <MeScreen api={api} household={household} onSignOut={doSignOut} onShowIntro={() => setIntro(true)} />;
   }
 
   return (
