@@ -11,6 +11,7 @@ import { McpClient } from './mcp-client.ts';
 import type {
   CatalogProvider,
   CatalogSearchRequest,
+  Promotion,
   QuoteProvider,
   QuoteRequest,
   QuoteResponse,
@@ -222,6 +223,16 @@ export class SuperMcpCatalogProvider implements CatalogProvider {
 
   constructor(url: string = SUPERMCP_URL) {
     this.#mcp = new McpClient(url, 60_000);
+  }
+
+  async listPromotions(limit: number): Promise<readonly Promotion[]> {
+    type Raw = { chainName?: string; description?: string; mechanicParams?: { discountRate?: number | null; discountedPrice?: number | null } | null; clubOnly?: boolean; endTs?: string; itemCodes?: string[] };
+    const res = await this.#mcp.callTool<{ promotions?: Raw[] }>('get_promotions', { limit });
+    return (res.promotions ?? []).flatMap((p) => {
+      const price = p.mechanicParams?.discountedPrice;
+      if (!p.chainName || typeof price !== 'number' || price <= 0) return [];
+      return [{ chainName: p.chainName, description: p.description ?? '', discountRate: p.mechanicParams?.discountRate ?? 0, discountedPrice: price, clubOnly: !!p.clubOnly, endTs: p.endTs ?? '', itemCodes: p.itemCodes ?? [] }];
+    });
   }
 
   async searchProducts(req: CatalogSearchRequest): Promise<readonly ProductCandidate[]> {

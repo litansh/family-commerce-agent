@@ -90,7 +90,7 @@ test.describe('store', () => {
 
   test('search-as-you-type shows photo cards', async ({ page }) => {
     await signIn(page);
-    await page.getByText('רשימה').click();
+    await page.getByText('רשימה', { exact: true }).last().click();
     await page.getByPlaceholder('מה צריך?').fill('קוטג');
     await expect(page.getByText(/^₪\d/).first()).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(3000);

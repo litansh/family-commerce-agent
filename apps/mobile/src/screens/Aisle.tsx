@@ -6,7 +6,7 @@ import { AISLES } from '../lib/categories';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { addLine, useList } from '../lib/store';
 import { ProductImage } from '../ProductImage';
-import { Button, Chip, Header, Loading, S, Skeleton, t, Toast } from '../ui';
+import { Button, Chip, Header, Icon, Loading, S, Skeleton, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -95,8 +95,8 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
       <Header title={`${meta?.glyph ?? ''} ${meta?.[locale === 'he' ? 'he' : 'en'] ?? aisle}`} subtitle={total ? tr('nProducts', { n: total }) : undefined} onBack={onBack} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center' }} style={{ flexGrow: 0, height: 52, marginBottom: 8 }}>
         {subs.map((k) => (
-          <Pressable key={k} onPress={() => { if (k !== activeSub) { tap(); setSub(k); } }} style={{ backgroundColor: k === activeSub ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: k === activeSub ? t.accent : t.line }}>
-            <Text style={{ color: k === activeSub ? '#fff' : t.ink, fontWeight: '600' }}>{subName(k, locale)}</Text>
+          <Pressable key={k} onPress={() => { if (k !== activeSub) { tap(); setSub(k); } }} style={{ backgroundColor: k === activeSub ? t.ink : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: k === activeSub ? t.ink : t.line }}>
+            <Text style={{ color: k === activeSub ? '#fff' : t.ink, fontWeight: '700', fontSize: 14 }}>{subName(k, locale)}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -107,19 +107,20 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
             {products.map((h) => {
               const have = !!h.gtin && inList.has(h.gtin);
               return (
-                <Pressable key={h.productId} onPress={() => setOpen(h)} style={({ pressed }) => [s.card, { width: '47%', flexGrow: 1, marginBottom: 0, padding: 12 }, pressed && { opacity: 0.8 }]}>
-                  <View style={{ alignItems: 'center', marginBottom: 8 }}><ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={96} radius={14} /></View>
-                  <Text style={[s.body, { fontSize: 14, lineHeight: 19, minHeight: 38 }]} numberOfLines={2}>{h.name}</Text>
-                  <View style={[s.rowStart, { marginTop: 4, flexWrap: 'wrap' }]}>{h.brand ? <Chip text={h.brand} tone="good" /> : null}{h.bought ? <Chip text={tr('boughtBefore')} tone="warn" /> : null}</View>
+                <Pressable key={h.productId} onPress={() => setOpen(h)} style={({ pressed }) => [{ width: '47%', flexGrow: 1, backgroundColor: t.card, borderRadius: 20, padding: 12, borderWidth: 1, borderColor: t.line }, pressed && { opacity: 0.8 }]}>
+                  <View style={{ alignItems: 'center', marginBottom: 10, paddingVertical: 4 }}><ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={104} radius={14} /></View>
+                  {h.bought ? <View style={{ position: 'absolute', top: 10, [rtl ? 'left' : 'right']: 10 }}><Icon name="star" size={14} color={t.accent} /></View> : null}
+                  <Text style={[s.body, { fontSize: 13.5, lineHeight: 18, minHeight: 36, fontWeight: '600' }]} numberOfLines={2}>{h.name}</Text>
+                  {h.brand ? <Text style={[s.faint, { marginTop: 2 }]} numberOfLines={1}>{h.brand}</Text> : null}
                   <View style={[s.row, { marginTop: 8, alignItems: 'flex-end' }]}>
-                    <View>
+                    <View style={{ flexShrink: 1 }}>
                       {h.priceMin !== undefined && h.priceMax !== undefined && h.priceMax > h.priceMin
-                        ? <Text style={s.price}>{money(h.priceMin)}<Text style={s.priceSmall}>–{money(h.priceMax)}</Text></Text>
-                        : h.fromPrice !== undefined ? <Text style={s.price}>{money(h.fromPrice)}</Text> : null}
-                      <Text style={s.faint}>{h.pricedAtChains > 1 ? `${tr('from')} · ${tr('atChains', { n: h.pricedAtChains })}` : tr('atChains', { n: 1 })}</Text>
+                        ? <Text style={[s.price, { fontSize: 18 }]}>{money(h.priceMin)}<Text style={[s.priceSmall, { fontSize: 12 }]}>–{money(h.priceMax)}</Text></Text>
+                        : h.fromPrice !== undefined ? <Text style={[s.price, { fontSize: 18 }]}>{money(h.fromPrice)}</Text> : null}
+                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={1}>{h.pricedAtChains > 1 ? tr('atChains', { n: h.pricedAtChains }) : tr('atChains', { n: 1 })}</Text>
                     </View>
-                    <Pressable onPress={() => add(h)} disabled={have} hitSlop={8} style={{ backgroundColor: have ? t.accentSoft : t.accent, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: have ? t.accent : '#fff', fontSize: 22, fontWeight: '800' }}>{have ? '✓' : '+'}</Text>
+                    <Pressable onPress={() => add(h)} disabled={have} hitSlop={10} style={{ backgroundColor: have ? t.accentSoft : t.ink, borderRadius: 999, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name={have ? 'check' : 'plus'} size={16} color={have ? t.accent : '#fff'} />
                     </Pressable>
                   </View>
                 </Pressable>

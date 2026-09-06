@@ -61,7 +61,20 @@ export interface CatalogSearchRequest {
  * differently: search is interactive and cheap, quoting is a whole-basket
  * operation that takes ~15 seconds.
  */
+/** One published promotion, as the catalogue reports it. Prices in shekels. */
+export interface Promotion {
+  readonly chainName: string;
+  readonly description: string;
+  readonly discountRate: number;
+  readonly discountedPrice: number;
+  readonly clubOnly: boolean;
+  readonly endTs: string;
+  readonly itemCodes: readonly string[];
+}
+
 export interface CatalogProvider {
+  /** Live promotions across every store the catalogue covers, when the provider has them. */
+  listPromotions?(limit: number): Promise<readonly Promotion[]>;
   readonly id: string;
   searchProducts(req: CatalogSearchRequest): Promise<readonly ProductCandidate[]>;
 }

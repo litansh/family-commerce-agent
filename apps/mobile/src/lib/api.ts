@@ -25,6 +25,21 @@ export interface QuoteResult {
   suggestions: Suggestion[];
 }
 
+export interface Deal {
+  gtin: string;
+  name: string;
+  brand?: string;
+  chainName: string;
+  /** Promotional price, agorot. */
+  price: number;
+  discountRate: number;
+  clubOnly: boolean;
+  endTs: string;
+  imageUrl: string | null;
+  /** True when the household buys this product. */
+  usual: boolean;
+}
+
 export class Api {
   constructor(private readonly idToken: string) {}
 
@@ -51,6 +66,8 @@ export class Api {
   createOrder = (hid: string, legs: { retailer: string; lines: Omit<ListLine, 'id'>[] }[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { legs });
   orders = (hid: string) => this.#call<{ orders: Order[] }>('GET', `/households/${hid}/orders`);
   browse = (hid: string, aisle: string, sub?: string, page = 0) => this.#call<{ aisle: string; sub: string; subs: string[]; page: number; total: number; hasMore: boolean; products: SearchHit[] }>('GET', `/households/${hid}/browse?aisle=${encodeURIComponent(aisle)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}&page=${page}`);
+  /** Live promotions across every store in the area, the household's own products first. */
+  deals = (hid: string) => this.#call<{ deals: Deal[] }>('GET', `/households/${hid}/deals`);
   images = (hid: string, gtins: string[]) => this.#call<{ images: Record<string, string | null> }>('POST', `/households/${hid}/images`, { gtins });
   product = (hid: string, gtin: string) => this.#call<{ gtin: string; name: string; brand?: string; listings: { chainId: string; chainName: string; name: string }[]; imageUrl: string | null; prices: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]; priceMin?: number; priceMax?: number }>('GET', `/households/${hid}/product?gtin=${encodeURIComponent(gtin)}`);
   order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
