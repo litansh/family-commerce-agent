@@ -12,7 +12,7 @@ export function OrdersScreen({ api, household, onOpen }: { api: Api; household: 
   return (
     <View style={s.screen}>
       <Header title={tr('ordersTitle')} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
         {!orders ? <><Skeleton /><Skeleton /></> : orders.length === 0 ? <Empty title={tr('noOrders')} hint="" /> : orders.map((o) => (
           <Pressable key={o.id} onPress={() => onOpen(o.id)} style={({ pressed }) => [s.card, pressed && { opacity: 0.7 }]}>
             <View style={s.row}>

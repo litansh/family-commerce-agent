@@ -7,7 +7,7 @@ import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, t as tr } from '../lib/i18n';
 import { addLine, newId, setLines, useList } from '../lib/store';
 import { ProductImage } from '../ProductImage';
-import { Button, Header, S, t, Toast } from '../ui';
+import { Button, GRAD_INK, GradientCard, Header, Icon, S, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -55,15 +55,21 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
 
   return (
     <View style={s.screen}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <Header title={tr('hello', { n: household.name })} subtitle={household.address} />
         <View style={{ paddingHorizontal: 20 }}>
           {shop.length >= 3 && (
-            <Pressable onPress={() => { tap(); setLines((xs) => [...xs, ...shop.map((p) => ({ id: newId(), ...lineFromPref(p) }))]); say(tr('addedN', { n: shop.length })); onList(); }}
-              style={({ pressed }) => [s.card, { backgroundColor: t.accent }, pressed && { opacity: 0.85 }]}>
-              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: shop.length })}</Text>
-              <Text style={{ color: '#D9EBDF', marginTop: 4, textAlign: rtl ? 'right' : 'left' }}>{tr('usualsHint')}</Text>
-            </Pressable>
+            <GradientCard colors={GRAD_INK} style={{ marginBottom: 14, padding: 22 }} onPress={() => { tap(); setLines((xs) => [...xs, ...shop.map((p) => ({ id: newId(), ...lineFromPref(p) }))]); say(tr('addedN', { n: shop.length })); onList(); }}>
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Icon name="spark" size={15} color={t.accent2} />
+                <Text style={{ color: t.accent2, fontWeight: '700', fontSize: 12.5, letterSpacing: 0.3 }}>{tr('usualsHint')}</Text>
+              </View>
+              <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800', textAlign: rtl ? 'right' : 'left', letterSpacing: -0.6, lineHeight: 32 }}>{tr('usualShopN', { n: shop.length })}</Text>
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginTop: 14 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, fontWeight: '600' }}>{tr('tabList')}</Text>
+                <Icon name="arrow" size={16} color="rgba(255,255,255,0.72)" />
+              </View>
+            </GradientCard>
           )}
           {firstRetailer && memory && Object.keys(memory.products).length === 0 && imp?.status !== 'done' && (
             <View style={[s.card, { backgroundColor: t.accentSoft }]}>
@@ -88,12 +94,20 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
               </View>
             </View>
           )}
-          <Text style={[s.title, { marginTop: 8, marginBottom: 10 }]}>{tr('aisles')}</Text>
-          <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
+          <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
+            <Text style={s.title}>{tr('aisles')}</Text>
+            <Pressable onPress={onList} hitSlop={8} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 3 }}>
+              <Text style={s.link}>{tr('tabList')}</Text>
+              <Icon name="chevron" size={13} color={t.accent} weight={2.6} />
+            </Pressable>
+          </View>
+          <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 12 }}>
             {AISLES.filter((a) => a.key !== 'other').map((a) => (
-              <Pressable key={a.key} onPress={() => onAisle(a.key)} style={({ pressed }) => [{ width: '30%', flexGrow: 1, backgroundColor: t.card, borderRadius: 16, paddingVertical: 16, alignItems: 'center' }, pressed && { opacity: 0.7 }]}>
-                <Text style={{ fontSize: 30 }}>{a.glyph}</Text>
-                <Text style={[s.small, { color: t.ink, fontWeight: '600', marginTop: 6, textAlign: 'center' }]}>{a[locale]}</Text>
+              <Pressable key={a.key} onPress={() => { tap(); onAisle(a.key); }} style={({ pressed }) => [{ width: '30.7%', flexGrow: 1, backgroundColor: t.card, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 8, alignItems: 'center', borderWidth: 1, borderColor: t.line }, pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] }]}>
+                <View style={{ width: 54, height: 54, borderRadius: 18, backgroundColor: a.tint, alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+                  <Text style={{ fontSize: 27 }}>{a.glyph}</Text>
+                </View>
+                <Text style={{ color: t.ink, fontWeight: '700', fontSize: 12.5, marginTop: 0, textAlign: 'center', letterSpacing: -0.2 }} numberOfLines={2}>{a[locale]}</Text>
               </Pressable>
             ))}
           </View>
