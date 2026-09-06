@@ -32,6 +32,12 @@ export interface StoreDef {
   readonly forgotJs?: string;
   /** Storefront ids (SuperMCP) this store fulfils, matched by regexp. */
   readonly storefront: RegExp;
+  /**
+   * JS run in the signed-in WebView that reads past orders through the store's
+   * own API and posts `history:{orders:[{at,lines:[{name,code?,qty}]}],diag}`.
+   * Stores without one fall back to the generic Hybris reader.
+   */
+  readonly historyJs?: string;
 }
 
 const setInput = (selector: string, value: string) =>
@@ -78,8 +84,31 @@ export const STORES: Record<string, StoreDef> = {
     id: 'wolt', name: 'וולט (Wolt Market, ויקטורי, קשת, מחסני השוק)', group: 'code', storefront: /wolt/i,
     loginUrl: 'https://wolt.com/he/isr',
     loginKind: 'otp',
-    // Logged out, the page invites you to "log in to see your addresses"; logged in it shows them.
-    signedInCheck: `(()=>{const t=(document.body.innerText||'').slice(0,4000);return !/אפשר להתחבר|להתחבר כדי|Log in to see|התחברות\\s*$/.test(t)&&/הכתובות שלך|ההזמנות שלי|My orders|Profile|פרופיל/.test(t)&&!document.querySelector('input[type="email"]');})()`,
+    // Signed in = the app holds a refresh token (a cookie its own JS can read).
+    signedInCheck: `(()=>{return /(^|;\\s*)__wrtoken=[^;]{20,}/.test(document.cookie)&&!document.querySelector('input[type="email"]');})()`,
+    // Refresh-token cookie → bearer → the orders page API; keep grocery venues only
+    // (restaurants would teach the family's "usuals" the wrong things).
+    historyJs: `(async()=>{const D={};try{
+  const get=(n)=>{const c=document.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith(n+'='));return c?decodeURIComponent(c.slice(n.length+1)):''};
+  const tr=await (await fetch('https://authentication.wolt.com/v1/wauth2/access_token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(get('__wrtoken'))})).json();
+  D.token=!!tr.access_token;
+  const H={accept:'application/json',authorization:'Bearer '+tr.access_token,'app-language':'he','platform':'Web'};
+  const out=[];let page='';
+  for(let i=0;i<3;i++){
+    const r=await fetch('https://consumer-api.wolt.com/order-xp/web/v1/pages/orders'+(page?'?page_token='+encodeURIComponent(page):''),{headers:H});
+    const j=await r.json().catch(()=>({}));D.status=r.status;
+    for(const o of (j.orders||[])){
+      const v=(o.venue&&o.venue.name)||'';
+      if(!/מרקט|market|ויקטורי|victory|קשת|keshet|מחסני|hashuk|סופר|super|שופרסל|טיב טעם|חצי חינם|carrefour|קרפור/i.test(v))continue;
+      const m=String(o.timestamp||'').match(/(\\d{2})\\/(\\d{2})\\/(\\d{4})/);const at=m?m[3]+'-'+m[2]+'-'+m[1]:'';
+      const lines=(o.items||[]).filter(x=>x&&x.name).map(x=>({name:String(x.name).slice(0,80),qty:Number(x.count||1)||1}));
+      if(lines.length)out.push({at,lines,venue:v});
+    }
+    page=j.next_page_token||'';if(!page)break;
+  }
+  D.orders=out.length;
+  window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag:D}));
+}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e),...D}}));}})();true;`,
     openLoginJs: `(()=>{if(document.querySelector('input[type="email"],input[type="tel"]'))return;const b=[...document.querySelectorAll('a,button')].find(x=>/להתחבר|התחברות|Log in|Login/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => setInput('input[type="email"]', email),
   },

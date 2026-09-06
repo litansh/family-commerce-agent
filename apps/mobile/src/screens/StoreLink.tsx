@@ -137,7 +137,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:1') {
                     setSignedIn(true);
-                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); if (storeId === 'shufersal') { setImporting(true); inject(HISTORY_JS); } }
+                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
                   }
                   else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
                   else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { build: BUILD, probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
@@ -147,7 +147,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
             <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
               {/* The person is never stuck behind the detector: once they see
                   themselves signed in, one tap confirms it and starts the import. */}
-              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); if (storeId === 'shufersal') { setImporting(true); inject(HISTORY_JS); } } }} />
+              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } } }} />
               <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('linkPrivacy')}</Text>
             </View>
           </>
