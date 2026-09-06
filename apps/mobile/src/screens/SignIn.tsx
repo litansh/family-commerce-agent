@@ -3,8 +3,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { saveTokens, signIn, type Tokens } from '../lib/auth';
 import { confirmForgotPassword, confirmSignUp, explain, forgotPassword, passwordSignIn, resendCode, signUp } from '../lib/cognito';
 import { config } from '../lib/config';
-import { currentRegion, isRTL, setLanguage, t as tr } from '../lib/i18n';
-import { Button, Input, S, t } from '../ui';
+import { isRTL, t as tr, useLanguage } from '../lib/i18n';
+import { Button, Input, LanguagePicker, S, t } from '../ui';
 import { Tile } from '../Logo';
 
 type Mode = 'signin' | 'signup' | 'confirm' | 'forgot' | 'reset';
@@ -25,7 +25,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [, bump] = useState(0);
+  useLanguage();
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setErr(null); setNote(null);
@@ -56,15 +56,12 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
   const google = () => run(async () => { const tk = await signIn('Google'); if (tk) onSignedIn(tk); else setErr(tr('cancelled')); });
 
   const title = { signin: tr('signInTitle'), signup: tr('signUpTitle'), confirm: tr('confirmTitle'), forgot: tr('forgotTitle'), reset: tr('resetTitle') }[mode];
-  const lang = currentRegion().locale;
 
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }} keyboardShouldPersistTaps="handled">
       <View style={[s.row, { marginBottom: 18 }]}>
         <Tile size={64} />
-        <Pressable onPress={() => { setLanguage(lang === 'he' ? 'en' : 'he'); bump((n) => n + 1); }} hitSlop={10}>
-          <Text style={s.link}>{lang === 'he' ? 'English' : 'עברית'}</Text>
-        </Pressable>
+        <LanguagePicker />
       </View>
       <Text style={[s.display, { fontSize: 40 }]}>{tr('appName')}</Text>
       <Text style={[s.title, { fontSize: 20, marginTop: 2 }]}>{tr('taglineShort')}</Text>

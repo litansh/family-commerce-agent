@@ -3,11 +3,13 @@ import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import type { Api, Household } from '../lib/api';
 import { t as tr } from '../lib/i18n';
-import { Button, Chip, Header, S, t } from '../ui';
+import { Button, Chip, Header, LanguagePicker, S, t } from '../ui';
+import { useLanguage } from '../lib/i18n';
 import { Mark } from '../Logo';
 
 export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api; household: Household; onSignOut: () => void; onShowIntro: () => void }) {
   const s = S();
+  useLanguage();
   const [code, setCode] = useState<string | null>(null);
   const [worker, setWorker] = useState<{ online: boolean; linked: Record<string, boolean> } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -18,6 +20,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
     <View style={s.screen}>
       <Header title={tr('meTitle')} subtitle={household.name} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+        <View style={[s.card, s.row]}><Text style={s.title}>{tr('language')}</Text><LanguagePicker /></View>
         <View style={s.card}>
           <Text style={s.small}>{household.address}</Text>
           <Text style={[s.faint, { marginTop: 4 }]}>ID {household.id}</Text>

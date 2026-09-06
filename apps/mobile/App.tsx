@@ -7,7 +7,7 @@ import type { PurchaseOption } from '@fca/domain';
 import { regionOf } from '@fca/domain';
 import { Api, type Household, type QuoteResult } from './src/lib/api';
 import { loadTokens, signOut, type Tokens } from './src/lib/auth';
-import { setRegion, t as tr } from './src/lib/i18n';
+import { loadLanguage, setRegion, t as tr, useLanguage } from './src/lib/i18n';
 import { clearList, useList, type Line } from './src/lib/store';
 import { HouseholdSetup } from './src/screens/Household';
 import { HomeScreen } from './src/screens/Home';
@@ -37,9 +37,10 @@ export default function App() {
   useEffect(() => { void introSeen().then((seen) => setIntro(!seen)); }, []);
   const [screen, setScreen] = useState<Screen>({ name: 'tabs' });
   const lines = useList();
+  useLanguage();
   const api = useMemo(() => (tokens ? new Api(tokens.idToken) : null), [tokens]);
 
-  useEffect(() => { void loadTokens().then((t) => setTokens(t)); }, []);
+  useEffect(() => { void loadLanguage().then(() => loadTokens()).then((t) => setTokens(t)); }, []);
   useEffect(() => {
     if (!api) return;
     api.me().then((me) => { const h = me.households[0] ?? null; if (h) setRegion(regionOf(h.country)); setHousehold(h); }).catch(async () => { await signOut(); setTokens(null); });

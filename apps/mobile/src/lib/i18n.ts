@@ -6,7 +6,8 @@
  * and row order rather than hard-coding right-to-left, so a US household
  * gets a left-to-right app from the same components.
  */
-import { getLocales } from 'expo-localization';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatMoney, regionOf, type Currency, type Locale, type Region } from '@fca/domain';
 
 type Strings = Record<string, string>;
@@ -42,6 +43,7 @@ const he: Strings = {
   errExists: 'כבר יש חשבון עם האימייל הזה — נסו להיכנס.', errWeak: 'הסיסמה חלשה מדי: לפחות 10 תווים, עם אות ומספר.', errMismatch: 'הסיסמאות לא זהות.', errCode: 'הקוד לא נכון.', errCodeExpired: 'הקוד פג — שלחנו חדש.', errWrong: 'האימייל או הסיסמה לא נכונים.', errUnconfirmed: 'המייל עדיין לא אומת.', errLimit: 'יותר מדי ניסיונות — נסו שוב בעוד כמה דקות.',
   addressLabel: 'כתובת למשלוח', addressPh: 'רחוב ומספר, עיר — למשל: ביאליק 20 רמת גן', verified: 'מאומת', partial: 'חלקי', addressVerified: 'הכתובת אומתה', addressPartial: 'חסר מספר בית — בחרו כתובת מדויקת מהרשימה', apt: 'דירה', floor: 'קומה', entrance: 'כניסה', notesPh: 'הערות לשליח (קוד, מיקום…)', pickFromList: 'בחרו את הכתובת מהרשימה כדי להמשיך',
   boughtBefore: 'קניתם', priceAt: 'המחיר בכל רשת', cheapestHere: 'הכי זול',
+  language: 'שפה',
   nProducts: '{n} מוצרים', loadMore: 'עוד {n} מוצרים', loading: 'טוענים…', carriedBy: 'נמכר ב', pricesAtCompare: 'המחיר בכל רשת מחושב בהשוואה — על כל הסל יחד.',
   scan: 'סריקה', scanHint: 'כוונו את המצלמה לברקוד', cameraNeeded: 'צריך גישה למצלמה כדי לסרוק ברקודים', allowCamera: 'אפשר מצלמה', scanned: 'נסרק — מחפשים…',
   usuals: 'הרגילים שלכם', usualsHint: 'הקישו כדי להוסיף. הכתום — הגיע הזמן.', qty: 'כמות',
@@ -92,6 +94,7 @@ const en: Strings = {
   errExists: 'There is already an account with this email — try signing in.', errWeak: 'Password too weak: at least 10 characters, with a letter and a number.', errMismatch: 'Passwords do not match.', errCode: 'Wrong code.', errCodeExpired: 'Code expired — we sent a new one.', errWrong: 'Wrong email or password.', errUnconfirmed: 'Email not verified yet.', errLimit: 'Too many attempts — try again in a few minutes.',
   addressLabel: 'Delivery address', addressPh: 'Street and number, city', verified: 'Verified', partial: 'Partial', addressVerified: 'Address verified', addressPartial: 'Missing house number — pick an exact address from the list', apt: 'Apt', floor: 'Floor', entrance: 'Entrance', notesPh: 'Notes for the courier (code, location…)', pickFromList: 'Pick the address from the list to continue',
   boughtBefore: 'Bought before', priceAt: 'Price at every store', cheapestHere: 'Cheapest',
+  language: 'Language',
   nProducts: '{n} products', loadMore: '{n} more products', loading: 'Loading…', carriedBy: 'Carried by', pricesAtCompare: 'Per-chain prices are computed at compare time — for the whole basket at once.',
   scan: 'Scan', scanHint: 'Point the camera at a barcode', cameraNeeded: 'Camera access is needed to scan barcodes', allowCamera: 'Allow camera', scanned: 'Scanned — looking it up…',
   usuals: 'Your usuals', usualsHint: 'Tap to add. Amber means it is about due.', qty: 'Qty',
@@ -113,12 +116,30 @@ const en: Strings = {
 
 const TABLES: Partial<Record<Locale, Strings>> = { he, en };
 
-// Israel is the product today; the country is fixed and only the language
-// is a choice. Hebrew unless the device is clearly not Hebrew.
-const deviceLang = getLocales()[0]?.languageCode ?? 'he';
-let region: Region = { ...regionOf('IL'), locale: deviceLang === 'en' ? 'en' : 'he', rtl: deviceLang !== 'en' };
+// Israel is the product today: the country is fixed, Hebrew is the default
+// for everyone, and the language is a choice the person makes and the device
+// remembers.
+let region: Region = { ...regionOf('IL'), locale: 'he', rtl: true };
+const LANG_KEY = 'fca.lang';
+const listeners = new Set<() => void>();
 
-export function setLanguage(l: 'he' | 'en'): void { region = { ...region, locale: l, rtl: l === 'he' }; }
+export type Lang = 'he' | 'en';
+export const LANGS: { key: Lang; label: string }[] = [{ key: 'he', label: 'עברית' }, { key: 'en', label: 'English' }];
+
+export function setLanguage(l: Lang): void {
+  region = { ...region, locale: l, rtl: l === 'he' };
+  void AsyncStorage.setItem(LANG_KEY, l).catch(() => undefined);
+  for (const fn of listeners) fn();
+}
+export async function loadLanguage(): Promise<void> {
+  try { const l = await AsyncStorage.getItem(LANG_KEY); if (l === 'he' || l === 'en') { region = { ...region, locale: l, rtl: l === 'he' }; for (const fn of listeners) fn(); } } catch { /* default stands */ }
+}
+/** Re-render a component when the language changes. */
+export function useLanguage(): Lang {
+  const [, force] = useState(0);
+  useEffect(() => { const fn = () => force((n) => n + 1); listeners.add(fn); return () => { listeners.delete(fn); }; }, []);
+  return region.locale === 'en' ? 'en' : 'he';
+}
 
 /** Called once the household is known; before that, the device decides. */
 export function setRegion(r: Region): void { region = { ...r, locale: region.locale, rtl: region.rtl }; }

@@ -8,7 +8,8 @@
  */
 import React from 'react';
 import { Mark } from './Logo';
-import { isRTL, t as tr } from './lib/i18n';
+import { isRTL, LANGS, setLanguage, t as tr, useLanguage } from './lib/i18n';
+import { Modal } from 'react-native';
 import {
   ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputProps, type TextStyle, type ViewStyle,
@@ -145,3 +146,31 @@ export const Skeleton = ({ lines = 3 }: { lines?: number }) => (
     ))}
   </View>
 );
+
+/** Language dropdown: a chip that opens a small sheet of languages. */
+export function LanguagePicker({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
+  const lang = useLanguage();
+  const [open, setOpen] = React.useState(false);
+  const current = LANGS.find((l) => l.key === lang)?.label ?? 'עברית';
+  return (
+    <>
+      <Pressable onPress={() => setOpen(true)} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: tone === 'dark' ? 'rgba(255,255,255,0.15)' : '#F1EEE6', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }}>
+        <Text style={{ color: tone === 'dark' ? '#fff' : t.ink, fontWeight: '600' }}>{current}</Text>
+        <Text style={{ color: tone === 'dark' ? '#fff' : t.muted, fontSize: 11 }}>▼</Text>
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable onPress={() => setOpen(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: t.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34 }}>
+            <Text style={[s.title, { marginBottom: 8 }]}>{tr('language')}</Text>
+            {LANGS.map((l) => (
+              <Pressable key={l.key} onPress={() => { setLanguage(l.key); setOpen(false); }} style={[s.row, { paddingVertical: 14, borderTopWidth: 1, borderColor: t.line }]}>
+                <Text style={[s.body, { fontSize: 17, fontWeight: l.key === lang ? '800' : '500' }]}>{l.label}</Text>
+                {l.key === lang ? <Text style={{ color: t.accent, fontWeight: '800' }}>✓</Text> : null}
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}

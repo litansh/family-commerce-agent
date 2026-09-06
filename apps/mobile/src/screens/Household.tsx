@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { Api, Household } from '../lib/api';
-import { currentRegion, setLanguage, t as tr } from '../lib/i18n';
-import { Button, Chip, Header, Input, S, t } from '../ui';
+import { currentRegion, t as tr, useLanguage } from '../lib/i18n';
+import { Button, Chip, Header, Input, LanguagePicker, S, t } from '../ui';
 
 interface Suggestion { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }
 
@@ -26,7 +26,7 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [, bump] = useState(0);
+  useLanguage();
   const seq = useRef(0);
   const RETAILERS = ['shufersal', 'rami-levy', 'victory', 'carrefour', 'yochananof', 'tiv-taam'];
   const NAMES: Record<string, string> = { shufersal: 'שופרסל', 'rami-levy': 'רמי לוי', victory: 'ויקטורי', carrefour: 'קרפור', yochananof: 'יוחננוף', 'tiv-taam': 'טיב טעם' };
@@ -52,7 +52,8 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
 
   return (
     <ScrollView style={s.screen} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 32 }}>
-      <Header title={tr('household')} subtitle={tr('householdSub')} action={lang === 'he' ? 'English' : 'עברית'} onAction={() => { setLanguage(lang === 'he' ? 'en' : 'he'); bump((n) => n + 1); }} />
+      <View style={{ position: 'absolute', top: 18, [currentRegion().rtl ? 'left' : 'right']: 20, zIndex: 2 }}><LanguagePicker /></View>
+      <Header title={tr('household')} subtitle={tr('householdSub')} />
       <View style={s.pad}>
         <View style={s.card}>
           <Text style={[s.title, { marginBottom: 12 }]}>{tr('newFamily')}</Text>
