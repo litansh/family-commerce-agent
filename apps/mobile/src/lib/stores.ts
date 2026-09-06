@@ -24,7 +24,7 @@ export const STORES: Record<string, StoreDef> = {
     loginUrl: 'https://www.shufersal.co.il/online/he/login',
     loginKind: 'password',
     signedInProbe: 'https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp',
-    signedInCheck: `fetch('/online/he/authentication/get-status-includes-otp',{credentials:'include',headers:{'x-requested-with':'XMLHttpRequest'}}).then(r=>r.text()).then(t=>t.trim()==='true'||t.trim().startsWith('{')).catch(()=>false)`,
+    signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include',redirect:'manual',headers:{'x-requested-with':'XMLHttpRequest'}}).then(r=>r.status===200).catch(()=>false)`,
   },
   'rami-levy': {
     id: 'rami-levy',
