@@ -79,9 +79,21 @@ export class ShufersalConnector implements RetailerConnector {
     // Nobody remembers a retailer password. The SMS route lives under
     // "club member identification"; open it so the window lands on
     // "enter the code we sent to your phone".
-    await this.#page.waitForTimeout(1200);
-    await this.#page.getByText('הזדהות חברי מועדון').first().click({ timeout: 4000 }).catch(() => undefined);
-    console.log('\n  Sign in to Shufersal in the window that just opened - with the SMS code, no password needed.');
+    // The club sign-in is a link on the login page that opens the loyalty
+    // form (ID number + a detail, then a 6-digit SMS code). Open it, and if
+    // the site hides the form for any reason, reveal it ourselves.
+    await this.#page.waitForSelector('#loyaltyMemberDataForm, a.js-tikTalkLink', { timeout: 15_000 }).catch(() => undefined);
+    await this.#page.locator('a.js-tikTalkLink').first().click({ timeout: 4000 }).catch(() => undefined);
+    await this.#page.waitForTimeout(800);
+    await this.#page.evaluate(() => {
+      const form = document.querySelector<HTMLElement>('#loyaltyMemberDataForm');
+      if (!form) return;
+      let el: HTMLElement | null = form;
+      while (el) { el.classList.remove('hidden'); el.style.display = ''; el = el.parentElement; }
+      form.scrollIntoView({ block: 'center' });
+      document.querySelector<HTMLInputElement>('#loyaltyMemberDataForm_idNumber')?.focus();
+    }).catch(() => undefined);
+    console.log('\n  Sign in to Shufersal in the window that just opened: the club form is open - ID number, then the 6-digit SMS code. No password.');
     console.log('  Kanili saves the session automatically once it sees you are in.');
     console.log('  If the window shows you signed in but nothing happens here, press Enter in this terminal.\n');
     // Poll for the signed-in state, but also accept a manual confirmation:
