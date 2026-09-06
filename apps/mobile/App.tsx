@@ -34,7 +34,8 @@ export default function App() {
   const [household, setHousehold] = useState<Household | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>('home');
   const [intro, setIntro] = useState<boolean | null>(null);
-  useEffect(() => { void introSeen().then((seen) => setIntro(!seen)); }, []);
+  const [firstTime, setFirstTime] = useState(true);
+  useEffect(() => { void introSeen().then((seen) => { setIntro(!seen); setFirstTime(!seen); }); }, []);
   const [screen, setScreen] = useState<Screen>({ name: 'tabs' });
   const lines = useList();
   useLanguage();
@@ -58,7 +59,7 @@ export default function App() {
   let showTabs = false;
   if (tokens === undefined) body = <Loading />;
   else if (!tokens || !api) body = <SignIn onSignedIn={setTokens} />;
-  else if (intro) body = <Intro onDone={() => setIntro(false)} />;
+  else if (intro) body = <Intro firstTime={firstTime} onDone={() => { setIntro(false); setFirstTime(false); }} />;
   else if (household === undefined) body = <Loading label={tr('loadingHousehold')} />;
   else if (!household) body = <HouseholdSetup api={api} onDone={(h) => { setRegion(regionOf(h.country)); setHousehold(h); }} />;
   else if (screen.name === 'aisle') body = <AisleScreen api={api} household={household} aisle={screen.aisle} onBack={() => setScreen({ name: 'tabs' })} />;

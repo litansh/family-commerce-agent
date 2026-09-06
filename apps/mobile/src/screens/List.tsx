@@ -65,7 +65,14 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     const mine = ++seq.current;
     setSearching(true);
     const h = setTimeout(() => {
-      api.search(household.id, q).then((r) => { if (mine === seq.current) { setHits(r.products); setSearching(false); } }).catch(() => { if (mine === seq.current) { setHits([]); setSearching(false); } });
+      api.search(household.id, q).then(async (r) => {
+        if (mine !== seq.current) return;
+        setHits(r.products); setSearching(false);
+        const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
+        if (missing.length === 0) return;
+        const im = await api.images(household.id, missing).catch(() => null);
+        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => (h.gtin && im.images[h.gtin] ? { ...h, imageUrl: im.images[h.gtin]! } : h)));
+      }).catch(() => { if (mine === seq.current) { setHits([]); setSearching(false); } });
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);

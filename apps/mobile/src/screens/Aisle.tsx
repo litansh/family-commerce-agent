@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { Api, Household, SearchHit } from '../lib/api';
@@ -44,15 +44,48 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
   const [open, setOpen] = useState<SearchHit | null>(null);
   const meta = AISLES.find((a) => a.key === aisle);
 
+  const [loading, setLoading] = useState(false);
+  const seq = useRef(0);
+
+  // One fetch per (aisle, sub). The first response also names the default
+  // sub-aisle; setting it must not trigger a second identical fetch. While a
+  // sub-aisle loads, the previous grid stays on screen, dimmed - a blank
+  // screen for ten seconds reads as "it disappeared".
   useEffect(() => {
-    setProducts(null); setPage(0);
-    api.browse(household.id, aisle, sub ?? undefined, 0).then((r) => { setSubs(r.subs); setSub(r.sub); setProducts(r.products); setHasMore(r.hasMore); setTotal(r.total); }).catch(() => setProducts([]));
+    const mine = ++seq.current;
+    setLoading(true); setPage(0);
+    api.browse(household.id, aisle, sub ?? undefined, 0)
+      .then((r) => {
+        if (mine !== seq.current) return;
+        setSubs(r.subs); setProducts(r.products); setHasMore(r.hasMore); setTotal(r.total);
+        if (sub === null) settleSub(r.sub);
+        void hydrateImages(r.products);
+      })
+      .catch(() => { if (mine === seq.current) setProducts([]); })
+      .finally(() => { if (mine === seq.current) setLoading(false); });
   }, [api, household.id, aisle, sub]);
+
+  // Setting the sub after the first load would re-run the effect; hold it in
+  // a ref-backed setter that does not change the dependency until a person taps.
+  const settledRef = useRef<string | null>(null);
+  const settleSub = (k: string) => { settledRef.current = k; setSubsActive(k); };
+  const [subActive, setSubsActive] = useState<string | null>(null);
+  const activeSub = sub ?? subActive;
+
+  // Pictures arrive after the grid: the browse response carries only cached
+  // ones, and the rest are fetched here and patched in as they resolve.
+  const hydrateImages = async (items: SearchHit[]) => {
+    const missing = items.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
+    if (missing.length === 0) return;
+    const r = await api.images(household.id, missing).catch(() => null);
+    if (!r) return;
+    setProducts((xs) => (xs ?? []).map((h) => (h.gtin && r.images[h.gtin] ? { ...h, imageUrl: r.images[h.gtin]! } : h)));
+  };
 
   const more = async () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
-    try { const r = await api.browse(household.id, aisle, sub ?? undefined, page + 1); setProducts((xs) => [...(xs ?? []), ...r.products]); setPage(page + 1); setHasMore(r.hasMore); } finally { setLoadingMore(false); }
+    try { const r = await api.browse(household.id, aisle, sub ?? undefined, page + 1); setProducts((xs) => [...(xs ?? []), ...r.products]); setPage(page + 1); setHasMore(r.hasMore); void hydrateImages(r.products); } finally { setLoadingMore(false); }
   };
   const inList = useMemo(() => new Set(lines.map((l) => l.gtin).filter(Boolean)), [lines]);
   const add = (h: SearchHit) => { tap(); addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), imageUrl: h.imageUrl }); setToast(tr('added')); setTimeout(() => setToast(null), 1200); };
@@ -62,14 +95,15 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
       <Header title={`${meta?.glyph ?? ''} ${meta?.[locale === 'he' ? 'he' : 'en'] ?? aisle}`} subtitle={total ? tr('nProducts', { n: total }) : undefined} onBack={onBack} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row' }} style={{ flexGrow: 0, marginBottom: 10 }}>
         {subs.map((k) => (
-          <Pressable key={k} onPress={() => { tap(); setSub(k); }} style={{ backgroundColor: k === sub ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: k === sub ? t.accent : t.line }}>
-            <Text style={{ color: k === sub ? '#fff' : t.ink, fontWeight: '600' }}>{subName(k, locale)}</Text>
+          <Pressable key={k} onPress={() => { if (k !== activeSub) { tap(); setSub(k); } }} style={{ backgroundColor: k === activeSub ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: k === activeSub ? t.accent : t.line }}>
+            <Text style={{ color: k === activeSub ? '#fff' : t.ink, fontWeight: '600' }}>{subName(k, locale)}</Text>
           </Pressable>
         ))}
       </ScrollView>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+        {loading && products ? <View style={{ height: 3, backgroundColor: t.accentSoft, borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}><View style={{ width: '40%', height: 3, backgroundColor: t.accent }} /></View> : null}
         {!products ? <><Skeleton /><Skeleton /><Skeleton /></> : (
-          <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10 }}>
+          <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10, opacity: loading ? 0.45 : 1 }}>
             {products.map((h) => {
               const have = !!h.gtin && inList.has(h.gtin);
               return (
@@ -93,7 +127,7 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
             })}
           </View>
         )}
-        {hasMore ? <View style={{ marginTop: 14 }}><Button title={loadingMore ? tr('loading') : tr('loadMore', { n: total - (products?.length ?? 0) })} kind="secondary" onPress={more} disabled={loadingMore} /></View> : null}
+        {hasMore && !loading && products ? <View style={{ marginTop: 14 }}><Button title={loadingMore ? tr('loading') : tr('loadMore', { n: total - (products?.length ?? 0) })} kind="secondary" onPress={more} disabled={loadingMore} /></View> : null}
       </ScrollView>
       {open ? <ProductSheet api={api} household={household} hit={open} onAdd={() => { add(open); setOpen(null); }} onClose={() => setOpen(null)} inList={!!open.gtin && inList.has(open.gtin)} /> : null}
       <Toast text={toast} />

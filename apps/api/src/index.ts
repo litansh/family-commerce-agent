@@ -227,7 +227,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const PAGE = 24;
       const slice = all.slice(page * PAGE, page * PAGE + PAGE);
       const [imgs, ranges] = await Promise.all([
-        images.resolveMany(slice.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8),
+        images.cachedMany(slice.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) }))),
         Promise.all(slice.map((c) => (c.gtin ? readRow(TABLE, 'CATALOG', `PRICE#${c.gtin}`) : Promise.resolve(undefined)))),
       ]);
       const products = slice.map((c, i) => {
@@ -235,6 +235,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         return { ...c, imageUrl: imgs[c.productId]?.url ?? null, ...(r?.min !== undefined && r.max !== undefined ? { priceMin: r.min, priceMax: r.max } : {}), bought: !!c.gtin && !!Object.values(memory.products).find((p) => p.gtin === c.gtin) };
       });
       return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products });
+    }
+
+    // Pictures for a set of barcodes, resolved within a time budget so the
+    // grid never waits on them. The app calls this right after rendering.
+    if (method === 'POST' && rest === 'images') {
+      const gtins = arr<string>(body['gtins'], 'gtins').filter((g) => typeof g === 'string').slice(0, 40);
+      const found = await images.resolveMany(gtins.map((g) => ({ key: g, gtin: g })), 10, 12_000);
+      return ok({ images: Object.fromEntries(gtins.map((g) => [g, found[g]?.url ?? null])) });
     }
 
     // One product, every chain that carries it. The catalogue's canonical
@@ -263,7 +271,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
       const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
-      const imgs = await images.resolveMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
+      const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
     }
     if (method === 'GET' && rest === 'region') return ok(region);

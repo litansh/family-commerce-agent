@@ -20,6 +20,8 @@ export interface ImageRef {
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
 const TTL_DAYS = 30;
+/** A miss is retried sooner: the sources are flaky, and a timeout is not a 404. */
+const MISS_TTL_DAYS = 1;
 
 export const ramiLevyImageUrl = (gtin: string): string => `https://img.rami-levy.co.il/product/${gtin}/small.jpg`;
 
@@ -81,22 +83,37 @@ export class ImageResolver {
     if (p.gtin) ref = (await tryRamiLevy(p.gtin)) ?? (await tryOff(p.gtin));
     if (!ref && p.name) ref = await tryShufersal(p.name);
 
-    const ttl = Math.floor(Date.now() / 1000) + TTL_DAYS * 86_400;
+    const ttl = Math.floor(Date.now() / 1000) + (ref ? TTL_DAYS : MISS_TTL_DAYS) * 86_400;
     await this.#doc
       .send(new PutCommand({ TableName: this.#table, Item: { PK: `IMG#${key}`, SK: 'IMG', ttl, ...(ref ? { url: ref.url, source: ref.source } : { miss: true }) } }))
       .catch(() => undefined);
     return ref ?? null;
   }
 
-  /** Resolve many, bounded concurrency, never blocking the caller for long. */
-  async resolveMany(items: readonly { key: string; gtin?: string; name?: string }[], concurrency = 6): Promise<Record<string, ImageRef | null>> {
+  /** Cache lookups only - what is already known, instantly. */
+  async cachedMany(items: readonly { key: string; gtin?: string; name?: string }[]): Promise<Record<string, ImageRef | null>> {
+    const out: Record<string, ImageRef | null> = {};
+    await Promise.all(items.map(async (it) => {
+      const key = it.gtin ? `G#${it.gtin}` : it.name ? `N#${it.name.trim().toLowerCase().slice(0, 120)}` : undefined;
+      if (!key) { out[it.key] = null; return; }
+      const r = await this.#doc.send(new GetCommand({ TableName: this.#table, Key: { PK: `IMG#${key}`, SK: 'IMG' } })).catch(() => undefined);
+      const c = r?.Item as { url?: string; source?: ImageRef['source']; miss?: boolean } | undefined;
+      out[it.key] = c?.url && c.source ? { url: c.url, source: c.source } : null;
+    }));
+    return out;
+  }
+
+  /** Resolve many within a time budget; whatever is not done by then comes back null (and is retried next time). */
+  async resolveMany(items: readonly { key: string; gtin?: string; name?: string }[], concurrency = 6, budgetMs = 20_000): Promise<Record<string, ImageRef | null>> {
     const out: Record<string, ImageRef | null> = {};
     const queue = [...items];
+    const deadline = Date.now() + budgetMs;
     await Promise.all(
       Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
         for (;;) {
           const it = queue.shift();
           if (!it) return;
+          if (Date.now() > deadline) { out[it.key] = null; continue; }
           out[it.key] = await this.resolve(it);
         }
       }),

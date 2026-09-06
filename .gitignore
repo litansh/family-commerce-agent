@@ -17,3 +17,5 @@ runs/
 .terraform.lock.hcl
 memory/
 .build/
+apps/mobile/e2e/results/
+apps/mobile/e2e/shots/

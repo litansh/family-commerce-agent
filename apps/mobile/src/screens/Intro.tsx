@@ -27,15 +27,19 @@ const CHAINS: { name: string; letter: string; color: string }[] = [
 const STAPLES = [['🥛', 'חלב'], ['🥚', 'ביצים'], ['🍞', 'לחם'], ['🍅', 'עגבניות'], ['🧀', 'קוטג׳'], ['🍼', 'פמפרס']] as const;
 const FIELDS = ['#1F6B45', '#9A6A0F', '#1B1B1A', '#1F6B45'];
 
-export function Intro({ onDone }: { onDone: () => void }) {
+export function Intro({ onDone, firstTime }: { onDone: () => void; firstTime: boolean }) {
   const s = S();
   const rtl = isRTL();
   const [step, setStep] = useState(0);
-  const [ready, setReady] = useState(false); // last screen's demo finished
+  // Each stage must be played before Next unlocks: the intro is something the
+  // person does, not reads. Skip exists only once they have seen it all once.
+  const [done, setDone] = useState<boolean[]>([false, false, false, false]);
+  const ready = done[step] ?? false;
+  const complete = (i: number) => setDone((d) => d.map((x, j) => (j === i ? true : x)));
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => { enter.setValue(0); Animated.timing(enter, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: native }).start(); }, [step, enter]);
   const finish = async () => { await markSeen(); onDone(); };
-  const next = () => { tap(); if (step === 3) void finish(); else setStep(step + 1); };
+  const next = () => { if (!ready) return; tap(); if (step === 3) void finish(); else setStep(step + 1); };
   const W = Dimensions.get('window').width;
 
   return (
@@ -47,24 +51,25 @@ export function Intro({ onDone }: { onDone: () => void }) {
         </View>
         <View style={[s.row, { marginTop: 10 }]}>
           <View style={s.rowStart}><Mark size={22} color="#fff" /><Text style={{ color: '#fff', fontWeight: '700' }}>{tr('appName')}</Text></View>
-          <Pressable onPress={finish} hitSlop={12}><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{tr('skip')}</Text></Pressable>
+          {!firstTime ? <Pressable onPress={finish} hitSlop={12}><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{tr('skip')}</Text></Pressable> : <View />}
         </View>
       </View>
       <Animated.View style={{ flex: 1, opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
         <View style={{ height: 300, alignItems: 'center', justifyContent: 'center' }}>
-          {step === 0 && <MergeStage width={W} />}
-          {step === 1 && <MemoryStage />}
-          {step === 2 && <RhythmStage />}
-          {step === 3 && <TapsStage onDone={() => setReady(true)} />}
+          {step === 0 && <MergeStage width={W} onDone={() => complete(0)} />}
+          {step === 1 && <MemoryStage onDone={() => complete(1)} />}
+          {step === 2 && <RhythmStage onDone={() => complete(2)} />}
+          {step === 3 && <TapsStage onDone={() => complete(3)} />}
         </View>
         <View style={{ flex: 1, backgroundColor: t.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 26 }}>
           <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
             <Text style={[s.display, { fontSize: 32, letterSpacing: -0.8 }]}>{tr(`intro${step + 1}Title`)}</Text>
             <Text style={[s.body, { color: t.muted, fontSize: 17, lineHeight: 26, marginTop: 10 }]}>{tr(`intro${step + 1}Body`)}</Text>
             {step === 3 ? <Text style={[s.small, { marginTop: 10 }]}>{tr('introAfter')}</Text> : null}
+            {!ready ? <Text style={[s.small, { marginTop: 10, color: t.amber, fontWeight: '700' }]}>{tr('introTryFirst')}</Text> : null}
           </ScrollView>
-          <Pressable onPress={next} disabled={step === 3 && !ready} style={({ pressed }) => [{ backgroundColor: step === 3 && !ready ? t.line : t.accent, borderRadius: 999, paddingVertical: 16, alignItems: 'center', marginBottom: 28 }, pressed && { transform: [{ scale: 0.98 }] }]}>
-            <Text style={{ color: '#fff', fontSize: 17, fontWeight: '800' }}>{step === 3 ? tr('introStart') : `${tr('introNext')} · ${step + 1}/4`}</Text>
+          <Pressable onPress={next} disabled={!ready} style={({ pressed }) => [{ backgroundColor: ready ? t.accent : t.line, borderRadius: 999, paddingVertical: 16, alignItems: 'center', marginBottom: 28 }, pressed && ready && { transform: [{ scale: 0.98 }] }]}>
+            <Text style={{ color: ready ? '#fff' : t.muted, fontSize: 17, fontWeight: '800' }}>{step === 3 ? tr('introStart') : `${tr('introNext')} · ${step + 1}/4`}</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -73,7 +78,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
 }
 
 /** Six storefronts orbit a basket; tap the sentence, they fly in, the basket bounces. */
-function MergeStage({ width }: { width: number }) {
+function MergeStage({ width, onDone }: { width: number; onDone: () => void }) {
   const anim = useRef(CHAINS.map(() => new Animated.Value(0))).current;
   const bounce = useRef(new Animated.Value(1)).current;
   const [merged, setMerged] = useState(false);
@@ -81,7 +86,7 @@ function MergeStage({ width }: { width: number }) {
     if (merged) return;
     tap();
     Animated.stagger(60, anim.map((a) => Animated.timing(a, { toValue: 1, duration: 520, easing: Easing.in(Easing.cubic), useNativeDriver: native }))).start(() => {
-      setMerged(true);
+      setMerged(true); onDone();
       Animated.sequence([Animated.timing(bounce, { toValue: 1.15, duration: 140, useNativeDriver: native }), Animated.spring(bounce, { toValue: 1, useNativeDriver: native })]).start();
     });
   };
@@ -112,8 +117,9 @@ function MergeStage({ width }: { width: number }) {
 }
 
 /** Tap staples; each one slides into the memory card. */
-function MemoryStage() {
+function MemoryStage({ onDone }: { onDone: () => void }) {
   const [picked, setPicked] = useState<string[]>([]);
+  useEffect(() => { if (picked.length >= 3) onDone(); }, [picked, onDone]);
   const toggle = (k: string) => { tap(); setPicked((xs) => (xs.includes(k) ? xs.filter((x) => x !== k) : [...xs, k])); };
   return (
     <View style={{ width: '100%', paddingHorizontal: 24 }}>
@@ -137,9 +143,10 @@ function MemoryStage() {
 }
 
 /** A ring fills over days; at four it turns amber and milk is due. */
-function RhythmStage() {
+function RhythmStage({ onDone }: { onDone: () => void }) {
   const [day, setDay] = useState(0);
-  useEffect(() => { const h = setInterval(() => setDay((d) => (d >= 5 ? 0 : d + 1)), 800); return () => clearInterval(h); }, []);
+  const [added, setAdded] = useState(false);
+  useEffect(() => { if (added) return; const h = setInterval(() => setDay((d) => (d >= 5 ? 0 : d + 1)), 800); return () => clearInterval(h); }, [added]);
   const due = day >= 4;
   const R = 78; const C = 2 * Math.PI * R; const pct = Math.min(1, day / 4);
   return (
@@ -152,9 +159,9 @@ function RhythmStage() {
         <Text style={{ fontSize: 56 }}>🥛</Text>
         <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginTop: 2 }}>{tr('intro3Days', { d: day })}</Text>
       </View>
-      <View style={{ backgroundColor: due ? '#F5B942' : 'rgba(255,255,255,0.14)', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginTop: 6 }}>
-        <Text style={{ color: due ? t.ink : '#fff', fontWeight: '700' }}>{due ? tr('intro3Due') : tr('intro3Rhythm')}</Text>
-      </View>
+      <Pressable disabled={!due || added} onPress={() => { tap(); setAdded(true); onDone(); }} style={({ pressed }) => [{ backgroundColor: added ? '#fff' : due ? '#F5B942' : 'rgba(255,255,255,0.14)', borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, marginTop: 6 }, pressed && { transform: [{ scale: 0.96 }] }]}>
+        <Text style={{ color: added || due ? t.ink : '#fff', fontWeight: '800' }}>{added ? tr('intro3Added') : due ? `${tr('intro3Due')}  +` : tr('intro3Rhythm')}</Text>
+      </Pressable>
     </View>
   );
 }
