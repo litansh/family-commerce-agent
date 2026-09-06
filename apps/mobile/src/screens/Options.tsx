@@ -7,6 +7,8 @@ import { Button, Chip, Header, Loading, Rank, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
 import { money, reasonT, t as tr } from '../lib/i18n';
+import { markLinked, useLinked } from '../lib/linked';
+import { StoreLink } from './StoreLink';
 
 const LETTERS = 'אבגדה';
 
@@ -30,9 +32,15 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   api: Api; household: Household; lines: Line[]; onBack: () => void; onChoose: (opt: PurchaseOption, q: QuoteResult) => void; onOrder: (orderId: string) => void;
 }) {
   const [ordering, setOrdering] = useState(false);
+  // A store you have never connected is connected right here, once, at the
+  // moment you first order from it — never up front.
+  const linked = useLinked();
+  const [needLink, setNeedLink] = useState<{ retailer: string; best: PurchaseOption; q: QuoteResult } | null>(null);
   const orderBest = async (best: PurchaseOption, q: QuoteResult) => {
     const legs = legsFor(best, q);
     if (legs.length === 0) { onChoose(best, q); return; }
+    const missing = legs.find((l) => !linked.includes(l.retailer));
+    if (missing) { setNeedLink({ retailer: missing.retailer, best, q }); return; }
     setOrdering(true);
     try { const o = await api.createOrder(household.id, legs); onOrder(o.id); }
     catch { onChoose(best, q); }
@@ -42,7 +50,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [fixing, setFixing] = useState<string | null>(null);
-  const [strategy, setStrategy] = useState<'cheapest' | 'single' | 'pickup' | 'split'>('cheapest');
+  // Cheap ↔ fast. "Fast" means one delivery from one store: nothing to wait
+  // for twice, nothing to drive to. "Balanced" takes the one-store order when
+  // it is within a few percent of the cheapest split, else the cheapest.
+  const [strategy, setStrategy] = useState<'cheap' | 'balanced' | 'fast'>('cheap');
   const [whyNot, setWhyNot] = useState(false);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
@@ -60,14 +71,13 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
   const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
-  const byStrategy = {
-    cheapest: q.options,
-    single: q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup'),
-    pickup: q.options.filter((o) => o.kind === 'pickup'),
-    split: q.options.filter((o) => o.kind === 'split_delivered'),
-  }[strategy];
-  const shown = byStrategy.slice(0, strategy === 'cheapest' ? 1 : 3);
+  const oneDelivery = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup');
+  const fastest = oneDelivery[0];
+  const balanced = fastest && best && fastest.cashCost - best.cashCost <= best.cashCost * 0.05 ? fastest : best;
+  const pick = { cheap: best, balanced, fast: fastest ?? best }[strategy];
+  const shown = pick ? [pick, ...q.options.filter((o) => o !== pick).slice(0, 2)] : [];
   const chosen = shown[0] ?? best;
+  const fastExtra = fastest && best ? fastest.cashCost - best.cashCost : 0;
 
   return (
     <View style={s.screen}>
@@ -76,13 +86,19 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
       <View style={{ paddingHorizontal: 20 }}>
         {q.options.length === 0 && <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
-        <View style={[s.rowStart, { flexWrap: 'wrap', marginBottom: 10 }]}>
-          {(['cheapest', 'single', 'pickup', 'split'] as const).map((k) => (
-            <Pressable key={k} onPress={() => setStrategy(k)} style={{ backgroundColor: strategy === k ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: strategy === k ? t.accent : t.line }}>
-              <Text style={{ color: strategy === k ? '#fff' : t.ink, fontWeight: '600' }}>{tr(`strat_${k}`)}</Text>
+        {/* The one control on this screen: cheap ↔ fast. */}
+        <View style={{ backgroundColor: t.inkSoft, borderRadius: 999, padding: 4, flexDirection: s.row.flexDirection, marginBottom: 8 }}>
+          {(['cheap', 'balanced', 'fast'] as const).map((k) => (
+            <Pressable key={k} onPress={() => setStrategy(k)} style={[{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 999 }, strategy === k && { backgroundColor: t.card, shadowColor: '#0E1512', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } }]}>
+              <Text style={{ color: strategy === k ? t.ink : t.muted, fontWeight: strategy === k ? '800' : '600', fontSize: 14 }}>{tr(`mode_${k}`)}</Text>
             </Pressable>
           ))}
         </View>
+        <Text style={[s.small, { marginBottom: 12 }]}>
+          {strategy === 'fast'
+            ? (fastest ? (fastExtra > 0 ? tr('modeFastCost', { x: money(fastExtra) }) : tr('modeFastFree')) : tr('modeFastNone'))
+            : strategy === 'balanced' ? tr('modeBalancedSub') : (fastExtra > 0 && best && best.legs.length > 1 ? tr('modeCheapSub', { n: best.legs.length, x: money(fastExtra) }) : tr('modeCheapOne'))}
+        </Text>
         {shown.length === 0 ? <View style={s.card}><Text style={s.body}>{tr('strat_none')}</Text></View> : null}
         {shown.map((o, i) => {
           const isBest = o === best;
@@ -159,6 +175,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
         <Button title={tr('orderNow', { x: money(chosen.cashCost) })} onPress={() => orderBest(chosen, q)} disabled={ordering} />
         <Pressable onPress={() => onChoose(chosen, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
       </View>
+    ) : null}
+    {needLink ? (
+      <StoreLink storeId={needLink.retailer} api={api} householdId={household.id} onClose={() => setNeedLink(null)}
+        onLinked={(id) => { markLinked(id); const { best: b, q: qq } = needLink; setNeedLink(null); void orderBest(b, qq); }} />
     ) : null}
     </View>
   );

@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain';
-import type { Api, Household } from '../lib/api';
+import type { Api, Deal, Household } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
-import { currentRegion, isRTL, t as tr } from '../lib/i18n';
+import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { addLine, newId, setLines, useList } from '../lib/store';
 import { ProductImage } from '../ProductImage';
 import { Button, GRAD_INK, GradientCard, Header, Icon, S, t, Toast } from '../ui';
@@ -43,6 +43,10 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
   const locale = currentRegion().locale === 'he' ? 'he' : 'en';
 
   useEffect(() => { api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
+  // Deals from every store nearby, the household's products first. Home is
+  // a store window, not a menu: there is always something to look at.
+  const [deals, setDeals] = useState<Deal[]>([]);
+  useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
   useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
 
   const onList_ = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);
@@ -92,6 +96,31 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
                   </Pressable>
                 ))}
               </View>
+            </View>
+          )}
+          {deals.length > 0 && (
+            <View style={{ marginBottom: 6, marginHorizontal: -20 }}>
+              <View style={[s.row, { paddingHorizontal: 20 }]}>
+                <View style={s.rowStart}><Icon name="tag" size={18} color={t.ink} /><Text style={s.title}>{tr('dealsNear')}</Text></View>
+                <Text style={s.faint}>{tr('dealsNearSub')}</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+                {deals.slice(0, 14).map((d) => (
+                  <Pressable key={`${d.gtin}-${d.chainName}`} onPress={() => { addLine({ query: d.name, productName: d.name, gtin: d.gtin, ...(d.brand ? { brand: d.brand } : {}), imageUrl: d.imageUrl ?? undefined }); tap(); say(tr('added')); }}
+                    style={({ pressed }) => [{ width: 148, backgroundColor: t.card, borderRadius: 18, padding: 10, borderWidth: 1, borderColor: d.usual ? t.accent2 : t.line }, pressed && { opacity: 0.6 }]}>
+                    <View style={{ alignItems: 'center' }}><ProductImage url={d.imageUrl} gtin={d.gtin} name={d.name} size={96} radius={12} /></View>
+                    <View style={{ position: 'absolute', top: 8, [rtl ? 'right' : 'left']: 8, backgroundColor: t.ink, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 }}>
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>-{Math.round(d.discountRate)}%</Text>
+                    </View>
+                    {d.usual ? <View style={{ position: 'absolute', top: 8, [rtl ? 'left' : 'right']: 8 }}><Icon name="star" size={14} color={t.accent} /></View> : null}
+                    <Text style={[s.body, { fontSize: 13, lineHeight: 17, marginTop: 8, minHeight: 34 }]} numberOfLines={2}>{d.name}</Text>
+                    <View style={[s.row, { marginTop: 6 }]}>
+                      <Text style={[s.price, { fontSize: 17 }]}>{money(d.price)}</Text>
+                      <Text style={[s.faint, { fontSize: 11, flexShrink: 1 }]} numberOfLines={1}>{d.chainName}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
           )}
           <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>

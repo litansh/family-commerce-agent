@@ -39,6 +39,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback } from '@fca/shopping-agent';
+import type { Promotion } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -236,6 +237,53 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         return { ...c, imageUrl: imgs[c.productId]?.url ?? null, ...(r?.min !== undefined && r.max !== undefined ? { priceMin: r.min, priceMax: r.max } : {}), bought: !!c.gtin && !!Object.values(memory.products).find((p) => p.gtin === c.gtin) };
       });
       return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products });
+    }
+
+    // Deals across every store nearby — not only connected ones — with the
+    // household's own products first. The promotions feed is cached six
+    // hours under a catalogue-wide key; ranking against memory is per
+    // request and free.
+    if (method === 'GET' && rest === 'deals') {
+      const { catalog } = requirePricing();
+      const cached = (await readRow(TABLE, 'CATALOG', 'PROMOS')) as { promos?: Promotion[]; at?: string } | undefined;
+      let promos: readonly Promotion[] = cached?.promos ?? [];
+      if (!promos.length || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
+        // The feed caps at 200, ordered by soonest end - the ones worth acting on this week.
+        const fresh = catalog.listPromotions ? await catalog.listPromotions(200).catch(() => null) : null;
+        if (fresh?.length) {
+          // Retailers describe promotions in till-speak ("קטיף 5.90 רימון-מות-299ישיר");
+          // the catalogue knows the product's real name. Resolve once per refresh,
+          // for the strongest deals, and keep the names with the cache.
+          const top = [...fresh].sort((a, b) => b.discountRate - a.discountRate).slice(0, 80);
+          const named = await Promise.all(top.map(async (p) => {
+            const gtin = p.itemCodes.find((c) => /^\d{8,14}$/.test(c));
+            if (!gtin) return p;
+            const hit = (await catalog.searchProducts({ query: gtin, gtin, limit: 1, location: household.address }).catch(() => []))[0];
+            return hit?.name ? { ...p, description: hit.name } : p;
+          }));
+          const byId = new Map(named.map((p) => [p.itemCodes.join(',') + p.chainName, p]));
+          promos = fresh.map((p) => byId.get(p.itemCodes.join(',') + p.chainName) ?? p);
+          await writeRow(TABLE, 'CATALOG', 'PROMOS', { promos, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 2 * 86400 });
+        }
+      }
+      const memory = await repo.load();
+      const usual = new Map(Object.values(memory.products).map((p) => [p.gtin, p]));
+      const now = Date.now();
+      const seen = new Set<string>();
+      const ranked = promos.flatMap((p) => {
+        if (p.discountRate < 8 || (p.endTs && Date.parse(p.endTs) < now)) return [];
+        const gtin = p.itemCodes.find((c) => /^\d{8,14}$/.test(c));
+        if (!gtin) return [];
+        const key = `${gtin}|${p.chainName}`;
+        if (seen.has(key)) return [];
+        seen.add(key);
+        const u = usual.get(gtin);
+        const name = u?.productName ?? p.description.replace(/^קו קופה\s*-\s*/, '').trim();
+        if (!name) return [];
+        return [{ gtin, name, ...(u?.brand ? { brand: u.brand } : {}), chainName: p.chainName, price: Math.round(p.discountedPrice * 100), discountRate: p.discountRate, clubOnly: p.clubOnly, endTs: p.endTs, usual: !!u, score: (u ? 1000 : 0) + p.discountRate }];
+      }).sort((a, b) => b.score - a.score).slice(0, 40);
+      const imgs = await images.cachedMany(ranked.map((d) => ({ key: d.gtin, name: d.name, gtin: d.gtin })));
+      return ok({ deals: ranked.map(({ score: _s, ...d }) => ({ ...d, imageUrl: imgs[d.gtin]?.url ?? null })) });
     }
 
     // Import order history captured on the device: the phone's logged-in
