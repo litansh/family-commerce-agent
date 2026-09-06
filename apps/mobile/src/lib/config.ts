@@ -29,3 +29,6 @@ export const config = {
   region: str('region'),
   googleEnabled: String(extra['googleEnabled']) === 'true',
 };
+
+/** Build stamp shown in Me and sent with every store report, so "which code is the phone running" is never a guess. */
+export const BUILD = '2026-09-06.2220';
