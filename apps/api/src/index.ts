@@ -109,6 +109,32 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (method === 'POST' && seg[2] === 'orders' && seg[3] && seg[4] === 'cancel') return ok(await orders.cancel(hid, seg[3]));
     if (method === 'GET' && rest === 'orders') return ok({ orders: await orders.list(hid) });
 
+    // Browse an aisle like a store: a handful of representative queries per
+    // aisle, merged, priced, with pictures. The aisle vocabulary lives in the
+    // app (it is UI), the queries here (they are catalogue-shaped).
+    if (method === 'GET' && rest === 'browse') {
+      const { catalog } = requirePricing();
+      const AISLE_QUERIES: Record<string, string[]> = {
+        dairy: ['חלב 3%', 'גבינה צהובה', 'קוטג', 'יוגורט', 'חמאה', 'ביצים', 'שמנת', 'גבינה לבנה'],
+        produce: ['עגבניות', 'מלפפונים', 'בצל', 'תפוחי אדמה', 'גזר', 'פלפל', 'בננות', 'תפוחים', 'אבוקדו', 'לימון'],
+        bakery: ['לחם אחיד', 'פיתות', 'חלה', 'לחמניות', 'לחם קל'],
+        meat: ['חזה עוף', 'בשר טחון', 'שניצל', 'סלמון', 'כרעיים', 'אנטריקוט'],
+        pantry: ['אורז', 'פסטה', 'רסק עגבניות', 'שמן זית', 'סוכר', 'קמח', 'טונה', 'חומוס', 'טחינה', 'קורנפלקס'],
+        frozen: ['פיצה קפואה', 'ירקות קפואים', 'גלידה', 'שניצל תירס'],
+        drinks: ['מים מינרליים', 'קוקה קולה', 'מיץ תפוזים', 'קפה נמס', 'תה', 'בירה'],
+        baby: ['חיתולים', 'מגבונים', 'מטרנה'],
+        household: ['נייר טואלט', 'טבליות למדיח', 'אבקת כביסה', 'סבון כלים', 'שקיות אשפה', 'מגבות נייר'],
+      };
+      const aisle = (event.queryStringParameters?.['aisle'] ?? '').trim();
+      const queries = AISLE_QUERIES[aisle];
+      if (!queries) return ok({ products: [] });
+      const results = await Promise.all(queries.map((q) => catalog.searchProducts({ query: q, limit: 6, location: household.address }).catch(() => [])));
+      const seen = new Set<string>();
+      const merged = results.flat().filter((c) => c.pricedAtChains > 0 && !seen.has(c.productId) && seen.add(c.productId)).slice(0, 48);
+      const imgs = await images.resolveMany(merged.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8);
+      return ok({ aisle, products: merged.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+    }
+
     // Search-as-you-type: catalogue candidates with pictures. Cheap and
     // interactive, so it is a GET with a short limit.
     if (method === 'GET' && rest === 'search') {

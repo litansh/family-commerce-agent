@@ -48,7 +48,7 @@ export async function loadTokens(): Promise<Tokens | null> {
   return t.refreshToken ? refresh(t.refreshToken) : null;
 }
 
-export async function signIn(provider?: 'Google'): Promise<Tokens | null> {
+export async function signIn(provider?: 'Google', mode: 'login' | 'signup' = 'login'): Promise<Tokens | null> {
   const request = new AuthSession.AuthRequest({
     clientId: config.clientId,
     redirectUri,
@@ -57,7 +57,9 @@ export async function signIn(provider?: 'Google'): Promise<Tokens | null> {
     usePKCE: true,
     ...(provider ? { extraParams: { identity_provider: provider } } : {}),
   });
-  const result = await request.promptAsync(discovery);
+  // Cognito serves /signup with the same parameters as /oauth2/authorize and
+  // returns the code the same way, so sign-up is the same flow on another page.
+  const result = await request.promptAsync(mode === 'signup' ? { ...discovery, authorizationEndpoint: `${config.cognitoDomain}/signup` } : discovery);
   if (result.type !== 'success' || !result.params['code']) return null;
 
   const res = await AuthSession.exchangeCodeAsync(

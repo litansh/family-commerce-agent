@@ -10,9 +10,9 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
   const s = S();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const go = async (provider?: 'Google') => {
+  const go = async (provider?: 'Google', mode: 'login' | 'signup' = 'login') => {
     setBusy(true); setErr(null);
-    try { const tk = await signIn(provider); if (tk) onSignedIn(tk); else setErr(tr('cancelled')); }
+    try { const tk = await signIn(provider, mode); if (tk) onSignedIn(tk); else setErr(tr('cancelled')); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   };
@@ -23,15 +23,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
       {isRTL() ? <Text style={[s.small, { fontSize: 15, marginBottom: 10 }]}>Kanili</Text> : null}
       <Text style={[s.title, { fontSize: 22, marginBottom: 6 }]}>{tr('taglineShort')}</Text>
       <Text style={[s.body, { color: t.muted, marginBottom: 28 }]}>{tr('taglineLong')}</Text>
+      <Button title={tr('signUp')} onPress={() => go(undefined, 'signup')} disabled={busy} />
+      <View style={{ height: 10 }} />
+      <Button title={tr('continueEmail')} kind="secondary" onPress={() => go()} disabled={busy} />
       {config.googleEnabled ? (
         <>
-          <Button title={tr('continueGoogle')} onPress={() => go('Google')} disabled={busy} />
-          <View style={{ height: 10 }} />
-          <Button title={tr('continueEmail')} kind="secondary" onPress={() => go()} disabled={busy} />
+          <Text style={[s.faint, { textAlign: 'center', marginVertical: 10 }]}>{tr('orDivider')}</Text>
+          <Button title={tr('continueGoogle')} kind="secondary" onPress={() => go('Google')} disabled={busy} />
         </>
-      ) : (
-        <Button title={tr('continueEmail')} onPress={() => go()} disabled={busy} />
-      )}
+      ) : null}
       {err ? <Text style={[s.small, { color: t.red, marginTop: 14 }]}>{err}</Text> : null}
     </View>
   );

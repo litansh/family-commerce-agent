@@ -13,7 +13,7 @@ type Strings = Record<string, string>;
 
 const he: Strings = {
   appName: 'קנילי', tagline: 'רשימה אחת לכולם. השוואה בין כל הרשתות שמגיעות אליכם. וזיכרון של מה שאתם באמת קונים — כדי שלא תשכחו כלום.',
-  continueGoogle: 'המשך עם Google', continueEmail: 'המשך עם אימייל', cancelled: 'ההתחברות בוטלה',
+  continueGoogle: 'המשך עם Google', continueEmail: 'כניסה', signUp: 'הרשמה — חשבון חדש', orDivider: 'או', cancelled: 'ההתחברות בוטלה',
   household: 'משק הבית', householdSub: 'הרשימה, הכתובת והזיכרון שייכים למשפחה — לא לאדם אחד.',
   newFamily: 'משפחה חדשה', namePh: 'שם — למשל: משפחת שמיר', addressPh: 'כתובת למשלוח — רחוב, מספר, עיר', country: 'מדינה',
   create: 'צור משק בית', haveFamily: 'יש לכם כבר משפחה?', askCode: 'בקשו קוד הזמנה ממי שיצר אותה.', codePh: 'קוד הזמנה', join: 'הצטרף',
@@ -27,6 +27,8 @@ const he: Strings = {
   orderNow: 'הזמינו דרך קנילי · {x}', linksInstead: 'או קנו לבד עם קישורים', taglineShort: 'כל הסופרים. חנות אחת.', taglineLong: 'רשימה אחת, סל אחד, כל הרשתות — ושום דבר לא נשכח.',
   whereOrder: 'איפה אתם בדרך כלל מזמינים?', whereOrderHint: 'בחרו את הרשתות. קנילי תתחבר אליהן ותלמד מה אתם קונים.', howGet: 'איך נוח לכם לקבל?', delivery_: 'משלוח', pickup_: 'איסוף עצמי', either_: 'מה שזול יותר',
   connectTitle: 'חברו את {r} ולמדו מההיסטוריה', connectSub: 'פעם אחת, במחשב הבית: הריצו את הפקודה, התחברו בחלון שנפתח, וקנילי תקרא את ההזמנות הקודמות שלכם.', importBtn: 'ייבאו את ההזמנות הקודמות', importing: 'קוראים את ההיסטוריה…', importDone: 'נלמדו {o} הזמנות · {p} מוצרים', importFailed: 'הייבוא נכשל: {e}', importNeedsLink: 'קודם צריך לחבר את החשבון במחשב הבית.',
+  tabHome: 'בית', tabList: 'רשימה', tabOrders: 'הזמנות', tabMe: 'אני', hello: 'שלום, {n}', aisles: 'המחלקות', browseAisle: 'לכל המוצרים ›', addToList: 'הוסף', inList: 'ברשימה ✓', from: 'החל מ', atChains: 'ב-{n} רשתות',
+  ordersTitle: 'ההזמנות שלכם', noOrders: 'עדיין אין הזמנות. הרשימה הראשונה מחכה.', meTitle: 'משק הבית', members: 'בני משפחה', inviteCode: 'קוד הזמנה', signOut: 'התנתקות', yourStores: 'הרשתות שלכם', getIt: 'איך מקבלים', workerOffline: 'המחשב הבית לא מחובר עכשיו — ההזמנה תמתין בתור עד שיתחבר.',
   scan: 'סריקה', scanHint: 'כוונו את המצלמה לברקוד', cameraNeeded: 'צריך גישה למצלמה כדי לסרוק ברקודים', allowCamera: 'אפשר מצלמה', scanned: 'נסרק — מחפשים…',
   usuals: 'הרגילים שלכם', usualsHint: 'הקישו כדי להוסיף. הכתום — הגיע הזמן.', qty: 'כמות',
   forgot: 'שכחתם משהו?', forgotSub: 'דברים שאתם קונים בדרך כלל ולא ברשימה. הקישו להוספה.', everyDays: 'כל ~{n} ימים · לפני {d}', boughtTimes: 'נקנה {n}×',
@@ -47,7 +49,7 @@ const he: Strings = {
 
 const en: Strings = {
   appName: 'Kanili', tagline: 'One list for the whole family. Every store that delivers to you, compared. And a memory of what you actually buy — so nothing gets forgotten.',
-  continueGoogle: 'Continue with Google', continueEmail: 'Continue with email', cancelled: 'Sign-in was cancelled',
+  continueGoogle: 'Continue with Google', continueEmail: 'Sign in', signUp: 'Sign up — new account', orDivider: 'or', cancelled: 'Sign-in was cancelled',
   household: 'Your household', householdSub: 'The list, the address and the memory belong to the family — not to one person.',
   newFamily: 'New family', namePh: 'Name — e.g. The Shamirs', addressPh: 'Delivery address — street, number, city', country: 'Country',
   create: 'Create household', haveFamily: 'Already have a family?', askCode: 'Ask whoever created it for an invite code.', codePh: 'Invite code', join: 'Join',
@@ -61,6 +63,8 @@ const en: Strings = {
   orderNow: 'Order through Kanili · {x}', linksInstead: 'or buy yourself with links', taglineShort: 'Every store. One shop.', taglineLong: 'One list, one basket, every chain — and nothing forgotten.',
   whereOrder: 'Where do you usually order?', whereOrderHint: 'Pick your chains. Kanili connects to them and learns what you buy.', howGet: 'How do you like to get it?', delivery_: 'Delivery', pickup_: 'Pickup', either_: 'Whichever is cheaper',
   connectTitle: 'Connect {r} and learn from your history', connectSub: 'Once, on the home computer: run the command, sign in in the window that opens, and Kanili reads your past orders.', importBtn: 'Import past orders', importing: 'Reading your history…', importDone: 'Learned {o} orders · {p} products', importFailed: 'Import failed: {e}', importNeedsLink: 'Link the account on the home computer first.',
+  tabHome: 'Home', tabList: 'List', tabOrders: 'Orders', tabMe: 'Me', hello: 'Hi, {n}', aisles: 'Aisles', browseAisle: 'All products ›', addToList: 'Add', inList: 'In list ✓', from: 'from', atChains: 'at {n} chains',
+  ordersTitle: 'Your orders', noOrders: 'No orders yet. Your first list is waiting.', meTitle: 'Household', members: 'Family', inviteCode: 'Invite code', signOut: 'Sign out', yourStores: 'Your stores', getIt: 'How you get it', workerOffline: 'The home computer is offline — the order will wait in the queue until it connects.',
   scan: 'Scan', scanHint: 'Point the camera at a barcode', cameraNeeded: 'Camera access is needed to scan barcodes', allowCamera: 'Allow camera', scanned: 'Scanned — looking it up…',
   usuals: 'Your usuals', usualsHint: 'Tap to add. Amber means it is about due.', qty: 'Qty',
   forgot: 'Forgot something?', forgotSub: 'Things you usually buy that are not on the list. Tap to add.', everyDays: 'every ~{n} days · {d} days ago', boughtTimes: 'bought {n}×',

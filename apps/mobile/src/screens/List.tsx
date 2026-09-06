@@ -5,7 +5,7 @@ import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain
 import type { Api, Household, SearchHit } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
-import { loadList, newId, saveList, type Line } from '../lib/store';
+import { newId, setLines, useList, type Line } from '../lib/store';
 import { ProductImage } from '../ProductImage';
 import { Scanner } from '../Scanner';
 import { Button, Chip, Empty, Header, Input, S, t, Toast } from '../ui';
@@ -25,7 +25,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
 }) {
   const s = S();
   const rtl = isRTL();
-  const [lines, setLines] = useState<Line[]>([]);
+  const lines = useList();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -53,9 +53,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const startImport = async () => { if (!firstRetailer) return; tap(); setImp({ status: 'queued' }); await api.requestImport(household.id, firstRetailer).catch(() => setImp({ status: 'failed', error: '' })); };
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
 
-  useEffect(() => { void loadList().then(setLines); api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
+  useEffect(() => { api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
   useEffect(() => {
-    void saveList(lines);
     api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([]));
   }, [lines, api, household.id]);
 
