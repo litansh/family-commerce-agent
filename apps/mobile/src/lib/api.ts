@@ -66,6 +66,8 @@ export class Api {
   createOrder = (hid: string, legs: { retailer: string; lines: Omit<ListLine, 'id'>[] }[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { legs });
   orders = (hid: string) => this.#call<{ orders: Order[] }>('GET', `/households/${hid}/orders`);
   browse = (hid: string, aisle: string, sub?: string, page = 0) => this.#call<{ aisle: string; sub: string; subs: string[]; page: number; total: number; hasMore: boolean; products: SearchHit[] }>('GET', `/households/${hid}/browse?aisle=${encodeURIComponent(aisle)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}&page=${page}`);
+  /** Storefronts that deliver to the household's address (cached a day). */
+  stores = (hid: string) => this.#call<{ storefronts: { serviceSlug: string; brand: string; chainName: string; serviceType: string }[] }>('GET', `/households/${hid}/stores`);
   /** Live promotions across every store in the area, the household's own products first. */
   deals = (hid: string) => this.#call<{ deals: Deal[] }>('GET', `/households/${hid}/deals`);
   images = (hid: string, gtins: string[]) => this.#call<{ images: Record<string, string | null> }>('POST', `/households/${hid}/images`, { gtins });

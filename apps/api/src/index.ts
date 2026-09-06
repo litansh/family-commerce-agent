@@ -243,6 +243,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     // household's own products first. The promotions feed is cached six
     // hours under a catalogue-wide key; ranking against memory is per
     // request and free.
+    // Which storefronts deliver to this household - the list the person sees
+    // as "stores near you". Cached a day per address.
+    if (method === 'GET' && rest === 'stores') {
+      const { catalog } = requirePricing();
+      const key = `STORES#${Buffer.from(household.address).toString('base64url').slice(0, 80)}`;
+      const cached = (await readRow(TABLE, 'CATALOG', key)) as { storefronts?: unknown[]; at?: string } | undefined;
+      if (cached?.storefronts?.length && cached.at && Date.now() - Date.parse(cached.at) < 24 * 3600_000) return ok({ storefronts: cached.storefronts });
+      const storefronts = catalog.listStorefronts ? await catalog.listStorefronts(household.address).catch(() => []) : [];
+      if (storefronts.length) await writeRow(TABLE, 'CATALOG', key, { storefronts, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 3 * 86400 });
+      return ok({ storefronts });
+    }
+
     if (method === 'GET' && rest === 'deals') {
       const { catalog } = requirePricing();
       const cached = (await readRow(TABLE, 'CATALOG', 'PROMOS')) as { promos?: Promotion[]; at?: string } | undefined;

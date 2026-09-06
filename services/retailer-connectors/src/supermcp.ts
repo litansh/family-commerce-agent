@@ -12,6 +12,7 @@ import type {
   CatalogProvider,
   CatalogSearchRequest,
   Promotion,
+  StorefrontInfo,
   QuoteProvider,
   QuoteRequest,
   QuoteResponse,
@@ -223,6 +224,15 @@ export class SuperMcpCatalogProvider implements CatalogProvider {
 
   constructor(url: string = SUPERMCP_URL) {
     this.#mcp = new McpClient(url, 60_000);
+  }
+
+  async listStorefronts(address: string): Promise<readonly StorefrontInfo[]> {
+    type Raw = { serviceSlug?: string; brand?: string; chainName?: string; serviceType?: string; minimumOrder?: number | null; deliveryFeeFrom?: number | null; coverage?: { serves?: boolean } | null };
+    const res = await this.#mcp.callTool<{ options?: Raw[] }>('list_delivery_options', { address });
+    return (res.options ?? []).filter((o) => o.serviceSlug && o.coverage?.serves !== false).map((o) => ({
+      serviceSlug: o.serviceSlug!, brand: o.brand ?? '', chainName: o.chainName ?? '', serviceType: o.serviceType ?? '',
+      ...(typeof o.minimumOrder === 'number' ? { minimumOrder: o.minimumOrder } : {}), ...(typeof o.deliveryFeeFrom === 'number' ? { deliveryFeeFrom: o.deliveryFeeFrom } : {}),
+    }));
   }
 
   async listPromotions(limit: number): Promise<readonly Promotion[]> {
