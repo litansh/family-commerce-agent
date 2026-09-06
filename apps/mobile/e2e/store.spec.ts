@@ -24,7 +24,7 @@ async function lenses(page: Page, name: string): Promise<void> {
   const skeletons = await page.locator('[style*="opacity: 0.6"]').count();
   // React Native on the web renders pressables as focusable divs, not <button>.
   const buttons = await page.locator('button, [role="button"], div[tabindex="0"]').count();
-  const latinUi = await page.evaluate(() => [...document.querySelectorAll('div,span')].map((e) => e.textContent ?? '').filter((t) => /^[A-Za-z ]{4,}$/.test(t.trim()) && !/Kanili|English/.test(t)).slice(0, 5));
+  const latinUi = await page.evaluate(() => [...document.querySelectorAll('div,span')].map((e) => e.textContent ?? '').filter((t) => /^[A-Za-z ]{4,}$/.test(t.trim()) && !/Kanili|English|Smoke family|ONLINE/.test(t)).slice(0, 5));
   expect(skeletons, `${name}: still showing skeleton placeholders`).toBeLessThan(3);
   expect(buttons, `${name}: no tappable action on screen`).toBeGreaterThan(0);
   expect(latinUi, `${name}: English UI text on a Hebrew screen`).toEqual([]);

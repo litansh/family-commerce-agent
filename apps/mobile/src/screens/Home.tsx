@@ -7,7 +7,7 @@ import { AISLES, aisleOf } from '../lib/categories';
 import { currentRegion, isRTL, t as tr } from '../lib/i18n';
 import { addLine, newId, setLines, useList } from '../lib/store';
 import { ProductImage } from '../ProductImage';
-import { Header, S, t, Toast } from '../ui';
+import { Button, Header, S, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -22,6 +22,23 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
   const [memory, setMemory] = useState<HouseholdMemory | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [imp, setImp] = useState<{ status: string; orders?: number; products?: number; error?: string } | null>(null);
+  const firstRetailer = household.retailers?.[0];
+  const retailerName: Record<string, string> = { shufersal: 'שופרסל', 'rami-levy': 'רמי לוי', victory: 'ויקטורי', carrefour: 'קרפור', yochananof: 'יוחננוף', 'tiv-taam': 'טיב טעם' };
+  useEffect(() => {
+    if (!firstRetailer) return;
+    let alive = true;
+    const poll = async () => {
+      const st = await api.importStatus(household.id, firstRetailer).catch(() => null);
+      if (!alive) return;
+      setImp(st);
+      if (st && ['queued', 'connecting', 'reading', 'resolving'].includes(st.status)) setTimeout(poll, 4000);
+      if (st?.status === 'done') api.memory(household.id).then(setMemory).catch(() => null);
+    };
+    void poll();
+    return () => { alive = false; };
+  }, [api, household.id, firstRetailer]);
+  const startImport = async () => { if (!firstRetailer) return; tap(); setImp({ status: 'queued' }); await api.requestImport(household.id, firstRetailer).catch(() => setImp({ status: 'failed', error: '' })); };
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
   const locale = currentRegion().locale === 'he' ? 'he' : 'en';
 
@@ -47,6 +64,15 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
               <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: shop.length })}</Text>
               <Text style={{ color: '#D9EBDF', marginTop: 4, textAlign: rtl ? 'right' : 'left' }}>{tr('usualsHint')}</Text>
             </Pressable>
+          )}
+          {firstRetailer && memory && Object.keys(memory.products).length === 0 && imp?.status !== 'done' && (
+            <View style={[s.card, { backgroundColor: t.accentSoft }]}>
+              <Text style={[s.title, { color: t.accent, fontSize: 17 }]}>{tr('connectTitle', { r: retailerName[firstRetailer] ?? firstRetailer })}</Text>
+              <Text style={[s.small, { marginVertical: 8 }]}>{tr('connectSub')}</Text>
+              {imp && ['queued', 'connecting', 'reading', 'resolving'].includes(imp.status) ? <Text style={s.small}>{tr('importing')}</Text>
+                : imp?.status === 'failed' ? <Text style={[s.small, { color: t.red }]}>{/no saved session/.test(imp.error ?? '') ? tr('importNeedsLink') : tr('importFailed', { e: imp.error ?? '' })}</Text>
+                : <Button title={tr('importBtn')} kind="secondary" onPress={startImport} />}
+            </View>
           )}
           {suggestions.length > 0 && (
             <View style={[s.card, { backgroundColor: t.amberSoft }]}>

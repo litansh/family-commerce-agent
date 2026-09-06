@@ -93,7 +93,7 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
   return (
     <View style={s.screen}>
       <Header title={`${meta?.glyph ?? ''} ${meta?.[locale === 'he' ? 'he' : 'en'] ?? aisle}`} subtitle={total ? tr('nProducts', { n: total }) : undefined} onBack={onBack} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row' }} style={{ flexGrow: 0, marginBottom: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center' }} style={{ flexGrow: 0, height: 52, marginBottom: 8 }}>
         {subs.map((k) => (
           <Pressable key={k} onPress={() => { if (k !== activeSub) { tap(); setSub(k); } }} style={{ backgroundColor: k === activeSub ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: k === activeSub ? t.accent : t.line }}>
             <Text style={{ color: k === activeSub ? '#fff' : t.ink, fontWeight: '600' }}>{subName(k, locale)}</Text>
@@ -143,7 +143,11 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[s.screen, { paddingTop: 12 }]}>
-        <Header title={hit.name} subtitle={hit.brand ?? ''} onBack={onClose} />
+        <View style={[s.pad, { paddingBottom: 4 }]}>
+          <Pressable onPress={onClose} hitSlop={10} style={{ alignSelf: isRTL() ? 'flex-end' : 'flex-start', marginBottom: 6 }}><Text style={s.link}>{tr('back')}</Text></Pressable>
+          <Text style={[s.title, { fontSize: 22, lineHeight: 28 }]}>{hit.name}</Text>
+          {hit.brand ? <Text style={s.small}>{hit.brand}</Text> : null}
+        </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }}>
           <View style={{ alignItems: 'center', marginVertical: 10 }}><ProductImage url={hit.imageUrl} gtin={hit.gtin} name={hit.name} size={160} radius={22} /></View>
           <View style={[s.row, { marginBottom: 12 }]}>
@@ -155,10 +159,16 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
               {detail.prices && detail.prices.length > 0 ? (
                 <>
                   <View style={s.row}><Text style={s.title}>{tr('priceAt')}</Text>{detail.priceMin !== undefined && detail.priceMax !== undefined ? <Text style={s.priceSmall}>{money(detail.priceMin)}–{money(detail.priceMax)}</Text> : null}</View>
-                  {detail.prices.map((p, i) => (
-                    <View key={p.storefrontId} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
-                      <View style={s.rowStart}><Text style={s.body}>{p.brand}</Text>{i === 0 ? <Chip text={tr('cheapestHere')} tone="good" /> : null}</View>
-                      <Text style={[s.price, i === 0 && { color: t.accent }]}>{money(p.price)}</Text>
+                  {groupPrices(detail.prices).map((g, i) => (
+                    <View key={g.price} style={{ paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }}>
+                      <View style={s.row}>
+                        <View style={[s.rowStart, { flexShrink: 1 }]}>
+                          <Text style={[s.body, { flexShrink: 1 }]} numberOfLines={2}>{g.names.length === 1 ? g.names[0] : tr('atNStores', { n: g.names.length })}</Text>
+                          {i === 0 ? <Chip text={tr('cheapestHere')} tone="good" /> : null}
+                        </View>
+                        <Text style={[s.price, i === 0 && { color: t.accent }]}>{money(g.price)}</Text>
+                      </View>
+                      {g.names.length > 1 ? <Text style={s.faint} numberOfLines={2}>{g.names.join(' · ')}</Text> : null}
                     </View>
                   ))}
                 </>
@@ -182,4 +192,11 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
       </View>
     </Modal>
   );
+}
+
+/** Identical prices collapse into one row: nine chains at ₪11.74 is one fact, not nine. */
+function groupPrices(prices: { storefrontId: string; brand: string; price: number }[]): { price: number; names: string[] }[] {
+  const by = new Map<number, string[]>();
+  for (const p of prices) by.set(p.price, [...(by.get(p.price) ?? []), p.brand]);
+  return [...by.entries()].sort((a, b) => a[0] - b[0]).map(([price, names]) => ({ price, names }));
 }
