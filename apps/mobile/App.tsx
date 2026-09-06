@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
+import { t as theme } from './src/ui';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { PurchaseOption } from '@fca/domain';
@@ -71,12 +72,17 @@ export default function App() {
       : <MeScreen api={api} household={household} onSignOut={doSignOut} onShowIntro={() => setIntro(true)} />;
   }
 
+  // On the web the app sits in a phone-width frame; it is a phone app that
+  // happens to run in a browser, and stretched to a desktop it looks wrong.
+  const frame = Platform.OS === 'web' ? { width: '100%' as const, maxWidth: 430, alignSelf: 'center' as const, flex: 1, backgroundColor: theme.bg } : { flex: 1 };
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={S().screen} edges={['top', 'bottom']}>
+      <SafeAreaView style={[S().screen, Platform.OS === 'web' && { backgroundColor: '#ECE8DF' }]} edges={['top', 'bottom']}>
         <StatusBar style="dark" />
-        <View style={{ flex: 1 }}>{body}</View>
-        {showTabs ? <TabBar active={tab} onChange={setTab} badge={lines.length || undefined} /> : null}
+        <View style={frame}>
+          <View style={{ flex: 1 }}>{body}</View>
+          {showTabs ? <TabBar active={tab} onChange={setTab} badge={lines.length || undefined} /> : null}
+        </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );

@@ -30,6 +30,8 @@ const discovery = {
 
 export const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kanili', path: 'auth' });
 
+export async function saveTokens(t: Tokens): Promise<void> { await store(t); }
+
 async function store(t: Tokens | null): Promise<void> {
   if (Platform.OS === 'web') {
     if (t) localStorage.setItem(KEY, JSON.stringify(t));

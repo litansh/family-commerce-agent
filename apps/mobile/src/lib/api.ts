@@ -40,7 +40,8 @@ export class Api {
   }
 
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
-  createHousehold = (name: string, address: string, country: string, retailers: string[], fulfillment: 'delivery' | 'pickup' | 'either') => this.#call<Household>('POST', '/households', { name, address, country, retailers, fulfillment });
+  createHousehold = (h: { name: string; address: string; country: string; retailers: string[]; fulfillment: 'delivery' | 'pickup' | 'either'; language: string; addressDetails: Record<string, unknown> }) => this.#call<Household>('POST', '/households', h);
+  suggestAddress = (q: string) => this.#call<{ suggestions: { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }[] }>('GET', `/geo/suggest?q=${encodeURIComponent(q)}`);
   household = (hid: string) => this.#call<Household>('GET', `/households/${hid}`);
   requestImport = (hid: string, retailer: string) => this.#call<{ retailer: string; status: string }>('POST', `/households/${hid}/imports`, { retailer });
   importStatus = (hid: string, retailer: string) => this.#call<{ retailer: string; status: string; orders?: number; products?: number; error?: string }>('GET', `/households/${hid}/imports/${retailer}`);

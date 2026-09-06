@@ -25,6 +25,10 @@ export interface Household {
   readonly retailers?: readonly string[];
   /** How they prefer to get it. Drives the default quote. */
   readonly fulfillment?: 'delivery' | 'pickup' | 'either';
+  /** Apartment, floor, entrance, notes — what the courier needs beyond the street. */
+  readonly addressDetails?: Record<string, unknown>;
+  /** UI language the family chose; the country stays IL for now. */
+  readonly language?: string;
   readonly createdBy: string;
   readonly createdAt: string;
 }
@@ -82,7 +86,7 @@ export class HouseholdStore {
     return h;
   }
 
-  async update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment'>>): Promise<Household> {
+  async update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment' | 'addressDetails' | 'language'>>): Promise<Household> {
     const names: Record<string, string> = {}; const values: Record<string, unknown> = {}; const sets: string[] = [];
     for (const [k, v] of Object.entries(patch)) { if (v === undefined) continue; names[`#${k}`] = k; values[`:${k}`] = v; sets.push(`#${k} = :${k}`); }
     if (sets.length > 0) await this.#doc.send(new UpdateCommand({ TableName: this.#table, Key: { PK: `HOUSEHOLD#${id}`, SK: 'META' }, UpdateExpression: `SET ${sets.join(', ')}`, ExpressionAttributeNames: names, ExpressionAttributeValues: values }));

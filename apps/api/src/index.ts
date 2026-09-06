@@ -73,10 +73,31 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const created = await households.create(caller.userId, caller.email, name, address, country);
       const retailers = Array.isArray(body['retailers']) ? (body['retailers'] as unknown[]).filter((x): x is string => typeof x === 'string') : undefined;
       const fulfillment = (['delivery', 'pickup', 'either'] as const).find((f) => f === body['fulfillment']);
-      return ok(retailers || fulfillment ? await households.update(created.id, { ...(retailers ? { retailers } : {}), ...(fulfillment ? { fulfillment } : {}) }) : created, 201);
+      const addressDetails = typeof body['addressDetails'] === 'object' && body['addressDetails'] ? (body['addressDetails'] as Record<string, unknown>) : undefined;
+      const language = typeof body['language'] === 'string' ? body['language'] : undefined;
+      return ok(await households.update(created.id, { ...(retailers ? { retailers } : {}), ...(fulfillment ? { fulfillment } : {}), ...(addressDetails ? { addressDetails } : {}), ...(language ? { language } : {}) }), 201);
     }
     if (method === 'POST' && seg[0] === 'invites' && seg[2] === 'accept' && seg[1]) {
       return ok(await households.acceptInvite(seg[1], caller.userId, caller.email));
+    }
+
+    // Address autocomplete: Israeli streets in Hebrew, via OpenStreetMap's
+    // Nominatim. Verified means the geocoder found the street and number.
+    if (method === 'GET' && path === '/geo/suggest') {
+      const q = (event.queryStringParameters?.['q'] ?? '').trim();
+      if (q.length < 3) return ok({ suggestions: [] });
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=il&accept-language=he&limit=6&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { 'user-agent': 'kanili/0.1 (contact: litansh@gmail.com)' } }).catch(() => null);
+      if (!res?.ok) return ok({ suggestions: [] });
+      const rows = (await res.json()) as { display_name: string; lat: string; lon: string; address?: Record<string, string> }[];
+      const suggestions = rows.map((r) => {
+        const a = r.address ?? {};
+        const street = a['road'] ?? a['pedestrian'] ?? '';
+        const number = a['house_number'] ?? '';
+        const city = a['city'] ?? a['town'] ?? a['village'] ?? a['municipality'] ?? '';
+        return { street, number, city, label: [street, number].filter(Boolean).join(' ') + (city ? `, ${city}` : ''), lat: Number(r.lat), lng: Number(r.lon), verified: !!street && !!number && !!city };
+      }).filter((x) => x.street);
+      return ok({ suggestions });
     }
 
     // --- everything below is scoped to one household ---------------------

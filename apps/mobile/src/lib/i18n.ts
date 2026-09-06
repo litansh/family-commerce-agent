@@ -15,7 +15,7 @@ const he: Strings = {
   appName: 'קנילי', tagline: 'רשימה אחת לכולם. השוואה בין כל הרשתות שמגיעות אליכם. וזיכרון של מה שאתם באמת קונים — כדי שלא תשכחו כלום.',
   continueGoogle: 'המשך עם Google', continueEmail: 'כניסה', signUp: 'הרשמה — חשבון חדש', orDivider: 'או', cancelled: 'ההתחברות בוטלה',
   household: 'משק הבית', householdSub: 'הרשימה, הכתובת והזיכרון שייכים למשפחה — לא לאדם אחד.',
-  newFamily: 'משפחה חדשה', namePh: 'שם — למשל: משפחת שמיר', addressPh: 'כתובת למשלוח — רחוב, מספר, עיר', country: 'מדינה',
+  newFamily: 'משפחה חדשה', namePh: 'שם — למשל: משפחת שמיר', country: 'מדינה',
   create: 'צור משק בית', haveFamily: 'יש לכם כבר משפחה?', askCode: 'בקשו קוד הזמנה ממי שיצר אותה.', codePh: 'קוד הזמנה', join: 'הצטרף',
   invite: 'הזמנת בן משפחה', inviteMsg: 'קוד הזמנה למשפחה: {code} (תקף 7 ימים)', inviteTitle: 'הזמנה',
   searching: 'מחפשים…', noResults: 'לא נמצא — נוסיף כמו שכתבתם', addAsTyped: 'הוסף ״{q}״ כמו שכתבתם', pickThis: 'זה', confirmed: 'נשמר בזיכרון ✓', tapToFix: 'הקישו על פריט כדי לבחור מוצר מדויק',
@@ -35,6 +35,11 @@ const he: Strings = {
   intro3Title: 'שום דבר לא נשכח', intro3Body: 'קנילי יודעת שחלב נגמר כל ~4 ימים. כשמגיע הזמן — היא מזכירה, לפני שקונים ביוקר במכולת.', intro3Days: 'לפני {d} ימים', intro3Due: 'הגיע הזמן לחלב — נוסיף?', intro3Rhythm: 'לומדים את הקצב…',
   intro4Title: 'שלוש הקשות', intro4Body: 'ככה נראית קנייה שבועית בקנילי. נסו:', intro4a: 'הוסיפו את הקנייה הרגילה', intro4b: 'השוו בכל הרשתות', intro4c: 'אשרו את הסכום', intro4Done: 'זהו. המצרכים בדרך. 🛒',
   couponChip: 'קופון −{x}', connectedStores: 'החנויות המחוברות', workerOnline: 'המחשב הבית מחובר', workerOff: 'המחשב הבית לא מחובר', linked: 'מחובר', notLinked: 'לא מחובר', copyCmd: 'העתיקו את הפקודה', copied: 'הועתק ✓', showIntro: 'הצג את ההקדמה שוב',
+  signInTitle: 'כניסה', signUpTitle: 'יצירת חשבון', confirmTitle: 'אימות המייל', forgotTitle: 'שחזור סיסמה', resetTitle: 'סיסמה חדשה',
+  email: 'אימייל', password: 'סיסמה', passwordAgain: 'הסיסמה שוב', newPassword: 'סיסמה חדשה', code: 'קוד האימות מהמייל', pwRule: 'לפחות 10 תווים, עם אות ומספר.',
+  signInBtn: 'כניסה', signUpBtn: 'יצירת חשבון', confirmBtn: 'אימות', sendCode: 'שלחו לי קוד', resetBtn: 'שמירת סיסמה', noAccount: 'אין לכם חשבון? הרשמה', forgotLink: 'שכחתי סיסמה', resend: 'שלחו קוד שוב', backToSignIn: 'חזרה לכניסה', codeSent: 'שלחנו קוד ל-{e}',
+  errExists: 'כבר יש חשבון עם האימייל הזה — נסו להיכנס.', errWeak: 'הסיסמה חלשה מדי: לפחות 10 תווים, עם אות ומספר.', errMismatch: 'הסיסמאות לא זהות.', errCode: 'הקוד לא נכון.', errCodeExpired: 'הקוד פג — שלחנו חדש.', errWrong: 'האימייל או הסיסמה לא נכונים.', errUnconfirmed: 'המייל עדיין לא אומת.', errLimit: 'יותר מדי ניסיונות — נסו שוב בעוד כמה דקות.',
+  addressLabel: 'כתובת למשלוח', addressPh: 'רחוב ומספר, עיר — למשל: ביאליק 20 רמת גן', verified: 'מאומת', partial: 'חלקי', addressVerified: 'הכתובת אומתה', addressPartial: 'חסר מספר בית — בחרו כתובת מדויקת מהרשימה', apt: 'דירה', floor: 'קומה', entrance: 'כניסה', notesPh: 'הערות לשליח (קוד, מיקום…)', pickFromList: 'בחרו את הכתובת מהרשימה כדי להמשיך',
   scan: 'סריקה', scanHint: 'כוונו את המצלמה לברקוד', cameraNeeded: 'צריך גישה למצלמה כדי לסרוק ברקודים', allowCamera: 'אפשר מצלמה', scanned: 'נסרק — מחפשים…',
   usuals: 'הרגילים שלכם', usualsHint: 'הקישו כדי להוסיף. הכתום — הגיע הזמן.', qty: 'כמות',
   forgot: 'שכחתם משהו?', forgotSub: 'דברים שאתם קונים בדרך כלל ולא ברשימה. הקישו להוספה.', everyDays: 'כל ~{n} ימים · לפני {d}', boughtTimes: 'נקנה {n}×',
@@ -57,7 +62,7 @@ const en: Strings = {
   appName: 'Kanili', tagline: 'One list for the whole family. Every store that delivers to you, compared. And a memory of what you actually buy — so nothing gets forgotten.',
   continueGoogle: 'Continue with Google', continueEmail: 'Sign in', signUp: 'Sign up — new account', orDivider: 'or', cancelled: 'Sign-in was cancelled',
   household: 'Your household', householdSub: 'The list, the address and the memory belong to the family — not to one person.',
-  newFamily: 'New family', namePh: 'Name — e.g. The Shamirs', addressPh: 'Delivery address — street, number, city', country: 'Country',
+  newFamily: 'New family', namePh: 'Name — e.g. The Shamirs', country: 'Country',
   create: 'Create household', haveFamily: 'Already have a family?', askCode: 'Ask whoever created it for an invite code.', codePh: 'Invite code', join: 'Join',
   invite: 'Invite family', inviteMsg: 'Family invite code: {code} (valid 7 days)', inviteTitle: 'Invite',
   searching: 'Searching…', noResults: 'No match — add it as typed', addAsTyped: 'Add “{q}” as typed', pickThis: 'This one', confirmed: 'Saved to memory ✓', tapToFix: 'Tap an item to pick the exact product',
@@ -77,6 +82,11 @@ const en: Strings = {
   intro3Title: 'Nothing forgotten', intro3Body: 'Kanili knows milk runs out every ~4 days. When it is time, it reminds you — before you pay corner-shop prices.', intro3Days: '{d} days ago', intro3Due: 'Milk is due — add it?', intro3Rhythm: 'Learning the rhythm…',
   intro4Title: 'Three taps', intro4Body: 'This is a weekly shop in Kanili. Try it:', intro4a: 'Add the usual shop', intro4b: 'Compare every store', intro4c: 'Approve the total', intro4Done: 'That’s it. Groceries on the way. 🛒',
   couponChip: 'Coupon −{x}', connectedStores: 'Connected stores', workerOnline: 'Home computer online', workerOff: 'Home computer offline', linked: 'Linked', notLinked: 'Not linked', copyCmd: 'Copy the command', copied: 'Copied ✓', showIntro: 'Show the intro again',
+  signInTitle: 'Sign in', signUpTitle: 'Create account', confirmTitle: 'Verify your email', forgotTitle: 'Reset password', resetTitle: 'New password',
+  email: 'Email', password: 'Password', passwordAgain: 'Password again', newPassword: 'New password', code: 'Verification code from email', pwRule: 'At least 10 characters, with a letter and a number.',
+  signInBtn: 'Sign in', signUpBtn: 'Create account', confirmBtn: 'Verify', sendCode: 'Send me a code', resetBtn: 'Save password', noAccount: 'No account? Sign up', forgotLink: 'Forgot password', resend: 'Resend code', backToSignIn: 'Back to sign in', codeSent: 'We sent a code to {e}',
+  errExists: 'There is already an account with this email — try signing in.', errWeak: 'Password too weak: at least 10 characters, with a letter and a number.', errMismatch: 'Passwords do not match.', errCode: 'Wrong code.', errCodeExpired: 'Code expired — we sent a new one.', errWrong: 'Wrong email or password.', errUnconfirmed: 'Email not verified yet.', errLimit: 'Too many attempts — try again in a few minutes.',
+  addressLabel: 'Delivery address', addressPh: 'Street and number, city', verified: 'Verified', partial: 'Partial', addressVerified: 'Address verified', addressPartial: 'Missing house number — pick an exact address from the list', apt: 'Apt', floor: 'Floor', entrance: 'Entrance', notesPh: 'Notes for the courier (code, location…)', pickFromList: 'Pick the address from the list to continue',
   scan: 'Scan', scanHint: 'Point the camera at a barcode', cameraNeeded: 'Camera access is needed to scan barcodes', allowCamera: 'Allow camera', scanned: 'Scanned — looking it up…',
   usuals: 'Your usuals', usualsHint: 'Tap to add. Amber means it is about due.', qty: 'Qty',
   forgot: 'Forgot something?', forgotSub: 'Things you usually buy that are not on the list. Tap to add.', everyDays: 'every ~{n} days · {d} days ago', boughtTimes: 'bought {n}×',
@@ -97,10 +107,15 @@ const en: Strings = {
 
 const TABLES: Partial<Record<Locale, Strings>> = { he, en };
 
-let region: Region = regionOf(getLocales()[0]?.regionCode ?? undefined);
+// Israel is the product today; the country is fixed and only the language
+// is a choice. Hebrew unless the device is clearly not Hebrew.
+const deviceLang = getLocales()[0]?.languageCode ?? 'he';
+let region: Region = { ...regionOf('IL'), locale: deviceLang === 'en' ? 'en' : 'he', rtl: deviceLang !== 'en' };
+
+export function setLanguage(l: 'he' | 'en'): void { region = { ...region, locale: l, rtl: l === 'he' }; }
 
 /** Called once the household is known; before that, the device decides. */
-export function setRegion(r: Region): void { region = r; }
+export function setRegion(r: Region): void { region = { ...r, locale: region.locale, rtl: region.rtl }; }
 export function currentRegion(): Region { return region; }
 export const dir = (): 'rtl' | 'ltr' => (region.rtl ? 'rtl' : 'ltr');
 export const isRTL = (): boolean => region.rtl;

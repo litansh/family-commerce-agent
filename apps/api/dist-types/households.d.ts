@@ -20,6 +20,10 @@ export interface Household {
     readonly retailers?: readonly string[];
     /** How they prefer to get it. Drives the default quote. */
     readonly fulfillment?: 'delivery' | 'pickup' | 'either';
+    /** Apartment, floor, entrance, notes — what the courier needs beyond the street. */
+    readonly addressDetails?: Record<string, unknown>;
+    /** UI language the family chose; the country stays IL for now. */
+    readonly language?: string;
     readonly createdBy: string;
     readonly createdAt: string;
 }
@@ -36,7 +40,7 @@ export declare class HouseholdStore {
     create(userId: string, email: string | undefined, name: string, address: string, country: string): Promise<Household>;
     listForUser(userId: string): Promise<Household[]>;
     get(id: string): Promise<Household | undefined>;
-    update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment'>>): Promise<Household>;
+    update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment' | 'addressDetails' | 'language'>>): Promise<Household>;
     /** The one authorisation check. Throws 404, not 403: an outsider learns nothing. */
     requireMember(householdId: string, userId: string): Promise<Membership>;
     createInvite(householdId: string): Promise<{
