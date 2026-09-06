@@ -10,6 +10,7 @@ import { money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
 import { getMode, setMode } from '../lib/prefs';
 import { StoreLink } from './StoreLink';
+import { storeForStorefront } from '../lib/stores';
 
 const LETTERS = 'אבגדה';
 
@@ -17,8 +18,7 @@ const LETTERS = 'אבגדה';
  * The costed ways to buy the list. Cash is the headline; time cost is shown
  * separately and never merged. Anything a storefront cannot supply is named.
  */
-const WORKERS: Record<string, RegExp> = { shufersal: /shufersal/i, 'rami-levy': /rami-levy/i };
-const retailerOf = (storefrontId: string) => Object.entries(WORKERS).find(([, re]) => re.test(storefrontId))?.[0];
+const retailerOf = (storefrontId: string) => storeForStorefront(storefrontId)?.id;
 
 /** Build order legs from an option: every leg the worker can drive. */
 function legsFor(option: PurchaseOption, quote: QuoteResult) {

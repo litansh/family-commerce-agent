@@ -5,7 +5,7 @@ import type { Api, Household } from '../lib/api';
 import { t as tr } from '../lib/i18n';
 import { Button, Chip, Header, LanguagePicker, S, t } from '../ui';
 import { useLanguage } from '../lib/i18n';
-import { STORES } from '../lib/stores';
+import { STORE_ORDER, STORES } from '../lib/stores';
 import { useLinked, markLinked, markUnlinked } from '../lib/linked';
 import { StoreLink } from './StoreLink';
 import { Mark } from '../Logo';
@@ -39,11 +39,15 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
           <Text style={[s.title, { marginBottom: 4 }]}>{tr('connectedStores')}</Text>
           <Text style={[s.small, { marginBottom: 8 }]}>{tr('connectedStoresSub')}</Text>
           {/* Every store Kanili can order from - not only the ones picked at setup. */}
-          {[...new Set([...(household.retailers ?? []), ...Object.keys(STORES)])].map((r) => {
+          {STORE_ORDER.map((r) => {
             const on = linked.includes(r);
+            const otp = STORES[r]?.loginKind === 'otp';
             return (
               <View key={r} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
-                <View style={s.rowStart}><Text style={s.body}>{STORES[r]?.name ?? r}</Text><Chip text={on ? tr('linked', {}) : tr('notLinked')} tone={on ? 'good' : 'warn'} /></View>
+                <View style={[s.rowStart, { flexShrink: 1, flexWrap: 'wrap' }]}>
+                  <Text style={s.body} numberOfLines={1}>{STORES[r]?.name ?? r}</Text>
+                  <Chip text={on ? tr('linked', {}) : otp ? tr('otpBadge') : tr('pwBadge')} tone={on ? 'good' : otp ? 'good' : 'neutral'} />
+                </View>
                 {on
                   ? <View style={[s.rowStart, { gap: 14 }]}>
                       <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('sync')}</Text></Pressable>
