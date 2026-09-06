@@ -9,6 +9,7 @@ import { Api, type Household, type QuoteResult } from './src/lib/api';
 import { loadTokens, signOut, type Tokens } from './src/lib/auth';
 import { isRTL, loadLanguage, setRegion, t as tr, useLanguage } from './src/lib/i18n';
 import { clearList, useList, type Line } from './src/lib/store';
+import { carouselBusy } from './src/lib/gesture';
 import { HouseholdSetup } from './src/screens/Household';
 import { HomeScreen } from './src/screens/Home';
 import { AisleScreen } from './src/screens/Aisle';
@@ -62,9 +63,11 @@ export default function App() {
   const goTabRef = useRef(goTab);
   goTabRef.current = goTab;
   const pan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 16 && Math.abs(g.dx) > Math.abs(g.dy) * 1.8,
+    // Deliberate only: a long, clearly sideways, reasonably quick drag that did
+    // not begin on a carousel. Nothing else moves the windows.
+    onMoveShouldSetPanResponder: (_e, g) => !carouselBusy() && Math.abs(g.dx) > 36 && Math.abs(g.dx) > Math.abs(g.dy) * 2.5,
     onPanResponderRelease: (_e, g) => {
-      if (Math.abs(g.dx) < 56) return;
+      if (Math.abs(g.dx) < 90 || Math.abs(g.vx) < 0.25 || carouselBusy()) return;
       const i = TAB_ORDER.indexOf(tabRef.current);
       const advance = isRTL() ? g.dx > 0 : g.dx < 0;
       const n = advance ? i + 1 : i - 1;

@@ -58,7 +58,7 @@ export class Api {
   createHousehold = (h: { name: string; address: string; country: string; retailers: string[]; fulfillment: 'delivery' | 'pickup' | 'either'; language: string; addressDetails: Record<string, unknown> }) => this.#call<Household>('POST', '/households', h);
   suggestAddress = (q: string) => this.#call<{ suggestions: { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }[] }>('GET', `/geo/suggest?q=${encodeURIComponent(q)}`);
   household = (hid: string) => this.#call<Household>('GET', `/households/${hid}`);
-  importHistory = (hid: string, retailer: string, orders: { at: string; lines: { name: string; code?: string; qty: number }[] }[]) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/import-history`, { retailer, orders });
+  importHistory = (hid: string, retailer: string, orders: { at: string; lines: { name: string; code?: string; qty: number }[] }[], diag?: Record<string, unknown>) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/import-history`, { retailer, orders, ...(diag ? { diag } : {}) });
   requestImport = (hid: string, retailer: string) => this.#call<{ retailer: string; status: string }>('POST', `/households/${hid}/imports`, { retailer });
   importStatus = (hid: string, retailer: string) => this.#call<{ retailer: string; status: string; orders?: number; products?: number; error?: string }>('GET', `/households/${hid}/imports/${retailer}`);
   search = (hid: string, q: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);

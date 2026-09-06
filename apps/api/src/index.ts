@@ -301,6 +301,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (method === 'POST' && rest === 'import-history') {
       const { catalog } = requirePricing();
       const raw = arr<{ at?: string; lines?: { name?: string; code?: string; qty?: number }[] }>(body['orders'], 'orders');
+      // The phone's diagnostic of what the store returned - the only window we
+      // have into a session that lives on the device.
+      console.log('import-history', JSON.stringify({ hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
       const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
       const orders: { at: string; lines: { phrase: string; gtin: string; productName: string; brand?: string; packQty?: number }[] }[] = [];
       for (const o of raw.slice(0, 40)) {

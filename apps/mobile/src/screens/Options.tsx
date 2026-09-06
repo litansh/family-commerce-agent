@@ -8,6 +8,7 @@ import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
 import { money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
+import { getMode, setMode } from '../lib/prefs';
 import { StoreLink } from './StoreLink';
 
 const LETTERS = 'אבגדה';
@@ -53,7 +54,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // Cheap ↔ fast. "Fast" means one delivery from one store: nothing to wait
   // for twice, nothing to drive to. "Balanced" takes the one-store order when
   // it is within a few percent of the cheapest split, else the cheapest.
-  const [strategy, setStrategy] = useState<'cheap' | 'balanced' | 'fast'>('cheap');
+  const [strategy, setStrategyState] = useState<'cheap' | 'balanced' | 'fast'>(getMode());
+  const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
   const [whyNot, setWhyNot] = useState(false);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
@@ -136,6 +138,31 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
           );
         })}
 
+        {/* Every store, one line each: what this basket costs there, or why it cannot be bought there. */}
+        {(() => {
+          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const }));
+          const rej = q.rejected.map((r) => ({ brand: r.brand, total: r.itemsSubtotal, coverage: r.requestedLines ? r.pricedLines / r.requestedLines : 0, ok: false as const, short: r.code === 'minimum' ? r.amountToMinimum : undefined }));
+          const rows = [...singles, ...rej].sort((a, b) => Number(b.ok) - Number(a.ok) || a.total - b.total);
+          if (rows.length === 0) return null;
+          const cheapest = singles.length ? Math.min(...singles.map((x) => x.total)) : 0;
+          return (
+            <View style={[s.card, { paddingVertical: 6 }]}>
+              <Text style={[s.title, { fontSize: 16, paddingVertical: 8 }]}>{tr('tblStores')}</Text>
+              {rows.map((r, i) => (
+                <View key={`${r.brand}-${i}`} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line, opacity: r.ok ? 1 : 0.6 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{r.brand}</Text>
+                    <Text style={[s.faint, { fontSize: 11 }]}>{r.ok ? tr('tblCovers', { p: Math.round(r.coverage * 100) }) : r.short !== undefined ? tr('tblShort', { x: money(r.short) }) : tr('tblCovers', { p: Math.round(r.coverage * 100) })}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[s.price, { fontSize: 18, color: r.ok && r.total === cheapest ? t.accent : t.ink }]}>{money(r.total)}</Text>
+                    {r.ok && r.total > cheapest ? <Text style={[s.faint, { fontSize: 11 }]}>+{money(r.total - cheapest)}</Text> : null}
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })()}
         {q.rejected.length > 0 ? (
           <Pressable onPress={() => setWhyNot((v) => !v)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('whyNot')} ({q.rejected.length}) {whyNot ? '▴' : '▾'}</Text></Pressable>
         ) : null}
