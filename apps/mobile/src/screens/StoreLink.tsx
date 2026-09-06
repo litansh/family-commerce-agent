@@ -47,6 +47,18 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   }, [WebView, store, storeId]);
 
   const [diag, setDiag] = useState<string | null>(null);
+  // The person's own e-mail, filled into the store's form on their own device
+  // so the only thing left to type is the code (or, once, a password).
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => { api.me().then((m) => setEmail(m.email ?? null)).catch(() => null); }, [api]);
+  const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js); };
+  const settle = () => {
+    // After a load: open the login dialog and fill the e-mail; SPAs need a second pass.
+    inject(store?.openLoginJs);
+    setTimeout(() => { inject(store?.openLoginJs); if (email) inject(store?.prefillEmailJs?.(email)); }, 1200);
+    setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 3000);
+  };
+  const createPassword = () => { inject(store?.forgotJs); setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 900); };
   const postHistory = async (json: string): Promise<void> => {
     try {
       const parsed = JSON.parse(json) as unknown;
@@ -97,6 +109,12 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
           <>
             <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 10 }}>
               <Text style={[s.small, { color: t.accent, fontWeight: '600' }]}>{store.loginKind === 'password' ? tr('linkTipPw') : tr('linkTipOtp')}</Text>
+              {store.forgotJs ? (
+                <View style={[s.rowStart, { marginTop: 8, gap: 8 }]}>
+                  <Pressable onPress={createPassword} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('createPwOnce')}</Text></Pressable>
+                  <Text style={[s.faint, { flex: 1 }]}>{tr('createPwOnceSub')}</Text>
+                </View>
+              ) : null}
             </View>
             <View style={{ flex: 1, overflow: 'hidden' }}>
               <WebView
@@ -113,6 +131,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 // A real mobile Safari UA so the store serves its normal phone flow
                 // (and iOS offers the saved-password / SMS-code autofill).
                 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+                onLoadEnd={settle}
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:1') { setSignedIn(true); if (!didImport.current && storeId === 'shufersal') { didImport.current = true; setImporting(true); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(HISTORY_JS); } }

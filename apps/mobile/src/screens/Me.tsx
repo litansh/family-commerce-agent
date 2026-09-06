@@ -38,7 +38,8 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         <View style={s.card}>
           <Text style={[s.title, { marginBottom: 4 }]}>{tr('connectedStores')}</Text>
           <Text style={[s.small, { marginBottom: 8 }]}>{tr('connectedStoresSub')}</Text>
-          {(household.retailers ?? ['shufersal']).map((r) => {
+          {/* Every store Kanili can order from - not only the ones picked at setup. */}
+          {[...new Set([...(household.retailers ?? []), ...Object.keys(STORES)])].map((r) => {
             const on = linked.includes(r);
             return (
               <View key={r} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>

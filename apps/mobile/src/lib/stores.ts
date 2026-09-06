@@ -15,6 +15,12 @@ export interface StoreDef {
   readonly signedInProbe: string;
   /** A JS expression evaluated in the WebView that returns true when signed in. */
   readonly signedInCheck: string;
+  /** JS run after each page load: open the store's login dialog so the person lands on the one field that matters. */
+  readonly openLoginJs?: string;
+  /** JS that fills the person's e-mail into the login form (their own address, on their own device). */
+  readonly prefillEmailJs?: (email: string) => string;
+  /** JS that opens the store's "create/reset password" flow, for stores that insist on a password. */
+  readonly forgotJs?: string;
 }
 
 export const STORES: Record<string, StoreDef> = {
@@ -28,14 +34,22 @@ export const STORES: Record<string, StoreDef> = {
     // Follow the redirect and look at where we landed - opaque redirects made the
     // manual variant unreliable inside WKWebView.
     signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
+    prefillEmailJs: (email) => `(()=>{const i=document.querySelector('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]');if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(email)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`,
+    forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
   },
   'rami-levy': {
     id: 'rami-levy',
     name: 'רמי לוי',
-    loginUrl: 'https://www.rami-levy.co.il/he/online',
+    // No password anywhere: e-mail → "send me a code" → the SMS code, which iOS
+    // fills in by itself. The site opens its login dialog from a header button.
+    loginUrl: 'https://www.rami-levy.co.il/he',
     loginKind: 'otp',
     signedInProbe: 'https://www.rami-levy.co.il/api/v2/site',
-    signedInCheck: `(!!document.querySelector('a[href*="my-account"],[class*="user-name"],[class*="account"]'))`,
+    // Signed in = the page has hydrated (search box present) and the header no
+    // longer offers "התחברות".
+    signedInCheck: `(()=>{if(!document.querySelector('input[type="search"]'))return false;return ![...document.querySelectorAll('button,a')].some(x=>/^\\s*התחברות\\s*$/.test(x.textContent||''));})()`,
+    openLoginJs: `(()=>{if(document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"]'))return;const b=[...document.querySelectorAll('button')].find(x=>/^\\s*התחברות\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
+    prefillEmailJs: (email) => `(()=>{const i=document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]');if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(email)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`,
   },
 };
 
