@@ -174,7 +174,8 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
 const PROBE_JS = `(async()=>{try{
   const out={href:location.href,title:document.title};
   // Every same-origin API call the page has made so far - the map of the store's real endpoints.
-  out.api=[...new Set(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.startsWith(location.origin)&&/\\/api\\/|\\/rest\\/|json|my-account|order|cart|history|user|auth|login/i.test(u)).map(u=>u.replace(location.origin,'').slice(0,140)))].slice(0,40);
+  // Same-origin paths and cross-origin API hosts alike: the shared platform keeps its API on another host.
+  out.api=[...new Set(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>/\\/api\\/|\\/rest\\/|graphql|json|my-account|order|cart|history|user|auth|login|session|customer|token/i.test(u)&&!/google|facebook|datadog|analytics|gtm|hotjar|cloudflare|\\.(png|jpe?g|svg|woff2?|css)(\\?|$)/i.test(u)).map(u=>u.replace(/^https?:\\/\\//,'').replace(location.host,'').slice(0,150)))].slice(0,40);
   if(location.hostname.includes('shufersal')){const r=await fetch('/online/he/my-account/orders',{credentials:'include'});const t=await r.text();Object.assign(out,{status:r.status,url:r.url,len:t.length,loginInPage:/login|התחבר|כניסה/i.test(t.slice(0,6000)),logoutLink:!!document.querySelector('a[href*="logout"]')});}
   out.bodyHead=document.body?document.body.innerText.slice(0,240).replace(/\\s+/g,' '):'';
   out.header=((document.querySelector('header')||{}).innerText||'').slice(0,200).replace(/\\s+/g,' ');
