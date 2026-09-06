@@ -47,8 +47,11 @@ export const STORES: Record<string, StoreDef> = {
     signedInProbe: 'https://www.rami-levy.co.il/api/v2/site',
     // Signed in = the page has hydrated (search box present) and the header no
     // longer offers "התחברות".
-    signedInCheck: `(()=>{if(!document.querySelector('input[type="search"]'))return false;return ![...document.querySelectorAll('button,a')].some(x=>/^\\s*התחברות\\s*$/.test(x.textContent||''));})()`,
-    openLoginJs: `(()=>{if(document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"]'))return;const b=[...document.querySelectorAll('button')].find(x=>/^\\s*התחברות\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
+    // The site is a Nuxt app: its auth module knows whether you are in. Fall
+    // back to the header, which reads "כניסה" (phone) / "התחברות" (desktop)
+    // while logged out and shows the person's name or "התנתקות" once in.
+    signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}const h=((document.querySelector('header')||document.body).innerText||'').slice(0,600);if(!h)return false;return /התנתק|החשבון שלי|שלום[, ]/.test(h)&&!/(^|\\s)(כניסה|התחברות)(\\s|$)/.test(h);})()`,
+    openLoginJs: `(()=>{if(document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"]'))return;const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => `(()=>{const i=document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]');if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(email)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`,
   },
 };
