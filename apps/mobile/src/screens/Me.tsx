@@ -19,6 +19,16 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   const [code, setCode] = useState<string | null>(null);
   const [worker, setWorker] = useState<{ online: boolean; linked: Record<string, boolean> } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // Only stores that actually deliver here. Until the answer arrives (or if it
+  // fails), show everything rather than nothing.
+  const [nearby, setNearby] = useState<string[] | null>(null);
+  useEffect(() => {
+    api.stores(household.id).then((r) => {
+      const hay = r.storefronts.map((x) => `${x.serviceSlug} ${x.brand} ${x.chainName}`);
+      setNearby(STORE_ORDER.filter((id) => hay.some((h) => STORES[id]!.storefront.test(h))));
+    }).catch(() => setNearby(null));
+  }, [api, household.id]);
+  const storeIds = nearby && nearby.length > 0 ? [...new Set([...nearby, ...linked])] : STORE_ORDER;
   useEffect(() => { const tick = () => api.worker(household.id).then(setWorker).catch(() => null); tick(); const h = setInterval(tick, 15000); return () => clearInterval(h); }, [api, household.id]);
   const cmd = (r: string) => `cd ~/GolandProjects/family-commerce-agent && source ~/.kanili/env && KANILI_HOUSEHOLD=${household.id} KANILI_RETAILER=${r} npm run link -w @fca/order-worker`;
   const copy = async (r: string) => { const c = cmd(r); if (Platform.OS === 'web') await navigator.clipboard?.writeText(c); else await Clipboard.setStringAsync(c); setCopied(r); setTimeout(() => setCopied(null), 1500); };
@@ -40,7 +50,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
           <Text style={[s.title, { marginBottom: 4 }]}>{tr('connectedStores')}</Text>
           <Text style={[s.small, { marginBottom: 8 }]}>{tr('connectedStoresSub')}</Text>
           {/* Every store Kanili can order from - not only the ones picked at setup. */}
-          {STORE_ORDER.map((r) => {
+          {storeIds.map((r) => {
             const on = linked.includes(r);
             const otp = STORES[r]?.loginKind === 'otp';
             return (

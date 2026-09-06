@@ -72,9 +72,21 @@ export interface Promotion {
   readonly itemCodes: readonly string[];
 }
 
+/** One online storefront that delivers to an address. */
+export interface StorefrontInfo {
+  readonly serviceSlug: string;
+  readonly brand: string;
+  readonly chainName: string;
+  readonly serviceType: string;
+  readonly minimumOrder?: number;
+  readonly deliveryFeeFrom?: number;
+}
+
 export interface CatalogProvider {
   /** Live promotions across every store the catalogue covers, when the provider has them. */
   listPromotions?(limit: number): Promise<readonly Promotion[]>;
+  /** Which storefronts deliver to this address. */
+  listStorefronts?(address: string): Promise<readonly StorefrontInfo[]>;
   readonly id: string;
   searchProducts(req: CatalogSearchRequest): Promise<readonly ProductCandidate[]>;
 }
