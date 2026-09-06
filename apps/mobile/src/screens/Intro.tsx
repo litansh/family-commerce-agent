@@ -119,7 +119,8 @@ function MergeStage({ width, onDone }: { width: number; onDone: () => void }) {
 /** Tap staples; each one slides into the memory card. */
 function MemoryStage({ onDone }: { onDone: () => void }) {
   const [picked, setPicked] = useState<string[]>([]);
-  useEffect(() => { if (picked.length >= 3) onDone(); }, [picked, onDone]);
+  const fired = useRef(false);
+  useEffect(() => { if (picked.length >= 3 && !fired.current) { fired.current = true; onDone(); } }, [picked, onDone]);
   const toggle = (k: string) => { tap(); setPicked((xs) => (xs.includes(k) ? xs.filter((x) => x !== k) : [...xs, k])); };
   return (
     <View style={{ width: '100%', paddingHorizontal: 24 }}>
@@ -170,7 +171,8 @@ function RhythmStage({ onDone }: { onDone: () => void }) {
 function TapsStage({ onDone }: { onDone: () => void }) {
   const [n, setN] = useState(0);
   const steps = [tr('intro4a'), tr('intro4b'), tr('intro4c')];
-  useEffect(() => { if (n === 3) onDone(); }, [n, onDone]);
+  const fired = useRef(false);
+  useEffect(() => { if (n === 3 && !fired.current) { fired.current = true; onDone(); } }, [n, onDone]);
   return (
     <View style={{ width: '100%', paddingHorizontal: 24, gap: 10 }}>
       {steps.map((label, i) => {
