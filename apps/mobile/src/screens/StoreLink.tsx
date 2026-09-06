@@ -173,6 +173,10 @@ const PROBE_JS = `(async()=>{try{
   out.api=[...new Set(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.startsWith(location.origin)&&/\\/api\\/|\\/rest\\/|json|my-account|order|cart|history|user|auth|login/i.test(u)).map(u=>u.replace(location.origin,'').slice(0,140)))].slice(0,40);
   if(location.hostname.includes('shufersal')){const r=await fetch('/online/he/my-account/orders',{credentials:'include'});const t=await r.text();Object.assign(out,{status:r.status,url:r.url,len:t.length,loginInPage:/login|התחבר|כניסה/i.test(t.slice(0,6000)),logoutLink:!!document.querySelector('a[href*="logout"]')});}
   out.bodyHead=document.body?document.body.innerText.slice(0,240).replace(/\\s+/g,' '):'';
+  out.header=((document.querySelector('header')||{}).innerText||'').slice(0,200).replace(/\\s+/g,' ');
+  try{const n=window.$nuxt;out.nuxt=!!n;out.authLoggedIn=n&&n.$auth?n.$auth.loggedIn:undefined;out.storeAuth=n&&n.$store&&n.$store.state&&n.$store.state.auth?Object.keys(n.$store.state.auth).slice(0,10):undefined;}catch(e){out.nuxtErr=String(e);}
+  try{out.ls=Object.keys(localStorage).slice(0,20);}catch(e){}
+  try{out.cookieNames=document.cookie.split(';').map(c=>c.trim().split('=')[0]).filter(Boolean).slice(0,20);}catch(e){}
   window.ReactNativeWebView.postMessage('probe:'+JSON.stringify(out));
 }catch(e){window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({error:String(e),href:location.href}));}})();true;`;
 
