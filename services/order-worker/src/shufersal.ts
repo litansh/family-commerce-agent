@@ -57,8 +57,18 @@ export class ShufersalConnector implements RetailerConnector {
     return path;
   }
 
+  /**
+   * Signed in means: not on the login page any more, and the page shows any
+   * of the things only a signed-in person sees. Broad on purpose - the
+   * post-login page changes, and a missed detection loses the session.
+   */
   async #signedIn(page: Page): Promise<boolean> {
-    return (await page.locator(SEL.accountLink).count()) > 0 && !page.url().includes('/login');
+    if (page.url().includes('/login')) return false;
+    return page.evaluate(() => {
+      const t = document.body?.innerText ?? '';
+      return !!document.querySelector('a[href*="logout"], .js-logout, a[href*="my-account"], .js-account-name, [class*="userName"], [class*="user-name"]')
+        || /התנתק|החשבון שלי|שלום,|היי /.test(t);
+    }).catch(() => false);
   }
 
   async interactiveLogin(): Promise<BrowserContext> {
@@ -71,13 +81,24 @@ export class ShufersalConnector implements RetailerConnector {
     // "enter the code we sent to your phone".
     await this.#page.waitForTimeout(1200);
     await this.#page.getByText('הזדהות חברי מועדון').first().click({ timeout: 4000 }).catch(() => undefined);
-    console.log('\n  Sign in to Shufersal in the window that just opened - with the SMS code, no password needed. Kanili is waiting…\n');
-    // Poll rather than waitForURL: the site sometimes signs in without leaving /login.
-    for (let i = 0; i < 600; i += 1) {
-      if (await this.#signedIn(this.#page)) break;
-      await this.#page.waitForTimeout(1000);
+    console.log('\n  Sign in to Shufersal in the window that just opened - with the SMS code, no password needed.');
+    console.log('  Kanili saves the session automatically once it sees you are in.');
+    console.log('  If the window shows you signed in but nothing happens here, press Enter in this terminal.\n');
+    // Poll for the signed-in state, but also accept a manual confirmation:
+    // a missed detection must never cost the person their sign-in.
+    let manual = false;
+    const stdin = process.stdin;
+    const onData = () => { manual = true; };
+    stdin.resume(); stdin.on('data', onData);
+    try {
+      for (let i = 0; i < 900; i += 1) {
+        if (manual || (await this.#signedIn(this.#page))) break;
+        await this.#page.waitForTimeout(1000);
+      }
+    } finally {
+      stdin.off('data', onData); stdin.pause();
     }
-    if (!(await this.#signedIn(this.#page))) throw new Error('shufersal: sign-in did not complete within 10 minutes');
+    if (!manual && !(await this.#signedIn(this.#page))) throw new Error('shufersal: sign-in did not complete within 15 minutes');
     await saveSession(this.#householdId, this.id, this.#ctx);
     console.log('  Session saved. You will not need to sign in again until Shufersal expires it.\n');
     return this.#ctx;

@@ -66,12 +66,18 @@ export class RamiLevyConnector implements RetailerConnector {
     this.#ctx = await browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 } });
     this.#page = await this.#ctx.newPage();
     await this.#page.goto(`${BASE}/he/online`, { waitUntil: 'domcontentloaded' });
-    console.log('\n  Sign in to Rami Levy in the window that just opened (use the account menu). Kanili is waiting…\n');
-    for (let i = 0; i < 600; i += 1) {
-      if (await this.#signedIn(this.#page)) break;
-      await this.#page.waitForTimeout(1000);
-    }
-    if (!(await this.#signedIn(this.#page))) { await this.#trace('login-timeout'); throw new Error('rami-levy: sign-in did not complete within 10 minutes'); }
+    console.log('\n  Sign in to Rami Levy in the window that just opened (account menu, phone + SMS code).');
+    console.log('  If the window shows you signed in but nothing happens here, press Enter in this terminal.\n');
+    let manual = false;
+    const onData = () => { manual = true; };
+    process.stdin.resume(); process.stdin.on('data', onData);
+    try {
+      for (let i = 0; i < 900; i += 1) {
+        if (manual || (await this.#signedIn(this.#page))) break;
+        await this.#page.waitForTimeout(1000);
+      }
+    } finally { process.stdin.off('data', onData); process.stdin.pause(); }
+    if (!manual && !(await this.#signedIn(this.#page))) { await this.#trace('login-timeout'); throw new Error('rami-levy: sign-in did not complete within 15 minutes'); }
     await saveSession(this.#householdId, this.id, this.#ctx);
     console.log('  Session saved.\n');
     return this.#ctx;
