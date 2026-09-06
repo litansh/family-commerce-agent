@@ -32,6 +32,7 @@ import {
   type PurchasedLine,
   regionOf,
   normalizeBrand,
+  importHistory,
   applyCoupons,
   type Coupon,
   type StorefrontQuote,
@@ -235,6 +236,38 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         return { ...c, imageUrl: imgs[c.productId]?.url ?? null, ...(r?.min !== undefined && r.max !== undefined ? { priceMin: r.min, priceMax: r.max } : {}), bought: !!c.gtin && !!Object.values(memory.products).find((p) => p.gtin === c.gtin) };
       });
       return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products });
+    }
+
+    // Import order history captured on the device: the phone's logged-in
+    // WebView fetched the account's past orders (same-origin, its own
+    // session) and posts them here. The server resolves product names to
+    // barcodes through the catalogue and replays them into memory, dated -
+    // so 'your usuals' exist without any home worker or stored session.
+    if (method === 'POST' && rest === 'import-history') {
+      const { catalog } = requirePricing();
+      const raw = arr<{ at?: string; lines?: { name?: string; code?: string; qty?: number }[] }>(body['orders'], 'orders');
+      const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
+      const orders: { at: string; lines: { phrase: string; gtin: string; productName: string; brand?: string; packQty?: number }[] }[] = [];
+      for (const o of raw.slice(0, 40)) {
+        const lines = [];
+        for (const l of (o.lines ?? []).slice(0, 60)) {
+          const name = (l.name ?? '').trim();
+          if (!name) continue;
+          if (l.code && /^\d{8,14}$/.test(l.code)) { lines.push({ phrase: name, gtin: l.code, productName: name, packQty: l.qty ?? 1 }); continue; }
+          let hit = cache.get(name);
+          if (hit === undefined) {
+            const found = await catalog.searchProducts({ query: name, limit: 3 }).catch(() => []);
+            const best = found.find((f) => f.gtin && f.pricedAtChains > 0);
+            hit = best?.gtin ? { gtin: best.gtin, productName: best.name, ...(best.brand ? { brand: best.brand } : {}) } : null;
+            cache.set(name, hit);
+          }
+          lines.push({ phrase: name, gtin: hit?.gtin ?? `name:${name}`, productName: hit?.productName ?? name, ...(hit?.brand ? { brand: hit.brand } : {}), packQty: l.qty ?? 1 });
+        }
+        if (lines.length) orders.push({ at: o.at ?? new Date().toISOString(), lines });
+      }
+      const repo = new DynamoMemoryRepository(hid, TABLE);
+      const saved = await repo.save(importHistory(await repo.load(), orders));
+      return ok({ orders: orders.length, products: Object.keys(saved.products).length });
     }
 
     // Pictures for a set of barcodes, resolved within a time budget so the
