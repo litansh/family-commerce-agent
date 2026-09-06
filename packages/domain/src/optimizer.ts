@@ -39,14 +39,27 @@ export const SUSPICIOUS_PRICE_RATIO = 3;
 
 export interface OptimizeResult {
   readonly options: readonly PurchaseOption[];
-  /** Storefronts excluded, and why. Surfaced so a missing chain is explainable. */
-  readonly rejected: readonly { storefrontId: string; brand: string; reason: string }[];
+  /** Storefronts excluded, and why - with the numbers, so the app can turn an absence into a hint. */
+  readonly rejected: readonly RejectedStorefront[];
   readonly warnings: readonly string[];
+}
+
+export interface RejectedStorefront {
+  readonly storefrontId: string;
+  readonly brand: string;
+  readonly reason: string;
+  readonly code: 'coverage' | 'minimum';
+  readonly itemsSubtotal: Agorot;
+  readonly pricedLines: number;
+  readonly requestedLines: number;
+  readonly minimumOrder?: Agorot;
+  /** How much more the basket needs to reach the minimum, when that is the reason. */
+  readonly amountToMinimum?: Agorot;
 }
 
 export function optimize(input: OptimizeInput): OptimizeResult {
   const { quotes, constants, requestedLineIds } = input;
-  const rejected: { storefrontId: string; brand: string; reason: string }[] = [];
+  const rejected: RejectedStorefront[] = [];
   const warnings: string[] = [...detectSuspiciousLines(quotes)];
 
   // --- Gate 1: coverage. A partial basket is not a cheap option, it is an
@@ -55,17 +68,19 @@ export function optimize(input: OptimizeInput): OptimizeResult {
     const cov = coverageRatio(q);
     if (cov < constants.minCoverageRatio) {
       rejected.push({
-        storefrontId: q.storefrontId,
-        brand: q.brand,
+        storefrontId: q.storefrontId, brand: q.brand, code: 'coverage',
         reason: `prices only ${q.pricedLines}/${q.requestedLines} lines (${pct(cov)}) — below the ${pct(constants.minCoverageRatio)} floor`,
+        itemsSubtotal: q.itemsSubtotal, pricedLines: q.pricedLines, requestedLines: q.requestedLines,
+        ...(q.minimumOrder !== undefined ? { minimumOrder: q.minimumOrder } : {}),
       });
       return false;
     }
     if (!q.meetsMinimum) {
       rejected.push({
-        storefrontId: q.storefrontId,
-        brand: q.brand,
+        storefrontId: q.storefrontId, brand: q.brand, code: 'minimum',
         reason: 'basket is below the storefront minimum',
+        itemsSubtotal: q.itemsSubtotal, pricedLines: q.pricedLines, requestedLines: q.requestedLines,
+        ...(q.minimumOrder !== undefined ? { minimumOrder: q.minimumOrder, amountToMinimum: agorot(Math.max(0, q.minimumOrder - q.itemsSubtotal)) } : {}),
       });
       return false;
     }

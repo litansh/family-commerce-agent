@@ -6,7 +6,7 @@ import type { Line } from '../lib/store';
 import { Button, Chip, Header, Loading, Rank, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
-import { money, reasonT, rejectionT, t as tr } from '../lib/i18n';
+import { money, reasonT, t as tr } from '../lib/i18n';
 
 const LETTERS = 'אבגדה';
 
@@ -42,7 +42,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const [q, setQ] = useState<QuoteResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [fixing, setFixing] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [strategy, setStrategy] = useState<'cheapest' | 'single' | 'pickup' | 'split'>('cheapest');
+  const [whyNot, setWhyNot] = useState(false);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
@@ -59,7 +60,14 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
   const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
-  const shown = showAll ? q.options : q.options.slice(0, 1);
+  const byStrategy = {
+    cheapest: q.options,
+    single: q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup'),
+    pickup: q.options.filter((o) => o.kind === 'pickup'),
+    split: q.options.filter((o) => o.kind === 'split_delivered'),
+  }[strategy];
+  const shown = byStrategy.slice(0, strategy === 'cheapest' ? 1 : 3);
+  const chosen = shown[0] ?? best;
 
   return (
     <View style={s.screen}>
@@ -68,9 +76,16 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
       <View style={{ paddingHorizontal: 20 }}>
         {q.options.length === 0 && <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
-        {best ? <Text style={[s.small, { marginBottom: 6 }]}>{tr('bestWay')}</Text> : null}
+        <View style={[s.rowStart, { flexWrap: 'wrap', marginBottom: 10 }]}>
+          {(['cheapest', 'single', 'pickup', 'split'] as const).map((k) => (
+            <Pressable key={k} onPress={() => setStrategy(k)} style={{ backgroundColor: strategy === k ? t.accent : t.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: strategy === k ? t.accent : t.line }}>
+              <Text style={{ color: strategy === k ? '#fff' : t.ink, fontWeight: '600' }}>{tr(`strat_${k}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+        {shown.length === 0 ? <View style={s.card}><Text style={s.body}>{tr('strat_none')}</Text></View> : null}
         {shown.map((o, i) => {
-          const isBest = i === 0;
+          const isBest = o === best;
           const extra = best && !isBest ? o.cashCost - best.cashCost : 0;
           return (
             <Pressable key={i} onPress={() => onChoose(o, q)} style={({ pressed }) => [s.card, isBest && { borderWidth: 2, borderColor: t.accent }, pressed && { opacity: 0.85 }]}>
@@ -105,8 +120,19 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
           );
         })}
 
-        {q.options.length > 1 && !showAll ? (
-          <Pressable onPress={() => setShowAll(true)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('otherWays')} ({q.options.length - 1}) ›</Text></Pressable>
+        {q.rejected.length > 0 ? (
+          <Pressable onPress={() => setWhyNot((v) => !v)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('whyNot')} ({q.rejected.length}) {whyNot ? '▴' : '▾'}</Text></Pressable>
+        ) : null}
+        {whyNot ? (
+          <View style={[s.card, { paddingVertical: 8 }]}>
+            {[...q.rejected].sort((a, b) => (a.amountToMinimum ?? 1e9) - (b.amountToMinimum ?? 1e9)).map((r) => (
+              <Text key={r.storefrontId} style={[s.small, { paddingVertical: 6, borderTopWidth: 1, borderColor: t.line }]}>
+                {r.code === 'minimum' && r.minimumOrder !== undefined
+                  ? tr('minShort', { b: r.brand, p: money(r.itemsSubtotal), x: money(r.amountToMinimum ?? 0), m: money(r.minimumOrder) })
+                  : tr('covShort', { b: r.brand, a: r.pricedLines, c: r.requestedLines })}
+              </Text>
+            ))}
+          </View>
         ) : null}
         {q.warnings.length > 0 && (
           <View style={[s.card, { backgroundColor: t.amberSoft }]}>
@@ -125,18 +151,13 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
         )}
         {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
 
-        {q.rejected.length > 0 && showAll && (
-          <View style={{ marginTop: 4 }}>
-            <Text style={[s.small, { marginBottom: 4 }]}>{tr('notOffered')}</Text>
-            {q.rejected.map((r, i) => <Text key={i} style={s.faint}>{r.brand} · {rejectionT(r.reason)}</Text>)}
-          </View>
-        )}
+
       </View>
     </ScrollView>
-    {best ? (
+    {chosen ? (
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
-        <Button title={tr('orderNow', { x: money(best.cashCost) })} onPress={() => orderBest(best, q)} disabled={ordering} />
-        <Pressable onPress={() => onChoose(best, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
+        <Button title={tr('orderNow', { x: money(chosen.cashCost) })} onPress={() => orderBest(chosen, q)} disabled={ordering} />
+        <Pressable onPress={() => onChoose(chosen, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
       </View>
     ) : null}
     </View>

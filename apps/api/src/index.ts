@@ -390,11 +390,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
  * quote, cached six hours under a catalogue-wide key so aisles can show the
  * range without paying for the quote each time.
  */
-async function chainPrices(gtin: string, address: string, qp: { quoteBasket: (r: { lines: ListLine[]; address: string }) => Promise<{ quotes: readonly StorefrontQuote[] }> }): Promise<{ storefrontId: string; brand: string; price: number }[]> {
-  const cached = (await readRow(TABLE, 'CATALOG', `PRICE#${gtin}`)) as { prices?: { storefrontId: string; brand: string; price: number }[]; at?: string } | undefined;
+async function chainPrices(gtin: string, address: string, qp: { quoteBasket: (r: { lines: ListLine[]; address: string }) => Promise<{ quotes: readonly StorefrontQuote[] }> }): Promise<{ storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]> {
+  const cached = (await readRow(TABLE, 'CATALOG', `PRICE#${gtin}`)) as { prices?: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]; at?: string } | undefined;
   if (cached?.prices && cached.at && Date.now() - Date.parse(cached.at) < 6 * 3600_000) return cached.prices;
   const res = await qp.quoteBasket({ lines: [{ id: 'x', query: gtin, gtin }], address }).catch(() => null);
-  const prices = (res?.quotes ?? []).flatMap((q) => { const l = q.lines.find((x) => x.lineId === 'x'); return l && !l.substituted ? [{ storefrontId: q.storefrontId, brand: q.brand, price: l.unitPrice }] : []; }).sort((a, b) => a.price - b.price);
+  const prices = (res?.quotes ?? []).flatMap((q) => { const l = q.lines.find((x) => x.lineId === 'x'); return l && !l.substituted ? [{ storefrontId: q.storefrontId, brand: q.brand, price: l.unitPrice, ...(q.minimumOrder !== undefined ? { minimumOrder: q.minimumOrder } : {}), deliveryFee: q.deliveryFee }] : []; }).sort((a, b) => a.price - b.price);
   if (prices.length) await writeRow(TABLE, 'CATALOG', `PRICE#${gtin}`, { prices, min: prices[0]!.price, max: prices[prices.length - 1]!.price, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 7 * 86400 });
   return prices;
 }

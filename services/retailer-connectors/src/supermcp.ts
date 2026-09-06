@@ -47,6 +47,7 @@ interface RawPlan {
   deliveredTotal?: number | null;
   meetsMinimum?: boolean;
   minimumOrder?: number | null;
+  amountToMinimum?: number | null;
   pricedLines: number;
   requestedLines: number;
   priceFeedStale?: boolean;
@@ -136,7 +137,9 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
         deliveredTotal:
           p.deliveredTotal != null ? shekels(p.deliveredTotal) : ((subtotal + fee) as Agorot),
         meetsMinimum: p.meetsMinimum !== false,
-        ...(p.minimumOrder != null ? { minimumOrder: shekels(p.minimumOrder) } : {}),
+        // Some storefronts publish only the shortfall; recover the minimum from it.
+        ...(p.minimumOrder != null ? { minimumOrder: shekels(p.minimumOrder) }
+          : p.amountToMinimum != null && p.amountToMinimum > 0 ? { minimumOrder: shekels(p.itemsSubtotal + p.amountToMinimum) } : {}),
         requestedLines: p.requestedLines,
         pricedLines: p.pricedLines,
         lines,

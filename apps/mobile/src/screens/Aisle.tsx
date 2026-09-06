@@ -138,7 +138,7 @@ export function AisleScreen({ api, household, aisle, onBack }: { api: Api; house
 /** Every chain that carries the product, in one place. */
 function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Api; household: Household; hit: SearchHit; onAdd: () => void; onClose: () => void; inList: boolean }) {
   const s = S();
-  const [detail, setDetail] = useState<{ listings: { chainName: string; name: string }[]; prices?: { storefrontId: string; brand: string; price: number }[]; priceMin?: number; priceMax?: number } | null>(null);
+  const [detail, setDetail] = useState<{ listings: { chainName: string; name: string }[]; prices?: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]; priceMin?: number; priceMax?: number } | null>(null);
   useEffect(() => { if (hit.gtin) api.product(household.id, hit.gtin).then(setDetail).catch(() => setDetail({ listings: [] })); else setDetail({ listings: [] }); }, [api, household.id, hit.gtin]);
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -169,6 +169,7 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
                         <Text style={[s.price, i === 0 && { color: t.accent }]}>{money(g.price)}</Text>
                       </View>
                       {g.names.length > 1 ? <Text style={s.faint} numberOfLines={2}>{g.names.join(' · ')}</Text> : null}
+                      {g.notes.length > 0 ? <Text style={[s.faint, { color: t.amber }]}>{g.notes.join(' · ')}</Text> : null}
                     </View>
                   ))}
                 </>
@@ -195,8 +196,14 @@ function ProductSheet({ api, household, hit, onAdd, onClose, inList }: { api: Ap
 }
 
 /** Identical prices collapse into one row: nine chains at ₪11.74 is one fact, not nine. */
-function groupPrices(prices: { storefrontId: string; brand: string; price: number }[]): { price: number; names: string[] }[] {
-  const by = new Map<number, string[]>();
-  for (const p of prices) by.set(p.price, [...(by.get(p.price) ?? []), p.brand]);
-  return [...by.entries()].sort((a, b) => a[0] - b[0]).map(([price, names]) => ({ price, names }));
+function groupPrices(prices: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]): { price: number; names: string[]; notes: string[] }[] {
+  const by = new Map<number, { names: string[]; notes: Set<string> }>();
+  for (const p of prices) {
+    const g = by.get(p.price) ?? { names: [], notes: new Set<string>() };
+    g.names.push(p.brand);
+    // A store's price is only real once its minimum is met; say so where it applies.
+    if (p.minimumOrder) g.notes.add(`${p.brand}: ${tr('minNote', { m: money(p.minimumOrder) })}`);
+    by.set(p.price, g);
+  }
+  return [...by.entries()].sort((a, b) => a[0] - b[0]).map(([price, g]) => ({ price, names: g.names, notes: [...g.notes].slice(0, 3) }));
 }
