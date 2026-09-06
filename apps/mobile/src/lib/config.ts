@@ -8,4 +8,6 @@ export const config = {
   clientId: extra['userPoolClientId'] ?? '',
   cognitoDomain: extra['cognitoDomain'] ?? '',
   region: extra['region'] ?? 'eu-central-1',
+  /** Google sign-in appears only once the Cognito IdP exists; a dead button is worse than none. */
+  googleEnabled: String(extra['googleEnabled']) === 'true',
 };

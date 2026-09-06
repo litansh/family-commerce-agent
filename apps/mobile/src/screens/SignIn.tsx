@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { signIn, type Tokens } from '../lib/auth';
 import { isRTL, t as tr } from '../lib/i18n';
 import { Button, S, t } from '../ui';
+import { config } from '../lib/config';
 import { Tile } from '../Logo';
 
 export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
@@ -22,9 +23,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
       {isRTL() ? <Text style={[s.small, { fontSize: 15, marginBottom: 10 }]}>Kanili</Text> : null}
       <Text style={[s.title, { fontSize: 22, marginBottom: 6 }]}>{tr('taglineShort')}</Text>
       <Text style={[s.body, { color: t.muted, marginBottom: 28 }]}>{tr('taglineLong')}</Text>
-      <Button title={tr('continueGoogle')} onPress={() => go('Google')} disabled={busy} />
-      <View style={{ height: 10 }} />
-      <Button title={tr('continueEmail')} kind="secondary" onPress={() => go()} disabled={busy} />
+      {config.googleEnabled ? (
+        <>
+          <Button title={tr('continueGoogle')} onPress={() => go('Google')} disabled={busy} />
+          <View style={{ height: 10 }} />
+          <Button title={tr('continueEmail')} kind="secondary" onPress={() => go()} disabled={busy} />
+        </>
+      ) : (
+        <Button title={tr('continueEmail')} onPress={() => go()} disabled={busy} />
+      )}
       {err ? <Text style={[s.small, { color: t.red, marginTop: 14 }]}>{err}</Text> : null}
     </View>
   );

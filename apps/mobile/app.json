@@ -27,7 +27,8 @@
       "userPoolId": "eu-central-1_8yomKtNCE",
       "userPoolClientId": "1t7e0himh3heckpassvg0q0e0o",
       "cognitoDomain": "https://fca-4b19ec.auth.eu-central-1.amazoncognito.com",
-      "region": "eu-central-1"
+      "region": "eu-central-1",
+      "googleEnabled": false
     },
     "plugins": [
       "expo-web-browser",
