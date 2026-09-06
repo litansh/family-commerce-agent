@@ -85,10 +85,21 @@ export class ShufersalConnector implements RetailerConnector {
     // Nobody remembers a retailer password. The SMS route lives under
     // "club member identification"; open it so the window lands on
     // "enter the code we sent to your phone".
-    // Shufersal Online signs in with email + password (or Facebook). The
-    // "club member identification" link on this page is for people who do
-    // NOT shop online, so it is not offered here.
-    console.log('\n  Sign in to Shufersal Online in the window that just opened - any way that works for you.');
+    // Open the OTP route the family prefers ("club member identification");
+    // the verification step below decides whether the resulting session is a
+    // signed-in Online session, so this is safe to pre-open either way.
+    await this.#page.waitForSelector('a.js-tikTalkLink', { timeout: 15_000 }).catch(() => undefined);
+    await this.#page.locator('a.js-tikTalkLink').first().click({ timeout: 4000 }).catch(() => undefined);
+    await this.#page.waitForTimeout(800);
+    await this.#page.evaluate(() => {
+      const form = document.querySelector<HTMLElement>('#loyaltyMemberDataForm');
+      if (!form) return;
+      let el: HTMLElement | null = form;
+      while (el) { el.classList.remove('hidden'); el.style.display = ''; el = el.parentElement; }
+      form.scrollIntoView({ block: 'center' });
+      document.querySelector<HTMLInputElement>('#loyaltyMemberDataForm_idNumber')?.focus();
+    }).catch(() => undefined);
+    console.log('\n  The window opened on the OTP (club) sign-in. Complete it; when the site shows you signed in, press Enter here.');
     console.log('  When the site shows you signed in, press Enter here. Kanili then checks with Shufersal and saves only a session that really is signed in.\n');
     // Loop: wait for Enter (or automatic detection), verify against the
     // site, and either save or explain what Shufersal reported and wait again.
