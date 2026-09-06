@@ -62,12 +62,18 @@ export class ShufersalConnector implements RetailerConnector {
    * of the things only a signed-in person sees. Broad on purpose - the
    * post-login page changes, and a missed detection loses the session.
    */
+  /**
+   * Signed in means what Shufersal says it means: the site's own status
+   * endpoint answers true for an authenticated Online session. Reading the
+   * page for hints produced a false positive once and cost a session.
+   */
   async #signedIn(page: Page): Promise<boolean> {
-    if (page.url().includes('/login')) return false;
-    return page.evaluate(() => {
-      const t = document.body?.innerText ?? '';
-      return !!document.querySelector('a[href*="logout"], .js-logout, a[href*="my-account"], .js-account-name, [class*="userName"], [class*="user-name"]')
-        || /התנתק|החשבון שלי|שלום,|היי /.test(t);
+    return page.evaluate(async () => {
+      try {
+        const r = await fetch('/online/he/authentication/get-status-includes-otp', { credentials: 'include', headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' } });
+        const t = (await r.text()).trim();
+        return t === 'true' || t.startsWith('{');
+      } catch { return false; }
     }).catch(() => false);
   }
 
@@ -79,21 +85,10 @@ export class ShufersalConnector implements RetailerConnector {
     // Nobody remembers a retailer password. The SMS route lives under
     // "club member identification"; open it so the window lands on
     // "enter the code we sent to your phone".
-    // The club sign-in is a link on the login page that opens the loyalty
-    // form (ID number + a detail, then a 6-digit SMS code). Open it, and if
-    // the site hides the form for any reason, reveal it ourselves.
-    await this.#page.waitForSelector('#loyaltyMemberDataForm, a.js-tikTalkLink', { timeout: 15_000 }).catch(() => undefined);
-    await this.#page.locator('a.js-tikTalkLink').first().click({ timeout: 4000 }).catch(() => undefined);
-    await this.#page.waitForTimeout(800);
-    await this.#page.evaluate(() => {
-      const form = document.querySelector<HTMLElement>('#loyaltyMemberDataForm');
-      if (!form) return;
-      let el: HTMLElement | null = form;
-      while (el) { el.classList.remove('hidden'); el.style.display = ''; el = el.parentElement; }
-      form.scrollIntoView({ block: 'center' });
-      document.querySelector<HTMLInputElement>('#loyaltyMemberDataForm_idNumber')?.focus();
-    }).catch(() => undefined);
-    console.log('\n  Sign in to Shufersal in the window that just opened: the club form is open - ID number, then the 6-digit SMS code. No password.');
+    // Shufersal Online signs in with email + password (or Facebook). The
+    // "club member identification" link on this page is for people who do
+    // NOT shop online, so it is not offered here.
+    console.log('\n  Sign in to Shufersal Online in the window that just opened (email + password; the password is usually saved in iPhone Settings > Passwords).');
     console.log('  Kanili saves the session automatically once it sees you are in.');
     console.log('  If the window shows you signed in but nothing happens here, press Enter in this terminal.\n');
     // Poll for the signed-in state, but also accept a manual confirmation:

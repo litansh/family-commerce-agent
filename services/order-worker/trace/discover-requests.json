@@ -1,0 +1,440 @@
+[
+ {
+  "url": "https://www.shufersal.co.il/online/he/my-account/orders",
+  "status": 302,
+  "type": "",
+  "sample": ""
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/wishlist/getCurrentUserLastWishlists",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~asm.app~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{12:function(e,t,n){\"use strict\";var o=n(8),r=function(){return function(e,t){if(Array.isArray(e))return e;if(Symbol.iterator in Object(e))return function(e,t){var n=[],o=!0,r=!1,i=void 0;try{for(var l,a=e[Symbol.iterator]();!(o=(l=a.next()).done)&&(n.push(l.value),!t||n.length!==t);o=!0);}catch(e){r=!0,i=e}finally{try{!o&&a.return&&a.return()}finally{if(r)throw i}}return n}(e,t);throw new TypeError(\"Invalid attempt to destructure non-iterable instance\")}}();var i={methods:{isMobileWidth:function(){return this.windowInnerWidth<this.screen"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[2],[,,,,,function(t,e,n){\"use strict\";n.d(e,\"d\",function(){return _}),n.d(e,\"c\",function(){return w}),n.d(e,\"b\",function(){return S});var r=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t},o=function(t){if(Number(t.version.split(\".\")[0])>=2)t.mixin({beforeCreate:n});else{var e=t.prototype._init;t.prototype._init=function(t){void 0===t&&(t={}),t.init=t.init?[n].concat(t.init):n,e.call(this,t)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[7],{142:function(n,e,t){\"use strict\";var a=t(3),i=t(73),s=t(60),r={model:{prop:\"checked\",event:\"change\"},props:{label:{type:String},checked:{type:Boolean},className:{type:String,required:!1}}},o=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t(\"li\",[t(\"div\",{staticClass:\"onoffSwitch\",class:n.className},[t(\"label\",{staticClass:\"alertTitle\"},[n._v(n._s(n.label)+\"\\n            \"),n._t(\"default\")],2),n._v(\" \"),t(\"label\",{staticClass:\"switch\"},[t(\"input\",{attrs:{type:\"checkbox\"},domProps:{checked:n.checked},on:{change:function(e)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~departmentorderStatus~shoppingListsm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[5],{210:function(t,e,i){var n,o=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t};\n/*! Hammer.JS - v2.0.7 - 2016-04-22\n * http://hammerjs.github.io/\n *\n * Copyright (c) 2016 Jorik Tangelder;\n * Licensed under the MIT license */\n!function(s,r,a,c){\"use strict\";var h,l=[\"\",\"webkit\",\"Moz\",\"MS\",\"ms\",\"o\"],u=r.createElement(\"div\"),p=\"function\",d=Math.round,f=Math.abs,m=Date.now;function v(t,e,i){re"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/expiring-coupon-count",
+  "status": 200,
+  "type": "application/json",
+  "sample": "0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/coupons_still_new.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"30\" height=\"31\" viewBox=\"0 0 30 31\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M4.295 1C2.475 1 1 2.46 1 4.26c0 1.802 1.475 3.262 3.295 3.262 1.82 0 3.296-1.46 3.296-3.261C7.59 2.46 6.115 1 4.295 1z\" stroke=\"#FFF\" stroke-width=\"1.82\"/>\n        <path d=\"m6.736 7.025 8.674 9.061a1.734 1.734 0 0 0 2.563 0l.163-.174L8.181 5.486 6.736 7.025z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"m6.828 13.161 8.583-8.987a1.733 1.733 0 0 1 2.562 0l.163.173L8.272 14.7 6.828 13.16z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"M4.295 12."
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/cartSummary/icon-coupon-text.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"17\" height=\"16\" viewBox=\"0 0 17 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<circle cx=\"8.49967\" cy=\"8.00001\" r=\"6.66667\" stroke=\"#667393\" stroke-width=\"1.5\"/>\n<path d=\"M8.5 11.3333V7.33334\" stroke=\"#667393\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n<circle cx=\"0.666667\" cy=\"0.666667\" r=\"0.666667\" transform=\"matrix(1 0 0 -1 7.83301 6)\" fill=\"#667393\"/>\n</svg>\n"
+ },
+ {
+  "url": "https://www.googleadservices.com/pagead/conversion/985965165/?random=1788706935489&cv=11&fst=1788706935489&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120213116~120385423~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=3&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=macOS&uapv=26.2.0&uaw=0&ec_mode=a&oid=1049277815.1788706935&oidsrc=3&ecsid2=1790895555.1788706747&_tu=ABA&gcl_ctr=2~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5",
+  "status": 200,
+  "type": "application/json",
+  "sample": "event: message\ndata: {\"fetch\":[\"https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1659204243&cv=11&fst=1788706935489&fmt=8&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120213116~120385423~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=3&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=no"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/my-account/coupons",
+  "status": 302,
+  "type": "",
+  "sample": ""
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/coupons_still_new.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"30\" height=\"31\" viewBox=\"0 0 30 31\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M4.295 1C2.475 1 1 2.46 1 4.26c0 1.802 1.475 3.262 3.295 3.262 1.82 0 3.296-1.46 3.296-3.261C7.59 2.46 6.115 1 4.295 1z\" stroke=\"#FFF\" stroke-width=\"1.82\"/>\n        <path d=\"m6.736 7.025 8.674 9.061a1.734 1.734 0 0 0 2.563 0l.163-.174L8.181 5.486 6.736 7.025z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"m6.828 13.161 8.583-8.987a1.733 1.733 0 0 1 2.562 0l.163.173L8.272 14.7 6.828 13.16z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"M4.295 12."
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[2],[,,,,,function(t,e,n){\"use strict\";n.d(e,\"d\",function(){return _}),n.d(e,\"c\",function(){return w}),n.d(e,\"b\",function(){return S});var r=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t},o=function(t){if(Number(t.version.split(\".\")[0])>=2)t.mixin({beforeCreate:n});else{var e=t.prototype._init;t.prototype._init=function(t){void 0===t&&(t={}),t.init=t.init?[n].concat(t.init):n,e.call(this,t)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~departmentorderStatus~shoppingListsm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[5],{210:function(t,e,i){var n,o=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t};\n/*! Hammer.JS - v2.0.7 - 2016-04-22\n * http://hammerjs.github.io/\n *\n * Copyright (c) 2016 Jorik Tangelder;\n * Licensed under the MIT license */\n!function(s,r,a,c){\"use strict\";var h,l=[\"\",\"webkit\",\"Moz\",\"MS\",\"ms\",\"o\"],u=r.createElement(\"div\"),p=\"function\",d=Math.round,f=Math.abs,m=Date.now;function v(t,e,i){re"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~asm.app~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{12:function(e,t,n){\"use strict\";var o=n(8),r=function(){return function(e,t){if(Array.isArray(e))return e;if(Symbol.iterator in Object(e))return function(e,t){var n=[],o=!0,r=!1,i=void 0;try{for(var l,a=e[Symbol.iterator]();!(o=(l=a.next()).done)&&(n.push(l.value),!t||n.length!==t);o=!0);}catch(e){r=!0,i=e}finally{try{!o&&a.return&&a.return()}finally{if(r)throw i}}return n}(e,t);throw new TypeError(\"Invalid attempt to destructure non-iterable instance\")}}();var i={methods:{isMobileWidth:function(){return this.windowInnerWidth<this.screen"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[7],{142:function(n,e,t){\"use strict\";var a=t(3),i=t(73),s=t(60),r={model:{prop:\"checked\",event:\"change\"},props:{label:{type:String},checked:{type:Boolean},className:{type:String,required:!1}}},o=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t(\"li\",[t(\"div\",{staticClass:\"onoffSwitch\",class:n.className},[t(\"label\",{staticClass:\"alertTitle\"},[n._v(n._s(n.label)+\"\\n            \"),n._t(\"default\")],2),n._v(\" \"),t(\"label\",{staticClass:\"switch\"},[t(\"input\",{attrs:{type:\"checkbox\"},domProps:{checked:n.checked},on:{change:function(e)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/cartSummary/icon-coupon-text.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"17\" height=\"16\" viewBox=\"0 0 17 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<circle cx=\"8.49967\" cy=\"8.00001\" r=\"6.66667\" stroke=\"#667393\" stroke-width=\"1.5\"/>\n<path d=\"M8.5 11.3333V7.33334\" stroke=\"#667393\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n<circle cx=\"0.666667\" cy=\"0.666667\" r=\"0.666667\" transform=\"matrix(1 0 0 -1 7.83301 6)\" fill=\"#667393\"/>\n</svg>\n"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/wishlist/getCurrentUserLastWishlists",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/expiring-coupon-count",
+  "status": 200,
+  "type": "application/json",
+  "sample": "0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.googleadservices.com/pagead/conversion/985965165/?random=1788706940678&cv=11&fst=1788706940678&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938469~118897920~118897930~120213116~120385422~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=8&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=macOS&uapv=26.2.0&uaw=0&ec_mode=a&oid=1333778154.1788706941&oidsrc=3&ecsid2=1790895555.1788706747&_tu=ABA&gcl_ctr=3~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5",
+  "status": 200,
+  "type": "application/json",
+  "sample": "event: message\ndata: {\"fetch\":[\"https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=198261167&cv=11&fst=1788706940678&fmt=8&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938469~118897920~118897930~120213116~120385422~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=8&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/my-account",
+  "status": 302,
+  "type": "",
+  "sample": ""
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/coupons_still_new.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"30\" height=\"31\" viewBox=\"0 0 30 31\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M4.295 1C2.475 1 1 2.46 1 4.26c0 1.802 1.475 3.262 3.295 3.262 1.82 0 3.296-1.46 3.296-3.261C7.59 2.46 6.115 1 4.295 1z\" stroke=\"#FFF\" stroke-width=\"1.82\"/>\n        <path d=\"m6.736 7.025 8.674 9.061a1.734 1.734 0 0 0 2.563 0l.163-.174L8.181 5.486 6.736 7.025z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"m6.828 13.161 8.583-8.987a1.733 1.733 0 0 1 2.562 0l.163.173L8.272 14.7 6.828 13.16z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"M4.295 12."
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[2],[,,,,,function(t,e,n){\"use strict\";n.d(e,\"d\",function(){return _}),n.d(e,\"c\",function(){return w}),n.d(e,\"b\",function(){return S});var r=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t},o=function(t){if(Number(t.version.split(\".\")[0])>=2)t.mixin({beforeCreate:n});else{var e=t.prototype._init;t.prototype._init=function(t){void 0===t&&(t={}),t.init=t.init?[n].concat(t.init):n,e.call(this,t)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~departmentorderStatus~shoppingListsm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[5],{210:function(t,e,i){var n,o=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t};\n/*! Hammer.JS - v2.0.7 - 2016-04-22\n * http://hammerjs.github.io/\n *\n * Copyright (c) 2016 Jorik Tangelder;\n * Licensed under the MIT license */\n!function(s,r,a,c){\"use strict\";var h,l=[\"\",\"webkit\",\"Moz\",\"MS\",\"ms\",\"o\"],u=r.createElement(\"div\"),p=\"function\",d=Math.round,f=Math.abs,m=Date.now;function v(t,e,i){re"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~asm.app~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{12:function(e,t,n){\"use strict\";var o=n(8),r=function(){return function(e,t){if(Array.isArray(e))return e;if(Symbol.iterator in Object(e))return function(e,t){var n=[],o=!0,r=!1,i=void 0;try{for(var l,a=e[Symbol.iterator]();!(o=(l=a.next()).done)&&(n.push(l.value),!t||n.length!==t);o=!0);}catch(e){r=!0,i=e}finally{try{!o&&a.return&&a.return()}finally{if(r)throw i}}return n}(e,t);throw new TypeError(\"Invalid attempt to destructure non-iterable instance\")}}();var i={methods:{isMobileWidth:function(){return this.windowInnerWidth<this.screen"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[7],{142:function(n,e,t){\"use strict\";var a=t(3),i=t(73),s=t(60),r={model:{prop:\"checked\",event:\"change\"},props:{label:{type:String},checked:{type:Boolean},className:{type:String,required:!1}}},o=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t(\"li\",[t(\"div\",{staticClass:\"onoffSwitch\",class:n.className},[t(\"label\",{staticClass:\"alertTitle\"},[n._v(n._s(n.label)+\"\\n            \"),n._t(\"default\")],2),n._v(\" \"),t(\"label\",{staticClass:\"switch\"},[t(\"input\",{attrs:{type:\"checkbox\"},domProps:{checked:n.checked},on:{change:function(e)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/cartSummary/icon-coupon-text.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"17\" height=\"16\" viewBox=\"0 0 17 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<circle cx=\"8.49967\" cy=\"8.00001\" r=\"6.66667\" stroke=\"#667393\" stroke-width=\"1.5\"/>\n<path d=\"M8.5 11.3333V7.33334\" stroke=\"#667393\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n<circle cx=\"0.666667\" cy=\"0.666667\" r=\"0.666667\" transform=\"matrix(1 0 0 -1 7.83301 6)\" fill=\"#667393\"/>\n</svg>\n"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/wishlist/getCurrentUserLastWishlists",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/expiring-coupon-count",
+  "status": 200,
+  "type": "application/json",
+  "sample": "0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.googleadservices.com/pagead/conversion/985965165/?random=1788706945530&cv=11&fst=1788706945530&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=7&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=macOS&uapv=26.2.0&uaw=0&ec_mode=a&oid=1582784101.1788706946&oidsrc=3&ecsid2=1790895555.1788706747&_tu=ABA&gcl_ctr=4~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5",
+  "status": 200,
+  "type": "application/json",
+  "sample": "event: message\ndata: {\"fetch\":[\"https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1564750351&cv=11&fst=1788706945530&fmt=8&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=7&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=no"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/my-account/personal-area",
+  "status": 302,
+  "type": "",
+  "sample": ""
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/coupons_still_new.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"30\" height=\"31\" viewBox=\"0 0 30 31\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M4.295 1C2.475 1 1 2.46 1 4.26c0 1.802 1.475 3.262 3.295 3.262 1.82 0 3.296-1.46 3.296-3.261C7.59 2.46 6.115 1 4.295 1z\" stroke=\"#FFF\" stroke-width=\"1.82\"/>\n        <path d=\"m6.736 7.025 8.674 9.061a1.734 1.734 0 0 0 2.563 0l.163-.174L8.181 5.486 6.736 7.025z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"m6.828 13.161 8.583-8.987a1.733 1.733 0 0 1 2.562 0l.163.173L8.272 14.7 6.828 13.16z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"M4.295 12."
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[2],[,,,,,function(t,e,n){\"use strict\";n.d(e,\"d\",function(){return _}),n.d(e,\"c\",function(){return w}),n.d(e,\"b\",function(){return S});var r=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t},o=function(t){if(Number(t.version.split(\".\")[0])>=2)t.mixin({beforeCreate:n});else{var e=t.prototype._init;t.prototype._init=function(t){void 0===t&&(t={}),t.init=t.init?[n].concat(t.init):n,e.call(this,t)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~departmentorderStatus~shoppingListsm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[5],{210:function(t,e,i){var n,o=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t};\n/*! Hammer.JS - v2.0.7 - 2016-04-22\n * http://hammerjs.github.io/\n *\n * Copyright (c) 2016 Jorik Tangelder;\n * Licensed under the MIT license */\n!function(s,r,a,c){\"use strict\";var h,l=[\"\",\"webkit\",\"Moz\",\"MS\",\"ms\",\"o\"],u=r.createElement(\"div\"),p=\"function\",d=Math.round,f=Math.abs,m=Date.now;function v(t,e,i){re"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~asm.app~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{12:function(e,t,n){\"use strict\";var o=n(8),r=function(){return function(e,t){if(Array.isArray(e))return e;if(Symbol.iterator in Object(e))return function(e,t){var n=[],o=!0,r=!1,i=void 0;try{for(var l,a=e[Symbol.iterator]();!(o=(l=a.next()).done)&&(n.push(l.value),!t||n.length!==t);o=!0);}catch(e){r=!0,i=e}finally{try{!o&&a.return&&a.return()}finally{if(r)throw i}}return n}(e,t);throw new TypeError(\"Invalid attempt to destructure non-iterable instance\")}}();var i={methods:{isMobileWidth:function(){return this.windowInnerWidth<this.screen"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[7],{142:function(n,e,t){\"use strict\";var a=t(3),i=t(73),s=t(60),r={model:{prop:\"checked\",event:\"change\"},props:{label:{type:String},checked:{type:Boolean},className:{type:String,required:!1}}},o=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t(\"li\",[t(\"div\",{staticClass:\"onoffSwitch\",class:n.className},[t(\"label\",{staticClass:\"alertTitle\"},[n._v(n._s(n.label)+\"\\n            \"),n._t(\"default\")],2),n._v(\" \"),t(\"label\",{staticClass:\"switch\"},[t(\"input\",{attrs:{type:\"checkbox\"},domProps:{checked:n.checked},on:{change:function(e)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/cartSummary/icon-coupon-text.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"17\" height=\"16\" viewBox=\"0 0 17 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<circle cx=\"8.49967\" cy=\"8.00001\" r=\"6.66667\" stroke=\"#667393\" stroke-width=\"1.5\"/>\n<path d=\"M8.5 11.3333V7.33334\" stroke=\"#667393\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n<circle cx=\"0.666667\" cy=\"0.666667\" r=\"0.666667\" transform=\"matrix(1 0 0 -1 7.83301 6)\" fill=\"#667393\"/>\n</svg>\n"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/wishlist/getCurrentUserLastWishlists",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/expiring-coupon-count",
+  "status": 200,
+  "type": "application/json",
+  "sample": "0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.googleadservices.com/pagead/conversion/985965165/?random=1788706950745&cv=11&fst=1788706950745&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938468~118897920~118897930~120213116~120385422~120469145~120469153~120914214&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=6&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=macOS&uapv=26.2.0&uaw=0&ec_mode=a&oid=286027968.1788706951&oidsrc=3&ecsid2=1790895555.1788706747&_tu=ABA&gcl_ctr=5~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5",
+  "status": 200,
+  "type": "application/json",
+  "sample": "event: message\ndata: {\"fetch\":[\"https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1848499502&cv=11&fst=1788706950745&fmt=8&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938465~115938468~118897920~118897930~120213116~120385422~120469145~120469153~120914214&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Flogin&rcb=6&gtm_ee=1&frm=0&tiba=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C%20-%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%7C%20Shuf"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/coupons_still_new.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"30\" height=\"31\" viewBox=\"0 0 30 31\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M4.295 1C2.475 1 1 2.46 1 4.26c0 1.802 1.475 3.262 3.295 3.262 1.82 0 3.296-1.46 3.296-3.261C7.59 2.46 6.115 1 4.295 1z\" stroke=\"#FFF\" stroke-width=\"1.82\"/>\n        <path d=\"m6.736 7.025 8.674 9.061a1.734 1.734 0 0 0 2.563 0l.163-.174L8.181 5.486 6.736 7.025z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"m6.828 13.161 8.583-8.987a1.733 1.733 0 0 1 2.562 0l.163.173L8.272 14.7 6.828 13.16z\" fill=\"#FFF\" fill-rule=\"nonzero\"/>\n        <path d=\"M4.295 12."
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[2],[,,,,,function(t,e,n){\"use strict\";n.d(e,\"d\",function(){return _}),n.d(e,\"c\",function(){return w}),n.d(e,\"b\",function(){return S});var r=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t},o=function(t){if(Number(t.version.split(\".\")[0])>=2)t.mixin({beforeCreate:n});else{var e=t.prototype._init;t.prototype._init=function(t){void 0===t&&(t={}),t.init=t.init?[n].concat(t.init):n,e.call(this,t)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/vendors~accountmodals~departmentorderStatus~shoppingListsm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[5],{210:function(t,e,i){var n,o=\"function\"==typeof Symbol&&\"symbol\"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&\"function\"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?\"symbol\":typeof t};\n/*! Hammer.JS - v2.0.7 - 2016-04-22\n * http://hammerjs.github.io/\n *\n * Copyright (c) 2016 Jorik Tangelder;\n * Licensed under the MIT license */\n!function(s,r,a,c){\"use strict\";var h,l=[\"\",\"webkit\",\"Moz\",\"MS\",\"ms\",\"o\"],u=r.createElement(\"div\"),p=\"function\",d=Math.round,f=Math.abs,m=Date.now;function v(t,e,i){re"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~asm.app~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{12:function(e,t,n){\"use strict\";var o=n(8),r=function(){return function(e,t){if(Array.isArray(e))return e;if(Symbol.iterator in Object(e))return function(e,t){var n=[],o=!0,r=!1,i=void 0;try{for(var l,a=e[Symbol.iterator]();!(o=(l=a.next()).done)&&(n.push(l.value),!t||n.length!==t);o=!0);}catch(e){r=!0,i=e}finally{try{!o&&a.return&&a.return()}finally{if(r)throw i}}return n}(e,t);throw new TypeError(\"Invalid attempt to destructure non-iterable instance\")}}();var i={methods:{isMobileWidth:function(){return this.windowInnerWidth<this.screen"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/modules/accountmodals~assortmentModal~bussinesCustomer~departmentorderStatusm4c7b5e.js",
+  "status": 200,
+  "type": "application/javascript",
+  "sample": "(window.webpackJsonp=window.webpackJsonp||[]).push([[7],{142:function(n,e,t){\"use strict\";var a=t(3),i=t(73),s=t(60),r={model:{prop:\"checked\",event:\"change\"},props:{label:{type:String},checked:{type:Boolean},className:{type:String,required:!1}}},o=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t(\"li\",[t(\"div\",{staticClass:\"onoffSwitch\",class:n.className},[t(\"label\",{staticClass:\"alertTitle\"},[n._v(n._s(n.label)+\"\\n            \"),n._t(\"default\")],2),n._v(\" \"),t(\"label\",{staticClass:\"switch\"},[t(\"input\",{attrs:{type:\"checkbox\"},domProps:{checked:n.checked},on:{change:function(e)"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/cartSummary/icon-coupon-text.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"17\" height=\"16\" viewBox=\"0 0 17 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<circle cx=\"8.49967\" cy=\"8.00001\" r=\"6.66667\" stroke=\"#667393\" stroke-width=\"1.5\"/>\n<path d=\"M8.5 11.3333V7.33334\" stroke=\"#667393\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n<circle cx=\"0.666667\" cy=\"0.666667\" r=\"0.666667\" transform=\"matrix(1 0 0 -1 7.83301 6)\" fill=\"#667393\"/>\n</svg>\n"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/wishlist/getCurrentUserLastWishlists",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/_ui/responsive/theme-miglog/img/header+Navigation/header-new-icons-coupons.svg",
+  "status": 200,
+  "type": "image/svg+xml",
+  "sample": "<svg width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\">\n    <g fill=\"none\" fill-rule=\"evenodd\">\n        <path d=\"M7.822 5.333a2.489 2.489 0 1 0 0 4.978 2.489 2.489 0 0 0 0-4.978z\" stroke=\"#002863\" stroke-width=\"1.4\"/>\n        <path d=\"m9.6 9.354 6.493 6.925a1.28 1.28 0 0 0 1.918 0l.122-.133-7.451-7.968L9.6 9.354z\" fill=\"#002863\" fill-rule=\"nonzero\"/>\n        <path d=\"m9.6 14.204 6.477-6.338a1.37 1.37 0 0 1 1.933 0l.123.122-7.443 7.3-1.09-1.084z\" fill=\"#002863\" fill-rule=\"nonzero\"/>\n        <path d=\"M7.822 13.867a2.489 2.489 0 1 0 0 4.977 2.489 2.489 0 0 0 0-4.977z\" "
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/expiring-coupon-count",
+  "status": 200,
+  "type": "application/json",
+  "sample": "0"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/entry-recommendations",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[]"
+ },
+ {
+  "url": "https://www.googleadservices.com/pagead/conversion/985965165/?random=1788706955511&cv=11&fst=1788706955511&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120213116~120385422~120412527~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Fwish-lists%2Fmain&rcb=9&gtm_ee=1&frm=0&tiba=Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=HeadlessChrome%3B153.0.8010.12%7CNot_A%2520Brand%3B8.0.0.0%7CChromium%3B153.0.8010.12&uamb=0&uam=&uap=macOS&uapv=26.2.0&uaw=0&ec_mode=a&oid=1960121513.1788706956&oidsrc=3&ecsid2=1790895555.1788706747&_tu=ABA&gcl_ctr=6~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5",
+  "status": 200,
+  "type": "application/json",
+  "sample": "event: message\ndata: {\"fetch\":[\"https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1985489797&cv=11&fst=1788706955511&fmt=8&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be6921h1v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120213116~120385422~120412527~120469145~120469153&u_w=1280&u_h=900&url=https%3A%2F%2Fwww.shufersal.co.il%2Fonline%2Fhe%2Fwish-lists%2Fmain&rcb=9&gtm_ee=1&frm=0&tiba=Shufersal&npa=0&pscdl=noapi&auid=797548124.1788706746&label=LBvQCLjcxYEaEO3EktYD&hn=www.googleadservices.com&uaa=arm&uab=64"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/recommendations/show-advisor",
+  "status": 200,
+  "type": "application/json",
+  "sample": "false"
+ },
+ {
+  "url": "https://www.shufersal.co.il/online/he/search/sitepopular?categoryCode=A&n=20",
+  "status": 200,
+  "type": "application/json",
+  "sample": "[{\"code\":\"P_4131074\",\"name\":\"חלב בקרטון 3% שומן\",\"url\":\"/%D7%A7%D7%98%D7%92%D7%95%D7%A8%D7%99%D7%95%D7%AA/%D7%A1%D7%95%D7%A4%D7%A8%D7%9E%D7%A8%D7%A7%D7%98/%D7%9E%D7%95%D7%A6%D7%A8%D7%99-%D7%97%D7%9C%D7%91-%D7%95%D7%91%D7%99%D7%A6%D7%99%D7%9D/%D7%9E%D7%95%D7%A6%D7%A8%D7%99-%D7%97%D7%9C%D7%91-%D7%95%D7%91%D7%99%D7%A6%D7%99%D7%9D/%D7%97%D7%9C%D7%91-%D7%98%D7%A8%D7%99/%D7%97%D7%9C%D7%91-%D7%91%D7%A7%D7%A8%D7%98%D7%95%D7%9F-3%25-%D7%A9%D7%95%D7%9E%D7%9F/p/P_4131074\",\"description\":\"חלב בקרטון 3% שומן\",\"purchasable\":null,\"stock\":{\"stockLevelStatus\":{\"code\":\"inStock\",\"type\":\"StockLevelStatus\"},\"stockL"
+ }
+]

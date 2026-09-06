@@ -17,7 +17,7 @@ export KANILI_HOUSEHOLD=<your household id>
 export KANILI_RETAILER=shufersal
 npm run link -w @fca/order-worker
 ```
-A Chrome window opens on Shufersal's login page. **You don't need your password:** the window opens on *הזדהות חברי מועדון* (club sign-in) — Shufersal texts a 6-digit code to the mobile on your club membership; type it in. If the link isn't pre-selected, it's just below the password form. When you're in, the terminal prints *Session saved* and the window closes. The session is reused from then on. (The **Me** tab has a "Copy the command" button that fills in your ID.)
+A Chrome window opens on Shufersal Online's login page. It takes **email + password** (Shufersal Online has no SMS sign-in; the club-identification link is for people who don't shop online). Your password is almost always already saved on your iPhone: *Settings → Passwords → search "shufersal"*. If not, *שכחתי סיסמה* once — the reset link arrives by email and takes a minute. The session is then kept and reused. When you're in, the terminal prints *Session saved* and the window closes. The session is reused from then on. (The **Me** tab has a "Copy the command" button that fills in your ID.)
 
 ## 2. Start the worker (leave it running)
 
