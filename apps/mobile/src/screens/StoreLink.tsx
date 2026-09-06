@@ -143,8 +143,11 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 }}
               />
             </View>
-            <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card }]}>
-              <Text style={[s.faint, { textAlign: 'center' }]}>{tr('linkPrivacy')}</Text>
+            <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
+              {/* The person is never stuck behind the detector: once they see
+                  themselves signed in, one tap confirms it and starts the import. */}
+              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); if (storeId === 'shufersal') { setImporting(true); inject(HISTORY_JS); } } }} />
+              <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('linkPrivacy')}</Text>
             </View>
           </>
         )}

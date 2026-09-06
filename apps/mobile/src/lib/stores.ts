@@ -1,18 +1,27 @@
 /**
- * How each store is connected. The login page and how we know the person is
- * in are per-store; everything else in the link flow is shared.
+ * How each store is connected - grouped by how the store actually behaves,
+ * because the chains share a handful of e-commerce platforms:
  *
- * loginKind is only a hint for the copy ("enter the SMS code" vs "Face ID
- * fills your password"); the WebView shows the store's real page either way.
+ *   code      Rami Levy (own SPA), Victory, Wolt: e-mail/phone → SMS code.
+ *             One tap; iOS types the code. Nothing to remember.
+ *   platform  Victory, Bitan/Carrefour, Keshet Taamim, Mahsanei HaShuk, Tiv Taam
+ *             run one platform: `?loginOrRegister=1` opens its login dialog.
+ *             SMS login is a per-chain switch (on at Victory, off elsewhere).
+ *   hybris    Shufersal (SAP Hybris): e-mail + password only.
+ *   other     Hatzi Hinam: its own password page.
+ *
+ * Every store is browsable and priced without connecting; connecting is asked
+ * once, at the first purchase from that store. The detectors below flip
+ * "connected" automatically, and the person can always confirm by hand.
  */
 export interface StoreDef {
   readonly id: string;
   readonly name: string;
   readonly loginUrl: string;
-  /** OTP (phone + SMS, no password) or password (autofilled). */
+  /** OTP (phone/e-mail + SMS code, no password) or password (autofilled by the phone). */
   readonly loginKind: 'otp' | 'password';
-  /** URL that only loads for a signed-in session; used to detect success. */
-  readonly signedInProbe: string;
+  /** Which platform recipe this store follows. */
+  readonly group: 'code' | 'platform' | 'hybris' | 'other';
   /** A JS expression evaluated in the WebView that returns true when signed in. */
   readonly signedInCheck: string;
   /** JS run after each page load: open the store's login dialog so the person lands on the one field that matters. */
@@ -21,39 +30,78 @@ export interface StoreDef {
   readonly prefillEmailJs?: (email: string) => string;
   /** JS that opens the store's "create/reset password" flow, for stores that insist on a password. */
   readonly forgotJs?: string;
+  /** Storefront ids (SuperMCP) this store fulfils, matched by regexp. */
+  readonly storefront: RegExp;
 }
 
+const setInput = (selector: string, value: string) =>
+  `(()=>{const i=document.querySelector(${JSON.stringify(selector)});if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`;
+
+/** Generic "am I in": a logout control or the person's account area, and no login prompt in the header. */
+const genericSignedIn = `(()=>{const h=((document.querySelector('header')||document.body).innerText||'').slice(0,800);if(!h)return false;const out=/התנתק|יציאה מהחשבון|החשבון שלי|שלום[, ]|logout/i.test(h)||!!document.querySelector('a[href*="logout" i],button[class*="logout" i]');const inn=/(^|\\s)(כניסה|התחברות|כניסה לחשבון)(\\s|$)/.test(h);return out&&!inn;})()`;
+
+/** The shared platform (Victory, Bitan, Keshet, MCK, Tiv Taam). */
+const platform = (id: string, name: string, host: string, storefront: RegExp, otp: boolean): StoreDef => ({
+  id, name, group: 'platform', storefront,
+  loginUrl: `https://${host}/?loginOrRegister=1`,
+  loginKind: otp ? 'otp' : 'password',
+  signedInCheck: genericSignedIn,
+  // Prefer the SMS tab when the chain offers it; otherwise stay on e-mail + password.
+  openLoginJs: otp
+    ? `(()=>{const b=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(b&&!document.querySelector('input[type="tel"]'))b.click();})();true;`
+    : undefined,
+  prefillEmailJs: (email) => setInput('input[type="email"]', email),
+  forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחת/.test(x.textContent||''));if(a)a.click();})();true;`,
+});
+
 export const STORES: Record<string, StoreDef> = {
-  shufersal: {
-    id: 'shufersal',
-    name: 'שופרסל',
-    loginUrl: 'https://www.shufersal.co.il/online/he/login',
-    loginKind: 'password',
-    signedInProbe: 'https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp',
-    // Logged out, the orders page 302s to /login; logged in it is a 200 at its own URL.
-    // Follow the redirect and look at where we landed - opaque redirects made the
-    // manual variant unreliable inside WKWebView.
-    signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
-    prefillEmailJs: (email) => `(()=>{const i=document.querySelector('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]');if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(email)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`,
-    forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
-  },
   'rami-levy': {
-    id: 'rami-levy',
-    name: 'רמי לוי',
+    id: 'rami-levy', name: 'רמי לוי', group: 'code', storefront: /rami-levy/i,
     // No password anywhere: e-mail → "send me a code" → the SMS code, which iOS
     // fills in by itself. The site opens its login dialog from a header button.
     loginUrl: 'https://www.rami-levy.co.il/he',
     loginKind: 'otp',
-    signedInProbe: 'https://www.rami-levy.co.il/api/v2/site',
-    // Signed in = the page has hydrated (search box present) and the header no
-    // longer offers "התחברות".
     // The site is a Nuxt app: its auth module knows whether you are in. Fall
     // back to the header, which reads "כניסה" (phone) / "התחברות" (desktop)
     // while logged out and shows the person's name or "התנתקות" once in.
-    signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}const h=((document.querySelector('header')||document.body).innerText||'').slice(0,600);if(!h)return false;return /התנתק|החשבון שלי|שלום[, ]/.test(h)&&!/(^|\\s)(כניסה|התחברות)(\\s|$)/.test(h);})()`,
+    signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}return ${genericSignedIn};})()`,
     openLoginJs: `(()=>{if(document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"]'))return;const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
-    prefillEmailJs: (email) => `(()=>{const i=document.querySelector('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]');if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(email)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`,
+    prefillEmailJs: (email) => setInput('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]', email),
+  },
+  victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
+  wolt: {
+    id: 'wolt', name: 'וולט (Wolt Market, ויקטורי, קשת, מחסני השוק)', group: 'code', storefront: /wolt/i,
+    loginUrl: 'https://wolt.com/he/isr',
+    loginKind: 'otp',
+    signedInCheck: `(()=>{const h=((document.querySelector('header')||document.body).innerText||'').slice(0,600);return !/(^|\\s)(התחברות|כניסה|Log in|Login)(\\s|$)/.test(h)&&!!document.querySelector('[data-test-id*="user" i],[aria-label*="פרופיל" i],[aria-label*="profile" i],img[alt*="avatar" i]');})()`,
+    openLoginJs: `(()=>{const b=[...document.querySelectorAll('button,a')].find(x=>/^\\s*(התחברות|כניסה|Log in)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
+    prefillEmailJs: (email) => setInput('input[type="email"]', email),
+  },
+  shufersal: {
+    id: 'shufersal', name: 'שופרסל', group: 'hybris', storefront: /shufersal/i,
+    loginUrl: 'https://www.shufersal.co.il/online/he/login',
+    loginKind: 'password',
+    // Logged out, the orders page 302s to /login; logged in it is a 200 at its own URL.
+    signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
+    prefillEmailJs: (email) => setInput('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]', email),
+    forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
+  },
+  carrefour: platform('carrefour', 'קרפור / ביתן', 'www.ybitan.co.il', /carrefour|ybitan|quik/i, false),
+  'keshet-teamim': platform('keshet-teamim', 'קשת טעמים', 'www.keshet-teamim.co.il', /keshet/i, false),
+  'mahsanei-hashuk': platform('mahsanei-hashuk', 'מחסני השוק', 'www.mck.co.il', /mck|mahsanei|hashuk/i, false),
+  'tiv-taam': platform('tiv-taam', 'טיב טעם', 'www.tivtaam.co.il', /tiv-?taam/i, false),
+  'hazi-hinam': {
+    id: 'hazi-hinam', name: 'חצי חינם', group: 'other', storefront: /hazi|hinam/i,
+    loginUrl: 'https://shop.hazi-hinam.co.il/authentication/login',
+    loginKind: 'password',
+    signedInCheck: genericSignedIn,
+    prefillEmailJs: (email) => setInput('input[type="email"],input[name*="mail" i],input[name*="user" i]', email),
+    forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
   },
 };
 
 export const storeName = (id: string): string => STORES[id]?.name ?? id;
+/** Which store (if any) can place an order at this storefront. */
+export const storeForStorefront = (storefrontId: string): StoreDef | undefined => Object.values(STORES).find((s) => s.storefront.test(storefrontId));
+/** One-tap stores first, then the rest, alphabetical within a group. */
+export const STORE_ORDER: string[] = Object.values(STORES).sort((a, b) => Number(b.loginKind === 'otp') - Number(a.loginKind === 'otp')).map((s) => s.id);
