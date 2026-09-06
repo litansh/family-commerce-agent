@@ -24,7 +24,10 @@ export const STORES: Record<string, StoreDef> = {
     loginUrl: 'https://www.shufersal.co.il/online/he/login',
     loginKind: 'password',
     signedInProbe: 'https://www.shufersal.co.il/online/he/authentication/get-status-includes-otp',
-    signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include',redirect:'manual',headers:{'x-requested-with':'XMLHttpRequest'}}).then(r=>r.status===200).catch(()=>false)`,
+    // Logged out, the orders page 302s to /login; logged in it is a 200 at its own URL.
+    // Follow the redirect and look at where we landed - opaque redirects made the
+    // manual variant unreliable inside WKWebView.
+    signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
   },
   'rami-levy': {
     id: 'rami-levy',
