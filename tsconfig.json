@@ -24,6 +24,9 @@
     },
     {
       "path": "services/order-worker"
+    },
+    {
+      "path": "services/cloud-connectors"
     }
   ]
 }
