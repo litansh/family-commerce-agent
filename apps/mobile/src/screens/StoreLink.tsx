@@ -58,6 +58,9 @@ export function StoreLink({ storeId, onClose, onLinked }: { storeId: string; onC
           </View>
         ) : (
           <>
+            <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 10 }}>
+              <Text style={[s.small, { color: t.accent, fontWeight: '600' }]}>{store.loginKind === 'password' ? tr('linkTipPw') : tr('linkTipOtp')}</Text>
+            </View>
             <View style={{ flex: 1, overflow: 'hidden' }}>
               <WebView
                 ref={(r) => { webref.current = r; }}
