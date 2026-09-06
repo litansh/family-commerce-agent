@@ -6,10 +6,9 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 const root = path.resolve(__dirname, '../..');
 const config = getDefaultConfig(__dirname);
-config.watchFolders = [
-  path.resolve(root, 'packages/domain'),
-  path.resolve(root, 'node_modules'),
-];
+// Watch the whole monorepo root so the root App.js shim and workspace
+// packages all resolve.
+config.watchFolders = [root];
 config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules'), path.resolve(root, 'node_modules')];
 config.resolver.disableHierarchicalLookup = true;
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];
