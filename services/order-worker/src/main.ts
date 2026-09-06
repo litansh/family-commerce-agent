@@ -18,6 +18,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mkdirSync } from 'node:fs';
 import { ShufersalConnector } from './shufersal.ts';
+import { RamiLevyConnector } from './rami-levy.ts';
 import { importHistory, type PurchasedLine } from '@fca/domain';
 import { DynamoMemoryRepository } from '@fca/memory-store';
 import { SuperMcpCatalogProvider } from '@fca/retailer-connectors';
@@ -26,7 +27,8 @@ import type { OrderLine, RetailerConnector } from './connector.ts';
 const QUEUE = process.env['KANILI_QUEUE_URL'] ?? '';
 const TABLE = process.env['KANILI_TABLE'] ?? 'fca-main';
 
-interface ImportJob { type: 'import'; householdId: string; retailer: 'shufersal' }
+type Retailer = 'shufersal' | 'rami-levy';
+interface ImportJob { type: 'import'; householdId: string; retailer: Retailer }
 
 interface Job {
   type?: 'order';
@@ -34,7 +36,7 @@ interface Job {
   orderId: string;
   /** Which leg of a multi-store order this message is. */
   legIndex: number;
-  retailer: 'shufersal';
+  retailer: Retailer;
   lines: OrderLine[];
 }
 
@@ -44,6 +46,10 @@ const connectorFor = (job: Pick<Job, 'retailer' | 'householdId'>): RetailerConne
   switch (job.retailer) {
     case 'shufersal':
       return new ShufersalConnector(job.householdId);
+    case 'rami-levy':
+      return new RamiLevyConnector(job.householdId);
+    default:
+      throw new Error(`no connector for ${String(job.retailer)}`);
   }
 };
 
