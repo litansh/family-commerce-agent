@@ -40,10 +40,70 @@ import { quoteWithFallback } from '@fca/shopping-agent';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
+import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow } from './orders.ts';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
+
+/** The store map: aisle → sub-aisles → catalogue queries. */
+const AISLES: Record<string, { key: string; queries: string[] }[]> = {
+  dairy: [
+    { key: 'milk', queries: ['חלב 3%', 'חלב 1%', 'חלב בשקית', 'חלב ללא לקטוז', 'חלב סויה', 'חלב שקדים'] },
+    { key: 'cheese', queries: ['גבינה צהובה', 'גבינה לבנה', 'קוטג', 'גבינת שמנת', 'גבינה בולגרית', 'מוצרלה', 'גבינת עיזים', 'פרמזן'] },
+    { key: 'yogurt', queries: ['יוגורט', 'יוגורט ביו', 'מעדן', 'אקטימל', 'פרו', 'יוגורט יווני'] },
+    { key: 'butter', queries: ['חמאה', 'מרגרינה', 'שמנת מתוקה', 'שמנת חמוצה', 'שמנת להקצפה'] },
+    { key: 'eggs', queries: ['ביצים', 'ביצים חופש', 'ביצים אורגניות'] },
+  ],
+  produce: [
+    { key: 'vegetables', queries: ['עגבניות', 'מלפפונים', 'בצל', 'תפוחי אדמה', 'גזר', 'פלפל', 'חסה', 'כרוב', 'ברוקולי', 'קישוא', 'חציל', 'בטטה', 'שום', 'כרובית'] },
+    { key: 'fruit', queries: ['בננות', 'תפוחים', 'תפוזים', 'אבוקדו', 'לימון', 'ענבים', 'אבטיח', 'מלון', 'תותים', 'אגסים', 'קלמנטינות', 'מנגו'] },
+    { key: 'herbs', queries: ['פטרוזיליה', 'כוסברה', 'שמיר', 'נענע', 'בזיליקום', 'בצל ירוק'] },
+  ],
+  bakery: [
+    { key: 'bread', queries: ['לחם אחיד', 'לחם קל', 'לחם מלא', 'לחם כוסמין', 'לחם שיפון', 'לחם פרוס'] },
+    { key: 'pita', queries: ['פיתות', 'לאפה', 'טורטיה', 'לחמניות', 'חלה', 'בייגלה'] },
+    { key: 'pastry', queries: ['קרואסון', 'עוגה', 'עוגיות', 'בורקס', 'רוגלך'] },
+  ],
+  meat: [
+    { key: 'chicken', queries: ['חזה עוף', 'כרעיים', 'שוקיים', 'כנפיים', 'פרגיות', 'שניצל עוף', 'עוף שלם'] },
+    { key: 'beef', queries: ['בשר טחון', 'אנטריקוט', 'סטייק', 'צלי', 'אסאדו', 'קבב', 'המבורגר'] },
+    { key: 'fish', queries: ['סלמון', 'טונה', 'דניס', 'אמנון', 'לברק', 'פילה דג', 'סרדינים'] },
+    { key: 'deli', queries: ['נקניק', 'פסטרמה', 'נקניקיות', 'הודו מעושן', 'סלמי'] },
+  ],
+  pantry: [
+    { key: 'rice_pasta', queries: ['אורז', 'פסטה', 'ספגטי', 'קוסקוס', 'פתיתים', 'בורגול', 'קינואה', 'אטריות'] },
+    { key: 'canned', queries: ['רסק עגבניות', 'טונה בשמן', 'תירס', 'זיתים', 'שעועית', 'חומוס בשימורים', 'אפונה', 'מלפפון חמוץ'] },
+    { key: 'oils', queries: ['שמן זית', 'שמן קנולה', 'חומץ', 'קטשופ', 'מיונז', 'חרדל', 'טחינה', 'סויה'] },
+    { key: 'baking', queries: ['סוכר', 'קמח', 'מלח', 'אבקת אפייה', 'שוקולד למריחה', 'דבש', 'ריבה', 'שמרים'] },
+    { key: 'breakfast', queries: ['קורנפלקס', 'גרנולה', 'שיבולת שועל', 'דגני בוקר', 'קפה נמס', 'קפה טורקי', 'תה', 'קקאו'] },
+    { key: 'snacks', queries: ['במבה', 'ביסלי', 'חטיף', 'שוקולד', 'עוגיות', 'קרקרים', 'פיצוחים', 'תפוצ׳יפס'] },
+    { key: 'legumes', queries: ['עדשים', 'חומוס יבש', 'שעועית לבנה', 'גרגרי חומוס'] },
+  ],
+  frozen: [
+    { key: 'frozen_meals', queries: ['פיצה קפואה', 'שניצל תירס', 'מלאווח', 'בורקס קפוא', 'ג׳חנון'] },
+    { key: 'frozen_veg', queries: ['ירקות קפואים', 'אפונה קפואה', 'צ׳יפס', 'תירס קפוא', 'שעועית ירוקה קפואה'] },
+    { key: 'ice_cream', queries: ['גלידה', 'ארטיק', 'שלגון', 'קרטיב'] },
+  ],
+  drinks: [
+    { key: 'water_soft', queries: ['מים מינרליים', 'קוקה קולה', 'ספרייט', 'סודה', 'פאנטה', 'משקה אנרגיה'] },
+    { key: 'juice', queries: ['מיץ תפוזים', 'מיץ תפוחים', 'פריגת', 'מיץ ענבים', 'לימונדה'] },
+    { key: 'hot', queries: ['קפה נמס', 'קפה טורקי', 'תה', 'תה ירוק', 'שוקו'] },
+    { key: 'alcohol', queries: ['בירה', 'יין אדום', 'יין לבן', 'ערק', 'וודקה'] },
+  ],
+  baby: [
+    { key: 'diapers', queries: ['חיתולים', 'פמפרס', 'האגיס', 'חיתולי שחייה'] },
+    { key: 'wipes', queries: ['מגבונים', 'מגבונים לחים', 'קרם החתלה'] },
+    { key: 'formula', queries: ['מטרנה', 'סימילאק', 'נוטרילון', 'דייסה לתינוקות', 'מחית'] },
+  ],
+  household: [
+    { key: 'paper', queries: ['נייר טואלט', 'מגבות נייר', 'טישו', 'מפיות'] },
+    { key: 'cleaning', queries: ['אקונומיקה', 'סבון כלים', 'טבליות למדיח', 'נוזל רצפות', 'מסיר שומנים', 'ספריי ניקוי'] },
+    { key: 'laundry', queries: ['אבקת כביסה', 'ג׳ל כביסה', 'מרכך כביסה', 'מסיר כתמים'] },
+    { key: 'bags', queries: ['שקיות אשפה', 'שקיות זיפ', 'נייר אפייה', 'נייר אלומיניום', 'ניילון נצמד'] },
+    { key: 'personal', queries: ['שמפו', 'מרכך שיער', 'סבון גוף', 'משחת שיניים', 'מברשת שיניים', 'דאודורנט'] },
+  ],
+};
 const households = new HouseholdStore(TABLE);
 const images = new ImageResolver(TABLE);
 const orders = new OrderStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
@@ -133,30 +193,37 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (method === 'POST' && seg[2] === 'orders' && seg[3] && seg[4] === 'cancel') return ok(await orders.cancel(hid, seg[3]));
     if (method === 'GET' && rest === 'orders') return ok({ orders: await orders.list(hid) });
 
-    // Browse an aisle like a store: a handful of representative queries per
-    // aisle, merged, priced, with pictures. The aisle vocabulary lives in the
-    // app (it is UI), the queries here (they are catalogue-shaped).
+    // Browse like a store. An aisle has sub-aisles (milk, cheeses, yogurts…);
+    // each sub-aisle is a set of catalogue queries merged into one deep page.
+    // The catalogue itself is every chain's published range (~255k products);
+    // this is only how a person walks it.
+    if (method === 'GET' && rest === 'aisles') return ok({ aisles: Object.entries(AISLES).map(([key, subs]) => ({ key, subs: subs.map((x) => x.key) })) });
     if (method === 'GET' && rest === 'browse') {
       const { catalog } = requirePricing();
-      const AISLE_QUERIES: Record<string, string[]> = {
-        dairy: ['חלב 3%', 'גבינה צהובה', 'קוטג', 'יוגורט', 'חמאה', 'ביצים', 'שמנת', 'גבינה לבנה'],
-        produce: ['עגבניות', 'מלפפונים', 'בצל', 'תפוחי אדמה', 'גזר', 'פלפל', 'בננות', 'תפוחים', 'אבוקדו', 'לימון'],
-        bakery: ['לחם אחיד', 'פיתות', 'חלה', 'לחמניות', 'לחם קל'],
-        meat: ['חזה עוף', 'בשר טחון', 'שניצל', 'סלמון', 'כרעיים', 'אנטריקוט'],
-        pantry: ['אורז', 'פסטה', 'רסק עגבניות', 'שמן זית', 'סוכר', 'קמח', 'טונה', 'חומוס', 'טחינה', 'קורנפלקס'],
-        frozen: ['פיצה קפואה', 'ירקות קפואים', 'גלידה', 'שניצל תירס'],
-        drinks: ['מים מינרליים', 'קוקה קולה', 'מיץ תפוזים', 'קפה נמס', 'תה', 'בירה'],
-        baby: ['חיתולים', 'מגבונים', 'מטרנה'],
-        household: ['נייר טואלט', 'טבליות למדיח', 'אבקת כביסה', 'סבון כלים', 'שקיות אשפה', 'מגבות נייר'],
-      };
       const aisle = (event.queryStringParameters?.['aisle'] ?? '').trim();
-      const queries = AISLE_QUERIES[aisle];
-      if (!queries) return ok({ products: [] });
-      const results = await Promise.all(queries.map((q) => catalog.searchProducts({ query: q, limit: 6, location: household.address }).catch(() => [])));
+      const sub = (event.queryStringParameters?.['sub'] ?? '').trim();
+      const page = Math.max(0, Number(event.queryStringParameters?.['page'] ?? 0) || 0);
+      const subs = AISLES[aisle];
+      if (!subs) return ok({ products: [], subs: [] });
+      const chosen = subs.find((x) => x.key === sub) ?? subs[0]!;
+      const results = await Promise.all(chosen.queries.map((q) => catalog.searchProducts({ query: q, limit: 20, location: household.address }).catch(() => [])));
       const seen = new Set<string>();
-      const merged = results.flat().filter((c) => c.pricedAtChains > 0 && !seen.has(c.productId) && seen.add(c.productId)).slice(0, 48);
-      const imgs = await images.resolveMany(merged.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8);
-      return ok({ aisle, products: merged.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+      const all = results.flat().filter((c) => c.pricedAtChains > 0 && !seen.has(c.productId) && seen.add(c.productId));
+      const PAGE = 24;
+      const slice = all.slice(page * PAGE, page * PAGE + PAGE);
+      const imgs = await images.resolveMany(slice.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })), 8);
+      return ok({ aisle, sub: chosen.key, subs: subs.map((x) => x.key), page, total: all.length, hasMore: all.length > (page + 1) * PAGE, products: slice.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+    }
+
+    // One product, every chain that carries it. The catalogue's canonical
+    // record keyed by barcode; the "why Kanili" moment on a product sheet.
+    if (method === 'GET' && rest === 'product') {
+      requirePricing();
+      const gtin = (event.queryStringParameters?.['gtin'] ?? '').trim();
+      if (!gtin) throw new HttpError(400, 'gtin is required');
+      const detail = await productDetail(gtin);
+      const img = await images.resolve({ gtin, ...(detail?.name ? { name: detail.name } : {}) });
+      return ok({ ...(detail ?? { gtin, name: '', listings: [] }), imageUrl: img?.url ?? null });
     }
 
     // Search-as-you-type: catalogue candidates with pictures. Cheap and
@@ -169,7 +236,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = found.filter((c) => c.pricedAtChains > 0).slice(0, 8);
+      const buyable = found.filter((c) => c.pricedAtChains > 0).slice(0, 14);
       const imgs = await images.resolveMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
     }
