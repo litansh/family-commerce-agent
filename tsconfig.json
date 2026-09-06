@@ -28,5 +28,7 @@
     {
       "path": "services/cloud-connectors"
     }
-  ]
+  ],
+  "compilerOptions": {},
+  "extends": "expo/tsconfig.base"
 }
