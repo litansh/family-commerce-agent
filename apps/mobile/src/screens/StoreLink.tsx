@@ -129,7 +129,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
  * read — so a run that finds nothing tells us exactly why instead of
  * silently doing nothing.
  */
-const HISTORY_JS = `(async()=>{try{
+const HISTORY_JS = `(async()=>{let diagHtml;try{
   const H={accept:'application/json','x-requested-with':'XMLHttpRequest'};
   const j=async(u)=>{const r=await fetch(u,{credentials:'include',headers:H});const t=await r.text();try{return {s:r.status,d:JSON.parse(t)}}catch(e){return {s:r.status,d:null,h:t.slice(0,400)}}};
   const L=await j('/online/he/my-account/orders');
@@ -147,6 +147,35 @@ const HISTORY_JS = `(async()=>{try{
     const lines=(Array.isArray(ents)?ents:[]).map(e=>{const p=e.product||e;const n=p.name||p.productName||p.title||e.name;const c=p.ean||p.barcode||p.gtin||p.code||e.code;return n?{name:String(n),code:c?String(c):undefined,qty:Number(e.quantity||e.qty||1)||1}:null}).filter(x=>x&&!/משלוח|דמי/.test(x.name));
     if(lines.length)out.push({at:o.at,lines});
   }
-  const diag={status:L.s,keys:Object.keys(root).slice(0,12),html:!!L.h,htmlHead:L.h?L.h.slice(0,120):undefined,found:codes.length,orders:out.length};
+  let via='json';
+  if(out.length===0){
+    // Fallback: the storefront is SAP Hybris; read the account pages as HTML.
+    via='html';
+    const html=async(u)=>{const r=await fetch(u,{credentials:'include'});return {s:r.status,t:await r.text()}};
+    const P=new DOMParser();
+    const list=await html('/online/he/my-account/orders?pageSize=20');
+    const doc=P.parseFromString(list.t,'text/html');
+    const links=[...doc.querySelectorAll('a[href*="/my-account/order"]')].map(a=>a.getAttribute('href')||'');
+    const seen=new Set();const ocodes=[];
+    for(const h of links){const m=h.match(/order[s]?\\/([A-Za-z0-9_-]+)/);if(m&&!seen.has(m[1])){seen.add(m[1]);ocodes.push({code:m[1],href:h});}}
+    for(const o of ocodes.slice(0,20)){
+      const d=await html(o.href.startsWith('http')?o.href:o.href.startsWith('/')?o.href:'/online/he/my-account/orders/'+o.code);
+      const od=P.parseFromString(d.t,'text/html');
+      const at=(od.querySelector('time')||{}).getAttribute?(od.querySelector('time').getAttribute('datetime')||od.querySelector('time').textContent||''):'';
+      const rows=[...od.querySelectorAll('[data-product-code],[data-code],.productItem,.product-item,.cart-item,li.item,tr.item,.orderEntry,.entry')];
+      const lines=[];
+      for(const r of rows){
+        const code=r.getAttribute('data-product-code')||r.getAttribute('data-code')||((r.querySelector('a[href*="/p/"]')||{}).getAttribute?(r.querySelector('a[href*="/p/"]').getAttribute('href')||'').match(/\\/p\\/P?_?(\\d{8,14})/)?.[1]:'')||'';
+        const nameEl=r.querySelector('.name,.productName,.product-name,.title,a[href*="/p/"],h3,h4');
+        const name=(nameEl?nameEl.textContent:r.textContent||'').replace(/\\s+/g,' ').trim().slice(0,80);
+        const qEl=r.querySelector('.qty,.quantity,[data-qty],input[name*="qty" i]');
+        const qty=Number(qEl?(qEl.value||qEl.getAttribute('data-qty')||qEl.textContent||'').replace(/[^\\d.]/g,''):1)||1;
+        if(name&&name.length>2&&!/משלוח|דמי/.test(name))lines.push({name,code:code||undefined,qty});
+      }
+      if(lines.length)out.push({at,lines});
+    }
+    diagHtml={listStatus:list.s,orderLinks:ocodes.length,listTitle:(doc.querySelector('title')||{}).textContent||'',login:/login|התחבר/i.test(list.t.slice(0,4000))};
+  }
+  const diag={via,status:L.s,keys:Object.keys(root).slice(0,12),html:!!L.h,htmlHead:L.h?L.h.slice(0,120):undefined,found:codes.length,orders:out.length,...(typeof diagHtml!=='undefined'?{fallback:diagHtml}:{})};
   window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag}));
 }catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`;
