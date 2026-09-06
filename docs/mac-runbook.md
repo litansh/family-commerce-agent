@@ -17,7 +17,7 @@ export KANILI_HOUSEHOLD=<your household id>
 export KANILI_RETAILER=shufersal
 npm run link -w @fca/order-worker
 ```
-A Chrome window opens on Shufersal's login page. Sign in the way you always do. When you're in, the terminal prints *Session saved* and the window closes. (The **Me** tab also has a "Copy the command" button that fills in your ID.)
+A Chrome window opens on Shufersal's login page. **You don't need your password:** pick *כניסה עם קוד ב-SMS*, enter your phone number, and type the code that arrives on your phone. When you're in, the terminal prints *Session saved* and the window closes. The session is reused from then on. (The **Me** tab has a "Copy the command" button that fills in your ID.)
 
 ## 2. Start the worker (leave it running)
 
