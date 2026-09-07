@@ -53,7 +53,17 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => { api.me().then((m) => setEmail(m.email ?? null)).catch(() => null); }, [api]);
   const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js); };
+  // The moment a store shows a "code" box, mark it as a one-time-code field
+  // and focus it. iOS then offers the SMS code on the keyboard as it lands —
+  // one tap, well inside the store's timer — instead of a race to type six
+  // digits from Messages. Runs continuously: code boxes appear after taps.
+  const OTP_JS = `(()=>{if(window.__kaniliOtp)return;window.__kaniliOtp=1;
+    const isCode=(i)=>{const a=(i.getAttribute('autocomplete')||'')+' '+(i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')+' '+(i.getAttribute('aria-label')||'');if(/phone|tel|zip|מיקוד|טלפון|נייד/i.test(a)||i.type==='tel')return false;const ml=Number(i.getAttribute('maxlength')||0);return /one-time|otp|sms|code|קוד/i.test(a)||(i.getAttribute('inputmode')==='numeric'&&ml>=4&&ml<=8&&i.type!=='password')||(/^\\\\d\\*$/.test(i.getAttribute('pattern')||'')&&ml>=4&&ml<=8);};
+    const tune=()=>{for(const i of document.querySelectorAll('input')){if(i.type==='hidden'||i.type==='password'||i.type==='email'||i.type==='search')continue;if(!isCode(i))continue;if(i.getAttribute('autocomplete')!=='one-time-code'){i.setAttribute('autocomplete','one-time-code');i.setAttribute('inputmode','numeric');i.setAttribute('pattern','[0-9]*');}
+      const r=i.getBoundingClientRect();if(r.width>0&&!i.value&&document.activeElement!==i&&!i.dataset.kaniliFocused){i.dataset.kaniliFocused='1';setTimeout(()=>{try{i.focus();i.click();}catch(e){}},150);}}};
+    tune();new MutationObserver(()=>tune()).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});})();true;`;
   const settle = () => {
+    inject(OTP_JS);
     // After a load: open the login dialog and fill the e-mail; SPAs need a second pass.
     inject(store?.openLoginJs);
     setTimeout(() => { inject(store?.openLoginJs); if (email) inject(store?.prefillEmailJs?.(email)); }, 1200);
