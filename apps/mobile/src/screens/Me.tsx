@@ -34,7 +34,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   const copy = async (r: string) => { const c = cmd(r); if (Platform.OS === 'web') await navigator.clipboard?.writeText(c); else await Clipboard.setStringAsync(c); setCopied(r); setTimeout(() => setCopied(null), 1500); };
   return (
     <View style={s.screen}>
-      <Header title={tr('meTitle')} subtitle={household.name} />
+      <Header title={tr('meTitle')} subtitle={`${household.name} · build ${BUILD}`} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
         <View style={[s.card, s.row]}><Text style={s.title}>{tr('language')}</Text><LanguagePicker /></View>
         <View style={s.card}>
