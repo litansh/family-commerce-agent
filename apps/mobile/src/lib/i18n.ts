@@ -75,6 +75,17 @@ const he: Strings = {
   noPricing: 'השוואת מחירים עדיין לא זמינה ב{country}. הרשימה המשותפת והזיכרון עובדים כבר עכשיו.',
   reason_cheapest: 'הסל השלם הזול ביותר מרשת אחת', reason_verified: 'רשת אחת, תנאי משלוח מאומתים', reason_split: '{n} פריטים זולים יותר ב{brand}, והחיסכון מכסה משלוח שני',
   reason_pickupCheaper: 'איסוף עצמי — זול מכל משלוח', reason_pickup: 'איסוף עצמי — יקר יותר ממשלוח כאן', reason_drive: 'זול יותר בחנות, והחיסכון מכסה את הנסיעה',
+  // Connecting a store (ADR 0008)
+  cloudPwTitle: 'היכנסו ל{s} — פעם אחת', cloudPwSub: 'האימייל והסיסמה של {s} נשלחים לרשת בשבילכם ומיד נמחקים. קניתי שומרת רק את החיבור — לא סיסמה, לא פרטים אישיים.',
+  cloudEmailPh: 'האימייל בחשבון {s}', cloudUserPh: 'אימייל או ת.ז בחשבון {s}', cloudPwPh: 'הסיסמה ב{s}', cloudConnectBtn: 'התחברו', cloudConnecting: 'מתחברים ל{s}…',
+  cloudPhoneTitle: 'חברו את {s} מהטלפון', cloudPhoneSub: '{s} מאפשרת כניסה רק מהמסך שלה (קוד ב-SMS). באפליקציה בטלפון זה לוקח רגע — והחיבור מגיע לכאן מיד.', cloudPhoneHint: 'פתחו את קניתי בטלפון › אני › חברו {s}',
+  cloudWrongPw: 'האימייל או הסיסמה לא נכונים ב{s}. נסו שוב, או צרו סיסמה ב{s}.', cloudUnavailable: '{s} לא עונה כרגע. נסו שוב בעוד רגע.', cloudNoAccount: 'אין לכם חשבון ב{s}?',
+  cloudConnected: '{s} מחובר', cloudConnectedSub: 'החיבור נשמר בענן של קניתי, מוצפן. מעכשיו כל טלפון של המשפחה מזמין מ{s}.',
+  cloudImporting: 'קוראים את ההזמנות הקודמות שלכם ב{s}…', cloudImported: '{n} הזמנות נלמדו לזיכרון המשפחתי', cloudImportedNone: 'עדיין אין הזמנות ב{s} ללמוד מהן',
+  forgotPwLink: 'שכחתם? צרו סיסמה ב{s}', signupTitle: 'חשבון חדש ב{s}', signupSub: 'הרשמה באתר של {s} לוקחת דקה. זה מה שהיא תבקש — מה שקניתי כבר יודעת מוכן להעתקה:',
+  signupOpen: 'פתחו את ההרשמה ב{s}', signupThen: 'סיימתם? חזרו לכאן והתחברו.', copy: 'העתק', copiedShort: 'הועתק', notKnown: 'תמלאו בעצמכם',
+  field_name: 'שם פרטי ומשפחה', field_id: 'תעודת זהות', field_phone: 'טלפון נייד', field_email: 'אימייל', field_birthdate: 'תאריך לידה', field_password: 'סיסמה חדשה', field_address: 'כתובת למשלוח', field_code: 'קוד שיגיע ב-SMS / במייל',
+  phoneBadge: 'מהטלפון', cloudBadge: 'מהאתר', sessionSaved: 'החיבור נשמר גם בענן ✓', sessionNotSaved: 'החיבור נשמר בטלפון הזה',
   rej_partial: 'מספקת רק {a} מתוך {b} פריטים', rej_min: 'הסל מתחת למינימום ההזמנה',
 };
 
@@ -141,6 +152,17 @@ const en: Strings = {
   noPricing: 'Price comparison is not available in {country} yet. The shared list and memory work today.',
   reason_cheapest: 'Cheapest complete basket from one store', reason_verified: 'One store, verified delivery terms', reason_split: '{n} items are cheaper at {brand}, and the saving clears a second delivery fee',
   reason_pickupCheaper: 'Collect yourself — cheaper than any delivery', reason_pickup: 'Collect yourself — costs more than delivery here', reason_drive: 'Cheaper in store, and the saving clears the drive',
+  // Connecting a store (ADR 0008)
+  cloudPwTitle: 'Sign in to {s} — once', cloudPwSub: 'Your {s} email and password are forwarded to the store for you and discarded at once. Kaniti keeps only the connection — no password, no personal details.',
+  cloudEmailPh: 'Email on your {s} account', cloudUserPh: 'Email or ID on your {s} account', cloudPwPh: 'Your {s} password', cloudConnectBtn: 'Sign in', cloudConnecting: 'Signing in to {s}…',
+  cloudPhoneTitle: 'Connect {s} from your phone', cloudPhoneSub: '{s} only lets you in from its own screen (SMS code). In the Kaniti app on your phone it takes a moment — and the connection shows up here right away.', cloudPhoneHint: 'Open Kaniti on your phone › Me › Connect {s}',
+  cloudWrongPw: 'That email or password is not right at {s}. Try again, or create a password at {s}.', cloudUnavailable: '{s} is not answering right now. Try again in a moment.', cloudNoAccount: 'No {s} account?',
+  cloudConnected: '{s} connected', cloudConnectedSub: 'The connection is kept in Kaniti’s cloud, encrypted. From now on every phone in the family orders from {s}.',
+  cloudImporting: 'Reading your past {s} orders…', cloudImported: '{n} orders learned into the family memory', cloudImportedNone: 'No {s} orders to learn from yet',
+  forgotPwLink: 'Forgot? Create a password at {s}', signupTitle: 'New {s} account', signupSub: 'Signing up on {s}’s site takes a minute. This is what it asks for — what Kaniti already knows is ready to copy:',
+  signupOpen: 'Open {s} sign-up', signupThen: 'Done? Come back here and sign in.', copy: 'Copy', copiedShort: 'Copied', notKnown: 'You fill this in',
+  field_name: 'First and last name', field_id: 'ID number', field_phone: 'Mobile phone', field_email: 'Email', field_birthdate: 'Date of birth', field_password: 'New password', field_address: 'Delivery address', field_code: 'Code sent by SMS / email',
+  phoneBadge: 'On the phone', cloudBadge: 'From the site', sessionSaved: 'Connection also saved to the cloud ✓', sessionNotSaved: 'Connection saved on this phone',
   rej_partial: 'supplies only {a} of {b} items', rej_min: 'basket is below the store minimum',
 };
 

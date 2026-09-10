@@ -38,7 +38,20 @@ export interface StoreDef {
    * Stores without one fall back to the generic Hybris reader.
    */
   readonly historyJs?: string;
+  /**
+   * The cloud rung (ADR 0008): what Kaniti's cloud can do for this store with
+   * no phone. `password` = e-mail + password typed once into Kaniti and used
+   * once; `otp` = the cloud asks the store for its code. Absent = the store
+   * gates sign-in behind a captcha or blocks datacenters, so it connects on
+   * the phone only.
+   */
+  readonly cloud?: 'password' | 'otp';
+  /** What the store's sign-up form asks a new person for, in its order — so Kaniti can prefill what it knows and say the rest up front. */
+  readonly signup: { readonly url: string; readonly asks: readonly SignupField[] };
+  /** Cookie / token names that make up a signed-in session on this store, for the phone to capture after sign-in. */
+  readonly sessionKeys?: readonly string[];
 }
+export type SignupField = 'name' | 'id' | 'phone' | 'email' | 'birthdate' | 'password' | 'address' | 'code';
 
 const setInput = (selector: string, value: string) =>
   `(()=>{const i=document.querySelector(${JSON.stringify(selector)});if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`;
@@ -62,6 +75,8 @@ const platform = (id: string, name: string, host: string, storefront: RegExp, ot
   openLoginJs: `(()=>{const has=document.querySelector('input[type="password"],input[type="tel"],input[type="email"]');if(!has){let b=document.querySelector('button.login')||[...document.querySelectorAll('button,a')].find(x=>/^\\s*(כניסת משתמש|כניסה|התחברות|כניסה לחשבון|התחברות לחשבון)\\s*$/.test(x.textContent||''));const vis=b&&b.getBoundingClientRect().width>0;if(b&&vis){b.click();}else{const m=document.querySelector('.btn-toggle-side-nav,button[class*="side-nav"]');if(m){m.click();setTimeout(()=>{const l=document.querySelector('button.login')||[...document.querySelectorAll('button,a')].find(x=>/כניסת משתמש|^\\s*כניסה\\s*$/.test(x.textContent||''));if(l)l.click();},700);}}}${otp ? `setTimeout(()=>{const o=[...document.querySelectorAll('button,a')].find(x=>/קוד חד פעמי/.test(x.textContent||''));if(o&&!document.querySelector('input[type="tel"]'))o.click();},1600);` : ''}})();true;`,
   prefillEmailJs: (email) => setInput('input[type="email"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחת/.test(x.textContent||''));if(a)a.click();})();true;`,
+  // stor.ai: `/v2/retailers/{id}/sessions` wants a reCAPTCHA hash and the platform 403s datacenters — phone only.
+  signup: { url: `https://${host}/?loginOrRegister=1`, asks: otp ? ['phone', 'code'] : ['name', 'phone', 'email', 'password'] },
 });
 
 export const STORES: Record<string, StoreDef> = {
@@ -78,6 +93,9 @@ export const STORES: Record<string, StoreDef> = {
     // On the phone the trigger is a <div aria-label="התחברות">, not a button.
     openLoginJs: `(()=>{if(document.querySelector('input[type="email"]'))return;const b=document.querySelector('[aria-label="התחברות"],[aria-label="כניסה"]')||[...document.querySelectorAll('button,a,div,span')].find(x=>x.children.length<3&&/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => setInput('dialog input[type="email"],[role="dialog"] input[type="email"],input[type="email"]', email),
+    // `/api/v2/site/auth/login` answers 422 "recaptcha" without a widget token — phone only.
+    signup: { url: 'https://www.rami-levy.co.il/he', asks: ['email', 'code'] },
+    sessionKeys: ['auth._token.local', 'auth._refresh_token.local'],
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
   wolt: {
@@ -111,6 +129,9 @@ export const STORES: Record<string, StoreDef> = {
 }catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e),...D}}));}})();true;`,
     openLoginJs: `(()=>{if(document.querySelector('input[type="email"],input[type="tel"]'))return;const b=[...document.querySelectorAll('a,button')].find(x=>/להתחבר|התחברות|Log in|Login/.test(x.textContent||''));if(b)b.click();})();true;`,
     prefillEmailJs: (email) => setInput('input[type="email"]', email),
+    // `/v3/users/email_login` sends a link; hCaptcha guards the flow — phone only.
+    signup: { url: 'https://wolt.com/he/isr', asks: ['email', 'code'] },
+    sessionKeys: ['__wrtoken', '__wtoken'],
   },
   shufersal: {
     id: 'shufersal', name: 'שופרסל', group: 'hybris', storefront: /shufersal/i,
@@ -120,6 +141,10 @@ export const STORES: Record<string, StoreDef> = {
     signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
     prefillEmailJs: (email) => setInput('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
+    // Plain form post, no captcha, reachable from AWS — the cloud can sign in with a password used once.
+    cloud: 'password',
+    signup: { url: 'https://www.shufersal.co.il/online/he/register', asks: ['name', 'id', 'phone', 'email', 'birthdate', 'password'] },
+    sessionKeys: ['JSESSIONID', 'XSRF-TOKEN', 'miglogstorefrontRememberMe'],
   },
   carrefour: platform('carrefour', 'קרפור / ביתן', 'www.ybitan.co.il', /carrefour|ybitan|quik/i, false),
   'keshet-teamim': platform('keshet-teamim', 'קשת טעמים', 'www.keshet-teamim.co.il', /keshet/i, false),
@@ -133,6 +158,10 @@ export const STORES: Record<string, StoreDef> = {
     // Their "e-mail / ID" box is a plain text field above the password.
     prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
+    // `/proxy/Login` JSON post, captcha token optional — the cloud can sign in with a password used once.
+    cloud: 'password',
+    signup: { url: 'https://shop.hazi-hinam.co.il/registration/personalDetails', asks: ['name', 'id', 'phone', 'email', 'address', 'password'] },
+    sessionKeys: ['H_UUID'],
   },
 };
 

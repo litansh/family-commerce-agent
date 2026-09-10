@@ -75,6 +75,19 @@ export class Api {
   order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
   approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
   cancelOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/cancel`);
+  // --- connecting stores (ADR 0008) ---------------------------------------
+  /** Which stores the cloud holds a session for (every device of the family sees the same answer). */
+  connections = (hid: string) => this.#call<{ connections: Record<string, { connected: boolean; method?: 'device' | 'otp' | 'password'; since?: string }> }>('GET', `/households/${hid}/stores/connections`);
+  /** Cloud rung: a one-time code (phone/e-mail) or a password used once. The password is sent over TLS and never stored. */
+  connectStore = (hid: string, store: string, body: { method: 'otp'; phone?: string; email?: string } | { method: 'password'; email: string; password: string }) =>
+    this.#call<{ challengeId?: string; sentTo?: string; connected?: boolean; method?: string }>('POST', `/households/${hid}/stores/${store}/connect`, body);
+  verifyStore = (hid: string, store: string, challengeId: string, code: string) => this.#call<{ connected: boolean }>('POST', `/households/${hid}/stores/${store}/connect/verify`, { challengeId, code });
+  /** Device rung: the phone captured the store's session after a sign-in in its WebView. */
+  postStoreSession = (hid: string, store: string, session: { cookies: { name: string; value: string; domain?: string; path?: string }[]; tokens?: Record<string, string>; userAgent?: string }) =>
+    this.#call<{ connected: boolean }>('POST', `/households/${hid}/stores/${store}/session`, session);
+  disconnectStore = (hid: string, store: string) => this.#call<{ connected: boolean }>('DELETE', `/households/${hid}/stores/${store}/connection`);
+  /** Past orders read through the cloud-held session, into the family's memory. */
+  cloudImport = (hid: string, store: string) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/stores/${store}/import`);
   worker = (hid: string) => this.#call<{ online: boolean; lastSeen: string | null; linked: Record<string, boolean> }>('GET', `/households/${hid}/worker`);
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);

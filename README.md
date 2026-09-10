@@ -2,7 +2,7 @@
 
 A household purchasing agent for Israel. Grocery is domain #1.
 
-**Status: live.** Web at https://d3lykvs28o7qrc.cloudfront.net · backend on AWS (Cognito, DynamoDB, Lambda, API Gateway) · Expo app for iOS/Android (EAS config in `apps/mobile`). Phases 0–4 done; Phase 5 (prepared carts) next.
+**Status: live.** Kaniti (קניתי) — web at https://d3lykvs28o7qrc.cloudfront.net · backend on AWS (Cognito, DynamoDB, Lambda, API Gateway) · Expo app for iOS/Android (EAS config in `apps/mobile`). Phases 0–4 done; store connection ladder (ADR 0008) built; Phase 5 (prepared carts) next.
 
 ## The short version
 
@@ -42,11 +42,38 @@ order history through the retailer's own account pages, resolve each product to 
 replay the orders into memory *dated* — so "your usuals" and purchase rhythms exist before the
 first shop. Nothing imported is marked confirmed; the family still says "yes, that one" once.
 
-## Ordering through Kaniti (the worker)
+## Connecting a store (ADR 0008)
 
-Retailers have no ordering API, so a small worker on the family's own Mac does the retailer work
-with the family's own session. It never stores a password: you sign in once in a window it opens,
-the session is kept encrypted under `~/.kaniti`, and reused until the retailer expires it.
+Kaniti is three apps from one codebase — web, iOS, Android — and connecting a store is one
+ladder on all of them. The first rung that works wins, and every rung ends in a session the
+store issued, sealed in Kaniti's cloud. **Nothing a person types is kept**: no password, phone,
+ID number or name.
+
+| Rung | Where | What the person does |
+|---|---|---|
+| device | iOS / Android | The store's own login in a WebView; Face ID or Google fills the saved password, or the SMS code lands on the keyboard. The session is then sent to the cloud, so every device in the family sees the store as connected. **Nobody can block this rung** — on the phone Kaniti *is* the person's own browser on the person's own network. |
+| cloud, password | web too (Shufersal, Hatzi Hinam) | E-mail + password typed once into Kaniti, forwarded, used for one sign-in, discarded. |
+| cloud, code | web too, where a store offers it without a captcha | Phone / e-mail, then the store's code. (No store qualifies today: Rami Levy and Wolt gate the code behind a captcha widget.) |
+| create | all | "No account?" shows exactly what the store's sign-up asks for, with everything Kaniti knows ready to copy (or typed in for you on the phone), and opens the store's own page. |
+
+On the web, a store with no cloud rung says "connect from your phone" in one line and the
+connection shows up on the web by itself once the phone has done it.
+
+```bash
+npm test                                   # unit tests incl. the cloud drivers (fake fetch)
+cd apps/mobile && npx expo export --platform web --output-dir dist && npx playwright test e2e/connect.spec.ts   # the web flow, API mocked
+node --experimental-strip-types e2e/store-lab.mjs      # every store's phone login page in WebKit (the device rung)
+node --experimental-strip-types e2e/login-api-lab.mjs  # what each store's page sends on sign-in — every non-GET aborted
+```
+
+The home-Mac worker below is now a fallback for ordering at stores the cloud cannot reach.
+
+## Ordering through the home worker (fallback)
+
+Retailers have no ordering API, so a small worker on the family's own Mac can do the retailer
+work with the family's own session. It never stores a password: you sign in once in a window it
+opens, the session is kept encrypted under `~/.kaniti` (or an existing `~/.kanili`), and reused
+until the retailer expires it.
 
 ```bash
 source ~/.kaniti/env                      # worker AWS profile + queue (written by Terraform apply)
