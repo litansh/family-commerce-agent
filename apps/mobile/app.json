@@ -53,13 +53,17 @@
           "cameraPermission": "קניתי משתמשת במצלמה רק כדי לסרוק ברקוד של מוצר לרשימה."
         }
       ],
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF8F3",
+          "imageWidth": 200
+        }
+      ]
     ],
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#FAF8F3"
-    },
     "owner": "litansh",
     "description": "כל הסופרים. חנות אחת. רשימה אחת, סל אחד, כל הרשתות — ושום דבר לא נשכח."
   }

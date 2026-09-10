@@ -242,19 +242,16 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         const tokens = body['tokens'] && typeof body['tokens'] === 'object' ? Object.fromEntries(Object.entries(body['tokens'] as Record<string, unknown>).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, String(v)])) : undefined;
         if (cookies.length === 0 && !tokens) throw new HttpError(400, 'no session in body');
         const session: StoreSession = { retailer: store, cookies, capturedAt: new Date().toISOString(), ...(typeof body['userAgent'] === 'string' ? { userAgent: body['userAgent'] } : {}), ...(tokens ? { tokens } : {}) };
-        // With a driver the store itself confirms the session; without one the
-        // phone already ran the store's signed-in check and we keep the jar for
-        // the phone's own later use.
-        if (driver && !(await driver.signedIn(session).catch(() => false))) throw new HttpError(401, 'not_signed_in');
+        // The phone already ran the store's own signed-in check, and from AWS
+        // the stores answer with block pages (ADR 0008 amendment) - so the
+        // cloud keeps the jar as the family's "connected" marker and does not
+        // second-guess it.
         return connected('device', session);
       }
       if (method === 'DELETE' && action === 'connection') { await sessions.remove(hid, store); return ok({ connected: false }); }
       if (method === 'GET' && action === 'connection') {
         const session = await sessions.get(hid, store);
-        if (!session) return ok({ connected: false });
-        const live = driver ? await driver.signedIn(session).catch(() => false) : true;
-        if (live) await sessions.touch(hid, store);
-        return ok({ connected: live, method: 'unknown', stale: !live });
+        return ok({ connected: !!session });
       }
       if (method === 'POST' && action === 'import') {
         const { catalog } = requirePricing();
