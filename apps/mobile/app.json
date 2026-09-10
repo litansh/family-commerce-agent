@@ -10,7 +10,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.litansh.kaniti",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "קניתי משתמשת במצלמה רק כדי לסרוק ברקוד של מוצר לרשימה.",
+        "CFBundleDevelopmentRegion": "he",
+        "CFBundleLocalizations": [
+          "he",
+          "en"
+        ]
       }
     },
     "android": {
@@ -40,7 +46,14 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-localization",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "קניתי משתמשת במצלמה רק כדי לסרוק ברקוד של מוצר לרשימה."
+        }
+      ],
+      "expo-dev-client"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",
