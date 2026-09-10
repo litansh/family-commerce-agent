@@ -1,0 +1,26 @@
+appId: com.litansh.kaniti
+---
+- runFlow: household.yaml
+- tapOn: "אני"
+- scrollUntilVisible:
+    element: "שופרסל"
+    direction: DOWN
+- tapOn:
+    text: "חברו"
+    below: "החנויות המחוברות"
+    optional: true
+- extendedWaitUntil:
+    visible: "חיבור שופרסל"
+    timeout: 10000
+- takeScreenshot: maestro/shots/07-connect-open
+# The store's own login page inside the WebView: give it time, then look for the form.
+- extendedWaitUntil:
+    visible:
+      text: "סיסמה|כניסה|אימייל"
+    timeout: 45000
+- takeScreenshot: maestro/shots/08-connect-store-form
+- tapOn: "אין לכם חשבון בשופרסל?"
+- assertVisible: "חשבון חדש בשופרסל"
+- takeScreenshot: maestro/shots/09-signup-guide
+- tapOn: "‹ חזרה"
+- tapOn: "✕"

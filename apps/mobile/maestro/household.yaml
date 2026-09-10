@@ -1,0 +1,27 @@
+appId: com.litansh.kaniti
+---
+- runFlow: signin.yaml
+- runFlow:
+    when:
+      visible: "משפחה חדשה"
+    commands:
+      - tapOn: "שם — למשל: משפחת שמיר"
+      - inputText: "משפחת סימולטור"
+      - tapOn:
+          id: "address"
+          optional: true
+      - tapOn: "כתובת"
+      - inputText: "הרצל 1 רמת גן"
+      - extendedWaitUntil:
+          visible: "רמת גן"
+          timeout: 15000
+      - tapOn:
+          text: "רמת גן"
+          index: 1
+      - hideKeyboard
+      - takeScreenshot: maestro/shots/02-household-form
+      - tapOn: "צור משק בית"
+- extendedWaitUntil:
+    visible: "המחלקות"
+    timeout: 60000
+- takeScreenshot: maestro/shots/03-home
