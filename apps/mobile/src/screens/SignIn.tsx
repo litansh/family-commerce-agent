@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { saveTokens, signIn, type Tokens } from '../lib/auth';
 import { confirmForgotPassword, confirmSignUp, explain, forgotPassword, passwordSignIn, resendCode, signUp } from '../lib/cognito';
@@ -32,6 +32,19 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
     try { await fn(); } catch (e) { setErr(explain(e, (k) => tr(k))); } finally { setBusy(false); }
   };
   const finish = async (tk: Tokens) => { await saveTokens(tk); onSignedIn(tk); };
+
+  // Dev-only: a build made with EXPO_PUBLIC_E2E_EMAIL/PASSWORD (the simulator
+  // Maestro run) signs in on its own, so the loop never fights the on-screen
+  // keyboard. The vars are unset in every real build, so this is inert there.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    const e = process.env['EXPO_PUBLIC_E2E_EMAIL'];
+    const p = process.env['EXPO_PUBLIC_E2E_PASSWORD'];
+    if (!e || !p || autoTried.current) return;
+    autoTried.current = true;
+    setEmail(e); setPw(p);
+    void run(async () => { await finish(await passwordSignIn(e.trim(), p)); });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doSignUp = () => run(async () => {
     if (pw !== pw2) { setErr(tr('errMismatch')); return; }
@@ -69,13 +82,13 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
 
       <Text style={[s.title, { marginBottom: 10 }]}>{title}</Text>
       {(mode === 'signin' || mode === 'signup' || mode === 'forgot') && (
-        <Input placeholder={tr('email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress" />
+        <Input testID="email" placeholder={tr('email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress" />
       )}
       {(mode === 'confirm' || mode === 'reset') && (
         <Input placeholder={tr('code')} value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" style={{ marginTop: 0 }} />
       )}
       {(mode === 'signin' || mode === 'signup' || mode === 'reset') && (
-        <Input placeholder={mode === 'reset' ? tr('newPassword') : tr('password')} value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" textContentType={mode === 'signin' ? 'password' : 'newPassword'} style={{ marginTop: 10 }} />
+        <Input testID="password" placeholder={mode === 'reset' ? tr('newPassword') : tr('password')} value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" textContentType={mode === 'signin' ? 'password' : 'newPassword'} style={{ marginTop: 10 }} />
       )}
       {(mode === 'signup' || mode === 'reset') && (
         <>
@@ -87,7 +100,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (t: Tokens) => void }) {
       {err ? <Text style={[s.small, { color: t.red, marginTop: 10 }]}>{err}</Text> : null}
       <View style={{ height: 16 }} />
 
-      {mode === 'signin' && <Button title={tr('signInBtn')} onPress={doSignIn} disabled={busy || !email || !pw} />}
+      {mode === 'signin' && <Button testID="signin-submit" title={tr('signInBtn')} onPress={doSignIn} disabled={busy || !email || !pw} />}
       {mode === 'signup' && <Button title={tr('signUpBtn')} onPress={doSignUp} disabled={busy || !email || !pw || !pw2} />}
       {mode === 'confirm' && <Button title={tr('confirmBtn')} onPress={doConfirm} disabled={busy || code.length < 4} />}
       {mode === 'forgot' && <Button title={tr('sendCode')} onPress={doForgot} disabled={busy || !email} />}

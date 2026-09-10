@@ -1,0 +1,15 @@
+appId: com.litansh.kaniti
+---
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Continue|Close|כניסה|משפחה חדשה|המחלקות|בית"
+    timeout: 120000
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true

@@ -8,6 +8,7 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { config } from './config';
 
@@ -38,12 +39,18 @@ async function store(t: Tokens | null): Promise<void> {
     else localStorage.removeItem(KEY);
     return;
   }
-  if (t) await SecureStore.setItemAsync(KEY, JSON.stringify(t));
-  else await SecureStore.deleteItemAsync(KEY);
+  // The keychain can be unavailable (a build without the entitlement, a locked
+  // device); tokens are short-lived, so falling back to app storage beats a hang.
+  try {
+    if (t) await SecureStore.setItemAsync(KEY, JSON.stringify(t));
+    else await SecureStore.deleteItemAsync(KEY);
+  } catch {
+    if (t) await AsyncStorage.setItem(KEY, JSON.stringify(t)); else await AsyncStorage.removeItem(KEY);
+  }
 }
 
 export async function loadTokens(): Promise<Tokens | null> {
-  const raw = Platform.OS === 'web' ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY);
+  const raw = Platform.OS === 'web' ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY).catch(() => AsyncStorage.getItem(KEY));
   if (!raw) return null;
   const t = JSON.parse(raw) as Tokens;
   if (t.expiresAt > Date.now() + 60_000) return t;
