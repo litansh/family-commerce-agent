@@ -4,11 +4,10 @@
  *
  *   npx expo export --platform web --output-dir dist && npx playwright test e2e/connect.spec.ts
  *
- * What it proves: a password-rung store (Shufersal) connects from the web
- * with a password typed once, a wrong password is said plainly, a phone-only
- * store (Rami Levy) says "from your phone" instead of a dead end, the sign-up
- * guide lists what the store asks and opens the store's own page, and
- * "connected" comes from the cloud, not from a device flag.
+ * What it proves: on the web every store says "from your phone" instead of a
+ * dead end (no grocery store lets AWS in - verified 2026-09-10), "connected"
+ * comes from the cloud where the phone put it, and the sign-up guide lists
+ * what the store asks and opens the store's own page.
  */
 import { test, expect, type Page, type Route } from '@playwright/test';
 
@@ -73,42 +72,18 @@ async function openMe(page: Page): Promise<void> {
 const connectRow = (page: Page, storeName: string) => page.locator('div', { hasText: new RegExp(`^${storeName}`) }).filter({ has: page.getByText('חברו', { exact: true }) }).last().getByText('חברו', { exact: true });
 
 test.describe('connect a store on the web', () => {
-  test('Shufersal: password once → connected in the cloud → history learned', async ({ page }) => {
+  test('Me on the web: every store connects from the phone, and "connected" comes from the cloud', async ({ page }) => {
     const { calls, state } = await mockApi(page);
+    state['shufersal'] = { connected: true, method: 'device' }; // connected on a phone earlier
     await openMe(page);
-    // Web badges say where each store connects from.
-    await expect(page.getByText('מהאתר').first()).toBeVisible();
     await expect(page.getByText('מהטלפון').first()).toBeVisible();
-    await page.screenshot({ path: 'e2e/shots/connect-00-me.png' });
-
-    await connectRow(page, 'שופרסל').click();
-    await expect(page.getByText('היכנסו לשופרסל — פעם אחת')).toBeVisible();
-    await page.screenshot({ path: 'e2e/shots/connect-01-shufersal-form.png' });
-    // The person's own e-mail is filled in already; only the password is typed.
-    await expect(page.getByTestId('cloud-user')).toHaveValue('lab@example.com');
-
-    // A wrong password is said plainly, and nothing is connected.
-    await page.getByTestId('cloud-password').fill('wrong');
-    await page.getByTestId('cloud-connect').click();
-    await expect(page.getByText(/האימייל או הסיסמה לא נכונים/)).toBeVisible({ timeout: 10_000 });
-    expect(state['shufersal']).toBeUndefined();
-    await page.screenshot({ path: 'e2e/shots/connect-02-wrong-password.png' });
-
-    await page.getByTestId('cloud-password').fill('LabPassw0rd!');
-    await page.getByTestId('cloud-connect').click();
-    await expect(page.getByText('שופרסל מחובר')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('3 הזמנות נלמדו לזיכרון המשפחתי')).toBeVisible({ timeout: 10_000 });
-    await page.screenshot({ path: 'e2e/shots/connect-03-connected.png' });
-    // The password went to the API exactly as typed, once, and was not kept anywhere on the page.
-    const posts = calls.filter((c) => c.path === '/households/h1/stores/shufersal/connect');
-    expect(posts.map((c) => (c.body as { password: string }).password)).toEqual(['wrong', 'LabPassw0rd!']);
-    await expect(page.getByTestId('cloud-password')).toHaveCount(0);
-
-    await page.getByText('סיימתי', { exact: false }).first().click();
-    // Me now reads "connected" from the cloud (the mock's state), with sync / disconnect.
+    await expect(page.getByText('מהאתר')).toHaveCount(0);
     await expect(page.locator('div', { hasText: /^שופרסל/ }).filter({ has: page.getByText('מחובר', { exact: true }) }).first()).toBeVisible({ timeout: 10_000 });
-    await page.screenshot({ path: 'e2e/shots/connect-04-me-connected.png' });
     expect(calls.some((c) => c.path === '/households/h1/stores/connections')).toBe(true);
+    await page.screenshot({ path: 'e2e/shots/connect-00-me.png' });
+    await connectRow(page, 'רמי לוי').click();
+    await expect(page.getByText('חברו את רמי לוי מהטלפון')).toBeVisible();
+    await expect(page.getByTestId('cloud-password')).toHaveCount(0);
   });
 
   test('Rami Levy on the web: honest "from your phone", with the sign-up guide', async ({ page, context }) => {

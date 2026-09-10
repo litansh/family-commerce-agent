@@ -141,8 +141,8 @@ export const STORES: Record<string, StoreDef> = {
     signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
     prefillEmailJs: (email) => setInput('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
-    // Plain form post, no captcha, reachable from AWS — the cloud can sign in with a password used once.
-    cloud: 'password',
+    // Plain form post, no captcha — but from AWS the site serves a 441-byte block page
+    // (verified from a Lambda, 2026-09-10), so there is no cloud rung: phone only.
     signup: { url: 'https://www.shufersal.co.il/online/he/register', asks: ['name', 'id', 'phone', 'email', 'birthdate', 'password'] },
     sessionKeys: ['JSESSIONID', 'XSRF-TOKEN', 'miglogstorefrontRememberMe'],
   },
@@ -158,8 +158,8 @@ export const STORES: Record<string, StoreDef> = {
     // Their "e-mail / ID" box is a plain text field above the password.
     prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
     forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
-    // `/proxy/Login` JSON post, captcha token optional — the cloud can sign in with a password used once.
-    cloud: 'password',
+    // `/proxy/Login` JSON post, captcha token optional — but Cloudflare challenges AWS
+    // addresses (403 "Just a moment", verified from a Lambda, 2026-09-10): phone only.
     signup: { url: 'https://shop.hazi-hinam.co.il/registration/personalDetails', asks: ['name', 'id', 'phone', 'email', 'address', 'password'] },
     sessionKeys: ['H_UUID'],
   },

@@ -52,12 +52,11 @@ ID number or name.
 | Rung | Where | What the person does |
 |---|---|---|
 | device | iOS / Android | The store's own login in a WebView; Face ID or Google fills the saved password, or the SMS code lands on the keyboard. The session is then sent to the cloud, so every device in the family sees the store as connected. **Nobody can block this rung** — on the phone Kaniti *is* the person's own browser on the person's own network. |
-| cloud, password | web too (Shufersal, Hatzi Hinam) | E-mail + password typed once into Kaniti, forwarded, used for one sign-in, discarded. |
-| cloud, code | web too, where a store offers it without a captcha | Phone / e-mail, then the store's code. (No store qualifies today: Rami Levy and Wolt gate the code behind a captcha widget.) |
+| cloud | none today | Built and tested, but from AWS every grocery store answers with a block page or a Cloudflare challenge (verified 2026-09-10), so the app offers no cloud sign-in. |
 | create | all | "No account?" shows exactly what the store's sign-up asks for, with everything Kaniti knows ready to copy (or typed in for you on the phone), and opens the store's own page. |
 
-On the web, a store with no cloud rung says "connect from your phone" in one line and the
-connection shows up on the web by itself once the phone has done it.
+On the web every store says "connect from your phone" in one line, and the connection shows up
+on the web by itself once the phone has done it. The phone app is where the product lives.
 
 ```bash
 npm test                                   # unit tests incl. the cloud drivers (fake fetch)

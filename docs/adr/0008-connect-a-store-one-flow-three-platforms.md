@@ -95,6 +95,19 @@ next rung on the ladder. Request shapes come from `login-api-lab.mjs`, which rec
 store's own page sends and **aborts every non-GET request**, so the lab never sends an SMS or
 creates anything.
 
+## Amendment, same day — the cloud rung is dead for grocery, the phone is the product
+
+A probe Lambda in eu-central-1 fetched each store the way the drivers do (2026-09-10 21:50 IDT):
+Shufersal served a 441-byte S3 block page instead of its login (ADR 0007's "does not block
+datacenters" no longer holds), Hatzi Hinam, Rami Levy and Victory answered Cloudflare's
+"Just a moment" 403, and only Wolt's token endpoint replied. The live smoke test of the new
+routes accordingly returned `502 unavailable` for both password drivers.
+
+So: **no store has a web rung.** The drivers stay (they work from any residential network and
+are the shape a future on-device relay would use), but the app offers no cloud sign-in. The web
+is for the list, the compare and the approval; connecting and ordering happen on the phone,
+where nobody can tell Kaniti from the person. Development effort goes to the phone app first.
+
 ## Consequences
 
 - The web app can connect Shufersal and Hatzi Hinam without the phone. Rami Levy, Wolt and the

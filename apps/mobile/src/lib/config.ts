@@ -31,4 +31,4 @@ export const config = {
 };
 
 /** Build stamp shown in Me and sent with every store report, so "which code is the phone running" is never a guess. */
-export const BUILD = '2026-09-10.2142';
+export const BUILD = '2026-09-10.2153';
