@@ -5,23 +5,26 @@ appId: com.litansh.kaniti
     when:
       visible: "משפחה חדשה"
     commands:
-      - tapOn: "שם — למשל: משפחת שמיר"
+      - tapOn:
+          id: "hh-name"
       - inputText: "משפחת סימולטור"
       - tapOn:
-          id: "address"
-          optional: true
-      - tapOn: "כתובת"
-      - inputText: "הרצל 1 רמת גן"
+          id: "hh-address"
+      - inputText: "ביאליק 20 רמת גן"
+      - waitForAnimationToEnd
       - extendedWaitUntil:
-          visible: "רמת גן"
-          timeout: 15000
+          visible:
+            id: "addr-sug-0"
+          timeout: 25000
       - tapOn:
-          text: "רמת גן"
-          index: 1
-      - hideKeyboard
-      - takeScreenshot: maestro/shots/02-household-form
-      - tapOn: "צור משק בית"
+          id: "addr-sug-0"
+      - extendedWaitUntil:
+          visible:
+            id: "hh-create"
+          timeout: 10000
+      - tapOn:
+          id: "hh-create"
 - extendedWaitUntil:
-    visible: "המחלקות"
+    visible:
+      text: "המחלקות|בית|הרגילים|לכל המוצרים"
     timeout: 60000
-- takeScreenshot: maestro/shots/03-home

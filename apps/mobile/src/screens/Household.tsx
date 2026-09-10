@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native';
 import type { Api, Household } from '../lib/api';
 import { currentRegion, t as tr, useLanguage } from '../lib/i18n';
 import { Button, Chip, Header, Input, LanguagePicker, S, t } from '../ui';
@@ -41,7 +41,7 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
     return () => clearTimeout(h);
   }, [q, api, picked]);
 
-  const pick = (sg: Suggestion) => { setPicked(sg); setQ(sg.label); setSugs([]); };
+  const pick = (sg: Suggestion) => { setPicked(sg); setQ(sg.label); setSugs([]); Keyboard.dismiss(); };
   const toggle = (r: string) => setRetailers((xs) => (xs.includes(r) ? xs.filter((x) => x !== r) : [...xs, r]));
   const run = async (fn: () => Promise<Household>) => {
     setBusy(true); setErr(null);
@@ -57,14 +57,14 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
       <View style={s.pad}>
         <View style={s.card}>
           <Text style={[s.title, { marginBottom: 12 }]}>{tr('newFamily')}</Text>
-          <Input placeholder={tr('namePh')} value={name} onChangeText={setName} />
+          <Input testID="hh-name" placeholder={tr('namePh')} value={name} onChangeText={setName} />
 
           <Text style={[s.small, { marginTop: 14, marginBottom: 6 }]}>{tr('addressLabel')}</Text>
-          <Input placeholder={tr('addressPh')} value={q} onChangeText={(v) => { setQ(v); if (picked && v !== picked.label) setPicked(null); }} />
+          <Input testID="hh-address" placeholder={tr('addressPh')} value={q} onChangeText={(v) => { setQ(v); if (picked && v !== picked.label) setPicked(null); }} />
           {sugs.length > 0 && (
             <View style={{ backgroundColor: t.card, borderRadius: 10, borderWidth: 1, borderColor: t.line, marginTop: 4, overflow: 'hidden' }}>
               {sugs.map((sg, i) => (
-                <Pressable key={i} onPress={() => pick(sg)} style={({ pressed }) => [s.row, { paddingVertical: 10, paddingHorizontal: 12, borderTopWidth: i ? 1 : 0, borderColor: t.line }, pressed && { backgroundColor: t.bg }]}>
+                <Pressable key={i} testID={`addr-sug-${i}`} accessibilityLabel={sg.label} onPress={() => pick(sg)} style={({ pressed }) => [s.row, { paddingVertical: 10, paddingHorizontal: 12, borderTopWidth: i ? 1 : 0, borderColor: t.line }, pressed && { backgroundColor: t.bg }]}>
                   <Text style={s.body}>{sg.label}</Text>
                   <Chip text={sg.verified ? tr('verified') : tr('partial')} tone={sg.verified ? 'good' : 'warn'} />
                 </Pressable>
@@ -93,7 +93,7 @@ export function HouseholdSetup({ api, onDone }: { api: Api; onDone: (h: Househol
             {(['delivery', 'pickup', 'either'] as const).map((f) => <Pressable key={f} onPress={() => setFulfillment(f)} style={{ opacity: fulfillment === f ? 1 : 0.5 }}><Chip text={tr(`${f}_`)} tone={fulfillment === f ? 'good' : 'neutral'} /></Pressable>)}
           </View>
           <View style={{ height: 16 }} />
-          <Button title={tr('create')} disabled={busy || !canCreate}
+          <Button testID="hh-create" title={tr('create')} disabled={busy || !canCreate}
             onPress={() => run(() => api.createHousehold({ name: name.trim(), address, country: 'IL', retailers, fulfillment, language: lang, addressDetails: { street: picked?.street, number: picked?.number, city: picked?.city, lat: picked?.lat, lng: picked?.lng, apt, floor, entrance, notes } }))} />
           {!picked?.verified && q.trim().length > 0 ? <Text style={[s.faint, { marginTop: 6 }]}>{tr('pickFromList')}</Text> : null}
         </View>

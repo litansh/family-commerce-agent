@@ -1,0 +1,55 @@
+# The whole loop, linear and deterministic: reset, auto sign-in, create the
+# household if the test user has none yet, walk the tabs, connect a store.
+appId: com.litansh.kaniti
+# The runner reloads the app from Metro (terminate + deep link) before this
+# runs, so we start from a fresh JS load, not a cold launch (which on a dev
+# client would drop to the launcher).
+---
+# Dev-client "Open in Kaniti?" and the dev menu, when they appear.
+- tapOn: { text: "Open", optional: true }
+- extendedWaitUntil:
+    visible: { text: "Continue|Close|כניסה|משפחה חדשה|המחלקות" }
+    timeout: 120000
+- tapOn: { text: "Continue", optional: true }
+- tapOn: { text: "Close", optional: true }
+# Auto sign-in (env creds) lands on the household screen or straight on Home.
+- extendedWaitUntil:
+    visible: { text: "משפחה חדשה|המחלקות|החנויות המחוברות" }
+    timeout: 45000
+- runFlow:
+    when:
+      visible: "משפחה חדשה"
+    commands:
+      - tapOn: { id: "hh-name" }
+      - inputText: "משפחת סימולטור"
+      - tapOn: { id: "hh-address" }
+      - inputText: "ביאליק 20 רמת גן"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: { id: "addr-sug-0" }
+          timeout: 25000
+      - tapOn: { id: "addr-sug-0" }
+      - extendedWaitUntil:
+          visible: { id: "hh-create" }
+          timeout: 10000
+      - tapOn: { id: "hh-create" }
+- extendedWaitUntil:
+    visible: { text: "המחלקות" }
+    timeout: 60000
+# Tabs
+- tapOn: ".*רשימה"
+- assertVisible: "מה צריך?|הרשימה ריקה|השוואת מחירים"
+- tapOn: ".*הזמנות"
+- assertVisible: "ההזמנות שלכם|עדיין אין הזמנות"
+- tapOn: ".*אני"
+- assertVisible: "החנויות המחוברות"
+# Connect a store: its own login opens inside Kaniti, the e-mail prefilled, no password.
+- tapOn: { text: "חברו", index: 0 }
+- extendedWaitUntil:
+    visible: { text: "חיבור |כניסה|התחברתי" }
+    timeout: 40000
+- extendedWaitUntil:
+    visible: { text: "kaniti-sim-.*@uberip.com|שלח קוד|קוד אימות|סיסמה" }
+    timeout: 60000
+# The store's login is open inside Kaniti with the e-mail already filled and
+# a code chooser (or password field) shown - connecting is one tap from here.
