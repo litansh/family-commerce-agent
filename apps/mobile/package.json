@@ -7,6 +7,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@fca/domain": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-cookies/cookies": "^6.2.1",
     "expo": "~57.0.20",
     "expo-auth-session": "~57.0.11",
     "expo-camera": "~57.0.4",
@@ -36,8 +37,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "tunnel": "expo start --tunnel",
     "e2e": "playwright test"
