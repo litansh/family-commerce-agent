@@ -28,7 +28,10 @@
       "userPoolClientId": "1t7e0himh3heckpassvg0q0e0o",
       "cognitoDomain": "https://fca-4b19ec.auth.eu-central-1.amazoncognito.com",
       "region": "eu-central-1",
-      "googleEnabled": false
+      "googleEnabled": false,
+      "eas": {
+        "projectId": "a5121da7-fde3-4eef-a352-2cb21426421e"
+      }
     },
     "plugins": [
       "expo-web-browser",
