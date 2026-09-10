@@ -80,20 +80,14 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const [signup, setSignup] = useState(false);
   const [saved, setSaved] = useState<boolean | null>(null);
   // Device rung → cloud: everything the page itself can read (cookies without
-  // HttpOnly, localStorage tokens) goes up; the API keeps it sealed. A dev
-  // build with a native cookie manager adds the HttpOnly jar too.
+  // HttpOnly, localStorage tokens) goes up; the API keeps it sealed. This is
+  // the family's "connected" marker - ordering itself runs here, on the phone,
+  // where the full session lives (ADR 0008 amendment).
   const CAPTURE_JS = `(()=>{try{const keys=${JSON.stringify(store?.sessionKeys ?? [])};const cookies=document.cookie.split(';').map(c=>c.trim()).filter(Boolean).map(c=>{const i=c.indexOf('=');return {name:c.slice(0,i),value:decodeURIComponent(c.slice(i+1)),domain:location.hostname}});const tokens={};try{for(const k of Object.keys(localStorage)){if(keys.includes(k)||/token/i.test(k)){const v=localStorage.getItem(k);if(v&&v.length>8&&v.length<4000)tokens[k]=v;}}}catch(e){}window.ReactNativeWebView.postMessage('session:'+JSON.stringify({cookies,tokens,userAgent:navigator.userAgent}));}catch(e){window.ReactNativeWebView.postMessage('session:'+JSON.stringify({cookies:[],tokens:{},error:String(e)}));}})();true;`;
   const postSession = async (json: string): Promise<void> => {
     try {
       const got = JSON.parse(json) as { cookies: { name: string; value: string; domain?: string }[]; tokens: Record<string, string>; userAgent?: string };
-      let cookies = got.cookies;
-      try {
-        // Native cookie manager (dev builds): the full jar, HttpOnly included.
-        const CM = require('@react-native-cookies/cookies').default as { get: (url: string, useWebKit?: boolean) => Promise<Record<string, { name: string; value: string; domain?: string; path?: string }>> };
-        const jar = await CM.get(store!.loginUrl, true);
-        const full = Object.values(jar).map((c) => ({ name: c.name, value: c.value, ...(c.domain ? { domain: c.domain } : {}), ...(c.path ? { path: c.path } : {}) }));
-        if (full.length) cookies = full;
-      } catch { /* Expo Go: no native module; the page-readable cookies go up */ }
+      const cookies = got.cookies;
       const r = await api.postStoreSession(householdId, storeId, { cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) });
       setSaved(r.connected);
     } catch { setSaved(false); }
