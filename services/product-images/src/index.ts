@@ -35,7 +35,7 @@ async function tryRamiLevy(gtin: string): Promise<ImageRef | undefined> {
 }
 
 async function tryOff(gtin: string): Promise<ImageRef | undefined> {
-  const res = await withTimeout(fetch(`https://world.openfoodfacts.org/api/v2/product/${gtin}.json?fields=image_front_small_url`, { headers: { 'user-agent': 'kanili/0.1' } }), 2500).catch(() => undefined);
+  const res = await withTimeout(fetch(`https://world.openfoodfacts.org/api/v2/product/${gtin}.json?fields=image_front_small_url`, { headers: { 'user-agent': 'kaniti/0.1' } }), 2500).catch(() => undefined);
   if (!res?.ok) return undefined;
   const d = (await res.json().catch(() => null)) as { status?: number; product?: { image_front_small_url?: string } } | null;
   const url = d?.product?.image_front_small_url;

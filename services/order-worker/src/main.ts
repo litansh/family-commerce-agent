@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The Kanili ordering worker. Runs on a machine at home, not in AWS: retailer
+ * The Kaniti ordering worker. Runs on a machine at home, not in AWS: retailer
  * sites reject datacenter traffic, and this is the one process that ever
  * holds a retailer session.
  *
@@ -8,10 +8,10 @@
  *           session is saved encrypted, no password is stored
  *   run   — long-poll SQS for orders, drive the retailer with the saved
  *           session, write progress to DynamoDB so the app can show it,
- *           wait for the family's approval in Kanili, then place the order
+ *           wait for the family's approval in Kaniti, then place the order
  *
- *   KANILI_HOUSEHOLD=<id> npm run link -w @fca/order-worker
- *   KANILI_QUEUE_URL=… KANILI_TABLE=fca-main npm start -w @fca/order-worker
+ *   KANITI_HOUSEHOLD=<id> npm run link -w @fca/order-worker
+ *   KANITI_QUEUE_URL=… KANITI_TABLE=fca-main npm start -w @fca/order-worker
  */
 import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
@@ -25,8 +25,9 @@ import { DynamoMemoryRepository } from '@fca/memory-store';
 import { SuperMcpCatalogProvider } from '@fca/retailer-connectors';
 import type { OrderLine, RetailerConnector } from './connector.ts';
 
-const QUEUE = process.env['KANILI_QUEUE_URL'] ?? '';
-const TABLE = process.env['KANILI_TABLE'] ?? 'fca-main';
+const env = (k: string): string | undefined => process.env[`KANITI_${k}`] ?? process.env[`KANILI_${k}`];
+const QUEUE = env('QUEUE_URL') ?? '';
+const TABLE = env('TABLE') ?? 'fca-main';
 
 type Retailer = 'shufersal' | 'rami-levy';
 interface ImportJob { type: 'import'; householdId: string; retailer: Retailer }
@@ -195,9 +196,9 @@ async function syncCoupons(householdId: string, c: RetailerConnector): Promise<v
 }
 
 async function link(): Promise<void> {
-  const householdId = process.env['KANILI_HOUSEHOLD'];
-  const retailer = (process.env['KANILI_RETAILER'] ?? 'shufersal') as Job['retailer'];
-  if (!householdId) throw new Error('KANILI_HOUSEHOLD is required');
+  const householdId = env('HOUSEHOLD');
+  const retailer = (env('RETAILER') ?? 'shufersal') as Job['retailer'];
+  if (!householdId) throw new Error('KANITI_HOUSEHOLD is required');
   const c = connectorFor({ householdId, retailer });
   try {
     await c.interactiveLogin();
@@ -212,15 +213,15 @@ async function link(): Promise<void> {
  * than two minutes as offline.
  */
 async function heartbeat(): Promise<void> {
-  const householdId = process.env['KANILI_HOUSEHOLD'];
+  const householdId = env('HOUSEHOLD');
   if (!householdId) return;
   const linked = Object.fromEntries((['shufersal', 'rami-levy'] as const).map((r) => [r, hasSession(householdId, r)]));
   await doc.send(new PutCommand({ TableName: TABLE, Item: { PK: `HOUSEHOLD#${householdId}`, SK: 'WORKER', lastSeen: new Date().toISOString(), linked, host: process.env['HOSTNAME'] ?? 'home' } })).catch(() => undefined);
 }
 
 async function run(): Promise<void> {
-  if (!QUEUE) throw new Error('KANILI_QUEUE_URL is required');
-  console.log('kanili worker: waiting for orders on', QUEUE);
+  if (!QUEUE) throw new Error('KANITI_QUEUE_URL is required');
+  console.log('kaniti worker: waiting for orders on', QUEUE);
   await heartbeat();
   setInterval(() => void heartbeat(), 30_000);
   for (;;) {

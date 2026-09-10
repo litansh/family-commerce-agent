@@ -22,6 +22,9 @@
     },
     {
       "path": "../../services/product-images"
+    },
+    {
+      "path": "../../services/cloud-connectors"
     }
   ]
 }

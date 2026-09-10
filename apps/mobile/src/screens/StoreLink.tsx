@@ -8,12 +8,12 @@ import { isRTL } from '../lib/i18n';
 import { BUILD } from '../lib/config';
 
 /**
- * Connect a store, entirely inside Kanili.
+ * Connect a store, entirely inside Kaniti.
  *
  * The store's own login opens in a WebView, so the OS autofills a saved
  * password with Face ID, or the person enters the SMS code — the very page
  * the store's own app uses, which is why "already have an account" and "new"
- * are one flow. Every couple of seconds Kanili asks the store's own page
+ * are one flow. Every couple of seconds Kaniti asks the store's own page
  * whether it is signed in; when it says yes, the store is connected. The
  * session stays in the WebView, on the device — nothing is sent to a server.
  *
@@ -57,10 +57,10 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   // and focus it. iOS then offers the SMS code on the keyboard as it lands —
   // one tap, well inside the store's timer — instead of a race to type six
   // digits from Messages. Runs continuously: code boxes appear after taps.
-  const OTP_JS = `(()=>{if(window.__kaniliOtp)return;window.__kaniliOtp=1;
+  const OTP_JS = `(()=>{if(window.__kanitiOtp)return;window.__kanitiOtp=1;
     const isCode=(i)=>{const a=(i.getAttribute('autocomplete')||'')+' '+(i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')+' '+(i.getAttribute('aria-label')||'');if(/phone|tel|zip|מיקוד|טלפון|נייד/i.test(a)||i.type==='tel')return false;const ml=Number(i.getAttribute('maxlength')||0);return /one-time|otp|sms|code|קוד/i.test(a)||(i.getAttribute('inputmode')==='numeric'&&ml>=4&&ml<=8&&i.type!=='password')||(/^\\\\d\\*$/.test(i.getAttribute('pattern')||'')&&ml>=4&&ml<=8);};
     const tune=()=>{for(const i of document.querySelectorAll('input')){if(i.type==='hidden'||i.type==='password'||i.type==='email'||i.type==='search')continue;if(!isCode(i))continue;if(i.getAttribute('autocomplete')!=='one-time-code'){i.setAttribute('autocomplete','one-time-code');i.setAttribute('inputmode','numeric');i.setAttribute('pattern','[0-9]*');}
-      const r=i.getBoundingClientRect();if(r.width>0&&!i.value&&document.activeElement!==i&&!i.dataset.kaniliFocused){i.dataset.kaniliFocused='1';setTimeout(()=>{try{i.focus();i.click();}catch(e){}},150);}}};
+      const r=i.getBoundingClientRect();if(r.width>0&&!i.value&&document.activeElement!==i&&!i.dataset.kanitiFocused){i.dataset.kanitiFocused='1';setTimeout(()=>{try{i.focus();i.click();}catch(e){}},150);}}};
     tune();new MutationObserver(()=>tune()).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});})();true;`;
   const settle = () => {
     inject(OTP_JS);

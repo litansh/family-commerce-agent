@@ -30,7 +30,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   }, [api, household.id]);
   const storeIds = nearby && nearby.length > 0 ? [...new Set([...nearby, ...linked])] : STORE_ORDER;
   useEffect(() => { const tick = () => api.worker(household.id).then(setWorker).catch(() => null); tick(); const h = setInterval(tick, 15000); return () => clearInterval(h); }, [api, household.id]);
-  const cmd = (r: string) => `cd ~/GolandProjects/family-commerce-agent && source ~/.kanili/env && KANILI_HOUSEHOLD=${household.id} KANILI_RETAILER=${r} npm run link -w @fca/order-worker`;
+  const cmd = (r: string) => `cd ~/GolandProjects/family-commerce-agent && source ~/.kaniti/env && KANITI_HOUSEHOLD=${household.id} KANITI_RETAILER=${r} npm run link -w @fca/order-worker`;
   const copy = async (r: string) => { const c = cmd(r); if (Platform.OS === 'web') await navigator.clipboard?.writeText(c); else await Clipboard.setStringAsync(c); setCopied(r); setTimeout(() => setCopied(null), 1500); };
   return (
     <View style={s.screen}>
@@ -49,7 +49,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         <View style={s.card}>
           <Text style={[s.title, { marginBottom: 4 }]}>{tr('connectedStores')}</Text>
           <Text style={[s.small, { marginBottom: 8 }]}>{tr('connectedStoresSub')}</Text>
-          {/* Every store Kanili can order from - not only the ones picked at setup. */}
+          {/* Every store Kaniti can order from - not only the ones picked at setup. */}
           {storeIds.map((r) => {
             const on = linked.includes(r);
             const otp = STORES[r]?.loginKind === 'otp';

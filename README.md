@@ -42,15 +42,15 @@ order history through the retailer's own account pages, resolve each product to 
 replay the orders into memory *dated* — so "your usuals" and purchase rhythms exist before the
 first shop. Nothing imported is marked confirmed; the family still says "yes, that one" once.
 
-## Ordering through Kanili (the worker)
+## Ordering through Kaniti (the worker)
 
 Retailers have no ordering API, so a small worker on the family's own Mac does the retailer work
 with the family's own session. It never stores a password: you sign in once in a window it opens,
-the session is kept encrypted under `~/.kanili`, and reused until the retailer expires it.
+the session is kept encrypted under `~/.kaniti`, and reused until the retailer expires it.
 
 ```bash
-source ~/.kanili/env                      # worker AWS profile + queue (written by Terraform apply)
-export KANILI_HOUSEHOLD=<your household id>   # shown in the app header menu
+source ~/.kaniti/env                      # worker AWS profile + queue (written by Terraform apply)
+export KANITI_HOUSEHOLD=<your household id>   # shown in the app header menu
 npm run link  -w @fca/order-worker        # one-time: sign in to Shufersal in the window that opens
 npm start     -w @fca/order-worker        # leave running; it waits for orders from the app
 ```

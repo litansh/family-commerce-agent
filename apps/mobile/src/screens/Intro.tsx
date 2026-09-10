@@ -2,7 +2,7 @@
  * The introduction, after the design review (docs/intro-design-review.md).
  *
  * Four screens, four colour fields, one arc. Each screen lets the person do
- * the thing Kanili is good at: merge the stores, form a memory, watch milk
+ * the thing Kaniti is good at: merge the stores, form a memory, watch milk
  * come due, count three taps. Shown once after sign-in; reopenable from Me.
  */
 import React, { useEffect, useRef, useState } from 'react';

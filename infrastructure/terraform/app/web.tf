@@ -1,4 +1,4 @@
-# The Kanili site: the Expo web build on S3 behind CloudFront. Private bucket,
+# The Kaniti site: the Expo web build on S3 behind CloudFront. Private bucket,
 # origin access control, SPA fallback so deep links resolve to index.html.
 # Deploy: npm run deploy:web (exports, syncs, invalidates).
 
@@ -25,7 +25,7 @@ resource "aws_cloudfront_distribution" "web" {
   enabled             = true
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # EU + NA edges; Israel is served from EU
-  comment             = "Kanili web"
+  comment             = "Kaniti web"
 
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name

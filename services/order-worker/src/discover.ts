@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 import { writeFileSync } from 'node:fs';
 import { loadSession } from './session.ts';
 
-const HID = process.env['KANILI_HOUSEHOLD'] ?? '';
+const HID = process.env['KANITI_HOUSEHOLD'] ?? '';
 const BASE = 'https://www.shufersal.co.il/online/he';
 const PAGES = ['/my-account/orders', '/my-account/coupons', '/my-account', '/my-account/personal-area', '/wish-lists/main'];
 

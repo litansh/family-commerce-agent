@@ -1,0 +1,744 @@
+{
+  "rami-levy": {
+    "requests": [
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/rl/manifest.2064add4.json",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "other"
+      },
+      {
+        "method": "GET",
+        "url": "blob:https://www.rami-levy.co.il/16b2cfb0-9485-4634-a279-3d100528c97c",
+        "headers": {
+          "accept": "*/*"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://session-replay.browser-intake-datadoghq.eu/api/v2/replay?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=a7de7b8f-98c6-4002-",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryYpo3V6lYjA7SFOAj",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "------WebKitFormBoundaryYpo3V6lYjA7SFOAj\r\nContent-Disposition: form-data; name=\"segment\"; filename=\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67-1789064634298\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n------WebKitFormBoundaryYpo3V6lYjA7SFOAj\r\nContent-Disposition: form-data; name=\"event\"; filename=\"blob\"\r\nContent-Type: application/json\r\n\r\n\r\n------WebKitFormBoundaryYpo3V6lYjA7SFOAj--\r\n",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/version.json",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=312320429&t=pageview&_s=1&dl=https%3A%2F%2Fwww.rami-levy.co.il%2Fhe&dp=%2Fhe&ul=he-il&dt=%D7%A8%D7%9E%D7%99%20%D7%9C%D7%95%D7%99%20%D7%91%D7%90%D7%99%D7%A0%D7%98%D7%A8%D7%A0%D7%98%20-%20%D7%90%D7%AA%D7%A8%20%D7%A7%D7%A0%D7%99%D7%95%D7%AA%20%D7",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/rl/fonts/OpenSansHebrew-Regular.dc71bbd.ttf",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "font"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/rl/fonts/OpenSansHebrew-Bold.5ef117b.ttf",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "font"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/rl/fonts/OpenSansHebrew-Light.542d161.ttf",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "font"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/api/menu?store=331&kosher=0",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "referer": "https://www.rami-levy.co.il/he",
+          "locale": "he"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=1f076b01-7b0f-4f1b-8ff8-dc3db3d",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064633842,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\"},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"3bb50e25-166a-41fe-83c2-ae3bd0cf77bb\",\"type\":\"document\",\"url\":\"https://www.rami-levy.co.il/he\",\"duration\":82000000,\"size\":642168,\"download\":{\"duration\":10000000,\"start\":72000000},\"first_byte\":{\"duration\":28000000,\"start\":44000",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=f3cd73e1-75c5-4e97-a261-86cacbc",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634735,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"7dad971a-e2e3-4a24-8c77-9a765af6bafb\",\"type\":\"xhr\",\"duration\":177000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.rami-levy.co.il/cdn-cgi/rum?\"},\"type\":\"resource\"}\n{\"_dd\":{\"format_version\":2,\"drift\":",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/version.json",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.rami-levy.co.il/api/menu?store=331&kosher=0",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "referer": "https://www.rami-levy.co.il/he",
+          "locale": "he"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=b844bdea-093b-460b-9427-5e3381c",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634895,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"1db07066-10e8-4a7e-984e-9f4fc76e7aef\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_470,f_webp/https://img.rami-levy.co.il/public/banners/9f1e8fd3-e111-4094-bf34-80af54f0524d.png\",\"duration\":0},\"ty",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=1&tag_exp=115616985~115938466~115938468~118897920",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=2&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=3&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=4&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=5&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=6&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=7&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=8&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=9&tag_exp=115616985~115938466~1159384",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=10&tag_exp=115616985~115938466~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=11&tag_exp=115616985~115938466~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=12&tag_exp=115616985~115938466~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=13&tag_exp=115616985~115938466~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=14&tag_exp=115616985~115938466~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=ac703129-a0ea-4428-85e9-c9def7d",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100}},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634996,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\",\"in_foreground\":true},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"error\":{\"id\":\"dd20de4b-8502-4fa8-b8e1-5dbcf8a6ae72\",\"message\":\"Network Error\",\"source\":\"source\",\"stack\":\"Error: Network Error\\n  at <anonymous> @ https://www.rami-levy.co.il/rl/07d3df9.js:2:226604\\n  at <anonymous> @ https://www.rami-levy.co.il/rl/07d",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=7be52932-edae-4bae-a8f2-264de5dcd",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064633842,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\"},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"3bb50e25-166a-41fe-83c2-ae3bd0cf77bb\",\"type\":\"document\",\"url\":\"https://www.rami-levy.co.il/he\",\"duration\":82000000,\"size\":642168,\"download\":{\"duration\":10000000,\"start\":72000000},\"first_byte\":{\"duration\":28000000,\"start\":44000",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=ff5daedd-3697-4199-a4e4-a055ab3c9",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634735,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"7dad971a-e2e3-4a24-8c77-9a765af6bafb\",\"type\":\"xhr\",\"duration\":177000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.rami-levy.co.il/cdn-cgi/rum?\"},\"type\":\"resource\"}\n{\"_dd\":{\"format_version\":2,\"drift\":",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=da1439f1-27d2-4c29-95e0-9d6b92c88",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634895,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":377.99903296865523,\"height\":663.9948796927929}},\"resource\":{\"id\":\"1db07066-10e8-4a7e-984e-9f4fc76e7aef\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_470,f_webp/https://img.rami-levy.co.il/public/banners/9f1e8fd3-e111-4094-bf34-80af54f0524d.png\",\"duration\":0},\"ty",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=1&tag_exp=115616985~115938466~115938468~118897920~118897930",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=2&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=3&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=4&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=5&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=6&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=7&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=0e218ca1-22c2-4395-a9c2-4572888",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634954,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"3bbe056c-727f-4b39-a395-8342bf70d188\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_470,f_webp/https://img.rami-levy.co.il/public/banners/9f1e8ef2-f2ca-4664-91ae-4a5f14999f30.png\",\"duration\":0},\"type\":\"resource\"}\n{\"_dd\":{\"form",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=8&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=9&tag_exp=115616985~115938466~115938468~1188979",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=10&tag_exp=115616985~115938466~115938468~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=11&tag_exp=115616985~115938466~115938468~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=12&tag_exp=115616985~115938466~115938468~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=13&tag_exp=115616985~115938466~115938468~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064634086&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=IAAAAAQ&cid=657577858.1789064634&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=14&tag_exp=115616985~115938466~115938468~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=ca746479-89cc-4410-98f5-ad6aa252e",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100}},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634996,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\",\"in_foreground\":true},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"error\":{\"id\":\"dd20de4b-8502-4fa8-b8e1-5dbcf8a6ae72\",\"message\":\"Network Error\",\"source\":\"source\",\"stack\":\"Error: Network Error\\n  at <anonymous> @ https://www.rami-levy.co.il/rl/07d3df9.js:2:226604\\n  at <anonymous> @ https://www.rami-levy.co.il/rl/07d",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=d442dfc3-1963-4778-a99a-d6736f6",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":0,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635045,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"78c93658-5f91-4901-83a6-7561e42f1222\",\"type\":\"fetch\",\"duration\":26000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=fa25d3b4-2019-4189-9179-4a3d4b4ef",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634954,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"3bbe056c-727f-4b39-a395-8342bf70d188\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_470,f_webp/https://img.rami-levy.co.il/public/banners/9f1e8ef2-f2ca-4664-91ae-4a5f14999f30.png\",\"duration\":0},\"type\":\"resource\"}\n{\"_dd\":{\"form",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=46f4b353-a5f9-40e2-ae67-33c2cb9",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635071,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"f32f589d-bbcd-46e7-b7b4-0379c4d83026\",\"type\":\"fetch\",\"duration\":48000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=178906",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=dd151b21-eeac-4fe1-bad2-405ce4a33",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":0,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635045,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"78c93658-5f91-4901-83a6-7561e42f1222\",\"type\":\"fetch\",\"duration\":26000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google-analytics.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=0104703a-5a54-4b78-8e74-0f377c88b",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635071,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"f32f589d-bbcd-46e7-b7b4-0379c4d83026\",\"type\":\"fetch\",\"duration\":48000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=178906",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=f8817193-9bcd-4470-a288-4f4727e",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635115,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"fc610324-ecd7-4eb3-8c12-6e4dc9cf5852\",\"type\":\"fetch\",\"duration\":5000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=0440a28f-b2e1-4543-9a23-77cf14d54",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064635115,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"fc610324-ecd7-4eb3-8c12-6e4dc9cf5852\",\"type\":\"fetch\",\"duration\":5000000,\"method\":\"POST\",\"status_code\":0,\"url\":\"https://www.google.com/g/collect?v=2&tid=G-GHY61FCLXT&gtm=45je6990v9103706988z8830292418za20gzb830292418zd830292418&_p=1789064",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=e98219cb-0b1e-44ec-8cba-5619798",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634973,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"56bb0a4f-1f25-4133-a934-922c8c22252f\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_768/https://img.rami-levy.co.il/public/banners/9f44f3cd-0267-4485-9c2d-5ec3b0b4bf61.png\",\"duration\":393000000,\"size\":418955,\"download\":{\"durat",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=92969bda-5bda-4e59-ac90-7e79c389d",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634973,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"56bb0a4f-1f25-4133-a934-922c8c22252f\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_768/https://img.rami-levy.co.il/public/banners/9f44f3cd-0267-4485-9c2d-5ec3b0b4bf61.png\",\"duration\":393000000,\"size\":418955,\"download\":{\"durat",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Afetch%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=ca58b362-141d-41c6-b4ec-57177c4",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634921,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"a6d6687d-3f65-4d3a-aad6-4da06a785f26\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_356,f_webp/https://img.rami-levy.co.il/public/banners/9dbec097-3aa4-45a3-b734-eb35d0d32861.png\",\"duration\":637000000,\"size\":23782,\"download\":{",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://bam.nr-data.net/1/NRJS-3a15855a72794ea92b8?a=914129259&sa=1&v=1208.49599aa&t=Unnamed%20Transaction&rst=3141&ck=1&ref=https://www.rami-levy.co.il/he&be=162&fe=2578&dc=419&af=err,xhr,stn,ins,spa&perf=%7B%22timing%22:%7B%22of%22:1789064633841,%22n%22:0,%22f%22:7,%22dn%22:7,%22dne%22:7,%22c%22:7",
+        "headers": {
+          "accept": "*/*"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://rum.browser-intake-datadoghq.eu/api/v2/rum?ddsource=browser&ddtags=sdk_version%3A4.50.1%2Capi%3Axhr%2Cenv%3Amaster%2Cservice%3Awww.rami-levy.co.il&dd-api-key=pubc4e8aa007137f532b3974fd6dd377ecb&dd-evp-origin-version=4.50.1&dd-evp-origin=browser&dd-request-id=fb0400d9-76f5-4a68-8129-7c918477c",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": "{\"_dd\":{\"format_version\":2,\"drift\":1,\"session\":{\"plan\":2},\"configuration\":{\"session_sample_rate\":100,\"session_replay_sample_rate\":100},\"discarded\":false},\"application\":{\"id\":\"25348e34-6efc-44ae-810b-81bbfc8bd20b\"},\"date\":1789064634921,\"service\":\"www.rami-levy.co.il\",\"version\":null,\"source\":\"browser\",\"session\":{\"id\":\"3bd54b99-9a29-4c86-b6cf-367c9e52ca67\",\"type\":\"user\",\"has_replay\":true},\"view\":{\"id\":\"ec8dcd25-257c-408c-b494-f4cc9364a7e0\",\"url\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"\"},\"display\":{\"viewport\":{\"width\":390,\"height\":664}},\"resource\":{\"id\":\"a6d6687d-3f65-4d3a-aad6-4da06a785f26\",\"type\":\"image\",\"url\":\"https://www.rami-levy.co.il/_ipx/w_356,f_webp/https://img.rami-levy.co.il/public/banners/9dbec097-3aa4-45a3-b734-eb35d0d32861.png\",\"duration\":637000000,\"size\":23782,\"download\":{",
+        "type": "xhr"
+      }
+    ],
+    "open": "התחברות",
+    "form": null,
+    "text2": "דלג לתוכן מרכזידלג לצור קשרדלג לסל הקניות שלךדלג לתפריט ראשי הצהרת נגישות תפריט קניה מהירה כניסה 0 הסל שלי מבצעים במחירי רמי לוי סל הקניות הזול במדינה עם המותג הפרטי מבצעי דגים ועופות פארם ותינוקות מחזיקי אשראי רמי לוי נהנים ממבצעים בלעדיים לכל ההטבות לכל ההטבות הכרטיס היחיד שצובר דולרים לחופשה הבאה שלך להצטרפות סילאן טבעי, קליית גת לרכישה רוטב צ'ילי מתוק, מנת השף לרכישה יינות הסדרה האיזורית, יקבי כרמל לרכישה חטיפי כיפלי , תלמה לרכישה סירופ בטעמים, פריגת לרכישה למסלולי התוכן למסלולי התוכן מצטרפי",
+    "form2": null,
+    "btn": "התחברות",
+    "text3": "דלג לתוכן מרכזידלג לצור קשרדלג לסל הקניות שלךדלג לתפריט ראשי הצהרת נגישות תפריט קניה מהירה כניסה 0 הסל שלי מבצעים במחירי רמי לוי סל הקניות הזול במדינה עם המותג הפרטי מבצעי דגים ועופות פארם ותינוקות מחזיקי אשראי רמי לוי נהנים ממבצעים בלעדיים לכל ההטבות לכל ההטבות הכרטיס היחיד שצובר דולרים לחופשה הבאה שלך להצטרפות סילאן טבעי, קליית גת לרכישה רוטב צ'ילי מתוק, מנת השף לרכישה יינות הסדרה האיזורית, יקבי כרמל לרכישה חטיפי כיפלי , תלמה לרכישה סירופ בטעמים, פריגת לרכישה למסלולי התוכן למסלולי התוכן מצטרפי"
+  },
+  "hazi-hinam": {
+    "requests": [
+      {
+        "method": "GET",
+        "url": "https://cdn.hazi-hinam.co.il/app/V_1.3029/assets/translate/he.translation.json",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://shop.hazi-hinam.co.il"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://shop.hazi-hinam.co.il/proxy/init",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "accept": "application/json, text/plain, */*"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://shop.hazi-hinam.co.il/proxy/api/user/info",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "accept": "application/json, text/plain, */*"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://shop.hazi-hinam.co.il/proxy/api/CMS/GetOperationalMessages",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "accept": "application/json, text/plain, */*"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=226647049&t=pageview&_s=1&dl=https%3A%2F%2Fshop.hazi-hinam.co.il%2Fauthentication%2Flogin&ul=he-il&dt=%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%D7%A9%D7%9C%D7%99%20%7C%20%D7%97%D7%A6%D7%99%20%D7%97%D7%99%D7%A0%D7",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "*/*",
+          "origin": "https://shop.hazi-hinam.co.il"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-NC6GJM5Y37&gtm=45je6990v878057850z879824609za20gzb79824609zd79824609&_p=1789064652878&_gaz=1&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAGA&cid=1937378413.1789064653&frm=0&pscdl=noapi&rcb=3&sr=390x844&ul=he-il&gaf=2&_s=1&tag_exp=115616986~115938466~11593846",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-NC6GJM5Y37&gtm=45je6990v878057850z879824609za20gzb79824609zd79824609&_p=1789064652878&_gaz=1&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAGA&cid=1937378413.1789064653&frm=0&pscdl=noapi&rcb=3&sr=390x844&ul=he-il&gaf=3&_s=1&tag_exp=115616986~115938466~115938468~1180",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-NC6GJM5Y37&gtm=45je6990v878057850za20gzb79824609zd79824609&_p=1789064652878&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAAAGQ&ae=a&cid=1937378413.1789064653&frm=0&pscdl=noapi&rcb=3&sr=390x844&ul=he-il&gaf=2&_s=2&tag_exp=115616986~115938466~115938468~118012009~",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-NC6GJM5Y37&gtm=45je6990v878057850za20gzb79824609zd79824609&_p=1789064652878&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAAAGQ&ae=a&cid=1937378413.1789064653&frm=0&pscdl=noapi&rcb=3&sr=390x844&ul=he-il&gaf=3&_s=2&tag_exp=115616986~115938466~115938468~118012009~118897",
+        "headers": {
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "",
+        "type": "fetch"
+      }
+    ],
+    "form": {
+      "action": null,
+      "method": null,
+      "buttons": [
+        "submit::on",
+        "submit:כניסה לחשבון שלי:disabled"
+      ],
+      "inputs": [
+        "text:name_userName=lab@example.com:false",
+        "password:name_password=LabPassw0rd!:false"
+      ]
+    },
+    "text2": "כניסה לחשבון שלי *השדות בכוכבית הם שדות חובה. אל תשכחו אותם *דוא\"ל/ת.ז/ח.פ (9 ספרות) *סיסמה כניסה לחשבון שלי שכחתי את הסיסמה שלי אין לי עדיין חשבוןהרשמה × אנחנו שומרים על פרטיותך באתר זה אנו משתמשים בעוגיות (Cookies) לשיפור חוויית הגלישה, התאמה אישית של תכנים ושירותים, וניתוח תנועת גולשים. מידע נוסף ניתן למצוא ב מדיניות הפרטיות. סגור הגעת למסך לוגין דף סיים טעינה"
+  }
+}

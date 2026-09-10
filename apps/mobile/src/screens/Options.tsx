@@ -229,7 +229,7 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
   };
   const orderable = legsFor(option, quote);
   const [ordering, setOrdering] = useState(false);
-  const orderViaKanili = async () => {
+  const orderViaKaniti = async () => {
     if (orderable.length === 0) return;
     setOrdering(true);
     try { const o = await api.createOrder(household.id, orderable); onOrder(o.id); } finally { setOrdering(false); }
@@ -239,7 +239,7 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
       <Header title={option.label} subtitle={tr('payAtStore')} onBack={onBack} />
       {orderable.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 6 }}>
-          <Button title={tr('orderViaKanili')} onPress={orderViaKanili} disabled={ordering} />
+          <Button title={tr('orderViaKaniti')} onPress={orderViaKaniti} disabled={ordering} />
           <Text style={[s.faint, { marginTop: 6, textAlign: 'center' }]}>{tr('noWorker')}</Text>
         </View>
       ) : null}

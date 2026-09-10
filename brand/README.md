@@ -1,6 +1,6 @@
-# Kanili brand
+# Kaniti brand
 
-**Name:** Kanili · קנילי — "buy for me" (קני לי), the phrase every family already says.
+**Name:** Kaniti · קניתי — "I bought" (קניתי), the word a family says when the shop is done. Formerly Kanili (קני לי).
 
 **Slogan:** כל הסופרים. חנות אחת.
 **App Store subtitle (≤30):** כל הסופרים בחנות אחת

@@ -5,9 +5,9 @@
  * opens on their own machine. The worker keeps the resulting session —
  * cookies and local storage, nothing else — encrypted on disk, and reuses it
  * until the retailer expires it. No password is ever seen, stored or sent
- * anywhere by Kanili.
+ * anywhere by Kaniti.
  *
- * Encryption is AES-256-GCM with a key that lives only in ~/.kanili/key
+ * Encryption is AES-256-GCM with a key that lives only in ~/.kaniti/key
  * (mode 0600). Losing the key means signing in again; nothing worse.
  */
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
@@ -18,7 +18,8 @@ import type { BrowserContext } from 'playwright';
 
 export type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
-const DIR = join(homedir(), '.kanili');
+// New name, old home: keep using ~/.kanili where it already exists.
+const DIR = existsSync(join(homedir(), '.kanili')) && !existsSync(join(homedir(), '.kaniti')) ? join(homedir(), '.kanili') : join(homedir(), '.kaniti');
 const KEY_FILE = join(DIR, 'key');
 
 function key(): Buffer {

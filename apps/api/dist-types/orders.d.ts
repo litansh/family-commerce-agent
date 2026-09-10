@@ -13,7 +13,7 @@ export interface OrderLeg {
     readonly error?: string;
 }
 /**
- * One Kanili order, fanned out to as many retailers as the basket needs.
+ * One Kaniti order, fanned out to as many retailers as the basket needs.
  * The family approves once; every leg's worker sees the same token.
  */
 export interface Order {

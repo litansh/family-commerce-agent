@@ -1,4 +1,4 @@
-/** The Kanili mark, drawn as vectors so it is crisp at any size and takes any colour. */
+/** The Kaniti mark, drawn as vectors so it is crisp at any size and takes any colour. */
 import React from 'react';
 import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 

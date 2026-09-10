@@ -7,7 +7,7 @@
 
 **G1 — It reads as a settings page, not a first impression.** Every screen is text-on-paper with a small element in the middle. There is no visual system that says "this is the thing I downloaded." *Fix:* each screen gets a full-bleed colour field at the top (green → amber → ink → green) with the illustration living inside it, and the copy below on paper. Four screens, four moods, one arc.
 
-**G2 — The chain chips in screen 1 are the most interesting object and they are tiny.** *Fix:* chips become large pill "storefronts" with the chain's initial in a coloured square, orbiting a bigger Kanili tile; the merge animation ends with a soft scale-bounce on the tile and a check drawing itself.
+**G2 — The chain chips in screen 1 are the most interesting object and they are tiny.** *Fix:* chips become large pill "storefronts" with the chain's initial in a coloured square, orbiting a bigger Kaniti tile; the merge animation ends with a soft scale-bounce on the tile and a check drawing itself.
 
 **G3 — No hierarchy between title and body.** Display 30 / body 16 on the same left edge, same colour weight. *Fix:* display 34/800 with tight tracking, body 17 with 26 line-height in muted ink, generous 20px gap; one idea per screen, ≤ 2 sentences.
 
@@ -29,7 +29,7 @@
 
 **U5 — Nothing on any screen mentions what happens *after* — the household setup.** The intro ends, then a form appears. *Fix:* the last screen's body says the next screen takes one minute and asks for the address.
 
-**U6 — Hebrew typography.** Mixed Hebrew/Latin brand name on one line breaks the rhythm. *Fix:* the Hebrew name is the display; "Kanili" appears once, small, under it.
+**U6 — Hebrew typography.** Mixed Hebrew/Latin brand name on one line breaks the rhythm. *Fix:* the Hebrew name is the display; "Kaniti" appears once, small, under it.
 
 ## Kept as is
 - One idea per screen; the four ideas are the right four (one shop, memory, nothing forgotten, three taps).

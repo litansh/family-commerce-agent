@@ -1,4 +1,4 @@
-# UX review — Kanili v0.1
+# UX review — Kaniti v0.1
 
 **Date:** 2026-09-06 · **Method:** heuristic walk-through of every screen on the live site at phone width, tap-counting the three core jobs, against Nielsen's heuristics and the best list apps (Bring!, AnyList) and grocery apps (Instacart, Shufersal).
 
@@ -15,7 +15,7 @@
 
 ## Findings and fixes
 
-**F1 — The options screen asks a question the optimizer already answered.** Ranked options are shown as equal cards; the family must read, choose, then find the order button on the next screen. *Fix:* the best option is selected by default with a single sticky call to action — "Order through Kanili · ₪836" — and the alternatives collapse under "other ways to buy". (Instacart never shows you a comparison table; it shows a cart and a button.)
+**F1 — The options screen asks a question the optimizer already answered.** Ranked options are shown as equal cards; the family must read, choose, then find the order button on the next screen. *Fix:* the best option is selected by default with a single sticky call to action — "Order through Kaniti · ₪836" — and the alternatives collapse under "other ways to buy". (Instacart never shows you a comparison table; it shows a cart and a button.)
 
 **F2 — No one-tap "usual shop".** The household's memory knows the rhythm; the list still starts empty every week. *Fix:* when memory holds ≥5 usuals, the list opens with a hero action — "Add the usual shop (14 items)" — that adds everything due or regularly bought in one tap, with the overdue ones first. The family removes the two things they don't want rather than adding fourteen they do.
 
