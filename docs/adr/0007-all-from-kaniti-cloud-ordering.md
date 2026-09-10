@@ -1,11 +1,11 @@
-# ADR 0007 — All from Kanili: phone login, cloud ordering, no home worker
+# ADR 0007 — All from Kaniti: phone login, cloud ordering, no home worker
 
 **Status:** accepted · 2026-09-06
 
 ## Context
 The ordering worker was placed on a home machine for two reasons: retailer sites were assumed to
 block datacenter IPs, and the retailer session had to live somewhere trusted. The product owner
-wants the entire experience inside Kanili on the phone — no Mac, no home computer.
+wants the entire experience inside Kaniti on the phone — no Mac, no home computer.
 
 Two facts, verified 2026-09-06:
 1. **Shufersal does not block datacenter IPs.** `GET /online/he/my-account/orders` from a
@@ -16,7 +16,7 @@ Two facts, verified 2026-09-06:
    `/my-account/*` page redirected to `/login`. Online sign-in is email+password or Facebook only.
 
 ## Decision
-"All from Kanili" is built as:
+"All from Kaniti" is built as:
 - **Phone (native app) captures the session.** A WebView opens Shufersal Online's login; iOS/Android
   autofill (Face ID) fills the saved password, or the person uses Facebook — one tap, no typing.
   After login the app reads the site's cookie jar (native cookie manager can read httpOnly cookies)
@@ -30,7 +30,7 @@ Two facts, verified 2026-09-06:
 ## Consequences
 - **Reading httpOnly cookies requires the native app**, so this path is gated on an EAS build →
   Apple Developer + Google Play accounts. The plain mobile web browser cannot capture the session.
-- Kanili cannot invent a login Shufersal does not offer: the one-time auth is email+password
+- Kaniti cannot invent a login Shufersal does not offer: the one-time auth is email+password
   (autofilled) or Facebook. That is a tap on the phone, not a typed password, but a password must
   exist once.
 - No per-family home machine — the model scales to other households, which the home worker never did.

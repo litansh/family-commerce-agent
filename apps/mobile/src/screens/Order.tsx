@@ -7,7 +7,7 @@ import { Button, Chip, Header, Loading, S, t } from '../ui';
 const STEPS = ['queued', 'connecting', 'filling_cart', 'choosing_slot', 'awaiting_approval', 'approved', 'placing', 'placed'];
 
 /**
- * An order placed through Kanili, live.
+ * An order placed through Kaniti, live.
  *
  * The worker at home reports each step; this screen polls and shows it. The
  * one moment that matters is `awaiting_approval`: the real total from the

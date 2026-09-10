@@ -1,0 +1,2851 @@
+{
+  "rami-levy": {
+    "id": "rami-levy",
+    "loginUrl": "https://www.rami-levy.co.il/he",
+    "requests": [],
+    "register": {
+      "clicked": "הכרטיס היחיד שצובר דולרים לחופשה הבאה של",
+      "url": "https://www.rami-levy.co.il/he",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "email",
+          "id": "email",
+          "placeholder": "דואר אלקטרוני*",
+          "required": true,
+          "label": "*"
+        },
+        {
+          "tag": "input",
+          "type": "radio",
+          "name": "delivery_method_login",
+          "label": "הודעת SMS"
+        },
+        {
+          "tag": "input",
+          "type": "radio",
+          "name": "delivery_method_login",
+          "label": "קריאה קולית"
+        }
+      ],
+      "text": "דלג לתוכן מרכזידלג לצור קשרדלג לסל הקניות שלךדלג לתפריט ראשי הצהרת נגישות תפריט קניה מהירה כניסה 0 הסל שלי מבצעים במחירי רמי לוי 2 ב-10.9 חליטה בטעם קרמל מלוח 0 0 0 8.90 ₪ ליח' 0.36 ל-1 יחידה 1 ב-9.9 אורז בסמטי 1 DAAWAT קג 0 0 0 9.90 ₪ ליח' 1.37 ל-100 גרם 1 ב-12.9 דבש טהור 0 0 0 12.90 ₪ ליח' 1.80 ל-"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "email",
+        "id": "email",
+        "placeholder": "דואר אלקטרוני*",
+        "required": true,
+        "label": "*"
+      },
+      {
+        "tag": "input",
+        "type": "radio",
+        "name": "delivery_method_login",
+        "label": "הודעת SMS"
+      },
+      {
+        "tag": "input",
+        "type": "radio",
+        "name": "delivery_method_login",
+        "label": "קריאה קולית"
+      }
+    ],
+    "filled": [
+      "email  email דואר אלקטרוני*"
+    ],
+    "clicked": "התחברות",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "email",
+        "id": "email",
+        "placeholder": "דואר אלקטרוני*",
+        "required": true,
+        "label": "*"
+      },
+      {
+        "tag": "input",
+        "type": "radio",
+        "name": "delivery_method_login",
+        "label": "הודעת SMS"
+      },
+      {
+        "tag": "input",
+        "type": "radio",
+        "name": "delivery_method_login",
+        "label": "קריאה קולית"
+      }
+    ]
+  },
+  "victory": {
+    "id": "victory",
+    "loginUrl": "https://www.victoryonline.co.il/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/reload?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "content-type": "application/x-protobuffer",
+          "accept": "*/*",
+          "origin": "https://www.google.com",
+          "referer": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2&co=aHR0cHM6Ly93d3cudmljdG9y"
+        },
+        "body": "\n\u0018BnqMGSY_YP4cCmbNINHpJPkd\u0012�\r03AFcWeA6rCMjeQRxkfOowc6YzIrOAJyEm_UF17kqwMJAmdyKba2QVpMtnUZNlirDfA3tJMA3Gv97Okxt2r22K_Bza2KAZGjO_tAKsCVoTaqEkQm4ILEwNFrO0amMQB5e9ktcIiDVylZNNKMWQm3vf-vqIlQdgnM17afc24XdAhCW0QzmgHmnpRlZt-9xdGj2wIaIG4OUFl4OT3SVyCw7xIuiMHfHiQeVanoyKHauWpe8cZjQLrRzY2ZODnLmrvWuECQWvkUsbib_CFWlojo-K6s4QFjvBn9OLEl21A__BB6I2T9ZaL2miCcV1iagKmcr6ulgSFe9kzmmXIteHUKtnEZfTYeWvcwiPBVN80XBzlykClc4nDKZ121yoRyuQxkyH84JS8E4mH5TvCGzNp9oxoo9aDw6TEojv8P6n3aTTpSfm3ZXzyWuAGgYTVzBrxZ895hGsAH5NPM-SCo2S9Hv90kiewTAobkIzN2J-FcFfccwuOm3yBeMRCNLKKuk2PFow3mZBXo7aYGRCzfijimvugy4M4VAJxkMxlsYHppOYls-Ij-_nQOjMwcS52nS9KL1lDnyQQxgHpfTeTlkn3YxlSTkwVkXR4-kRos5sZedO97tMVB3ASn85qBU9S7nGQTezzKlWtKwP7SirDkeMs5LFkBYTwNFiXD3ZPiLZShQZVb-CCuQLNTwbW8qt5Ha77fkQXJsdqaLs6pG5QzhKKkWQXw9IGTeWX6XqGiri0d1oAYpToL0g_wOSRyAzSJmqeRrIe",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.victoryonline.co.il/v2/retailers/1470/sessions/generate-otp-code?appId=3",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://www.victoryonline.co.il",
+          "referer": "https://www.victoryonline.co.il/?loginOrRegister=1"
+        },
+        "body": "{\"otpCredentials\":\"0500000000\",\"typeOfOtp\":2,\"recaptchaHash\":\"HFdjd3ZU5RZmocIAdCWB1TWV9yInEnVmkqB2gmdU4tGTcMPlA1BgcnAG9XNnNUYCcrbiIQBwRTdDdqFRJcVXEqLCZ5ZUdIbA8yEXQVNEdHJkEve3E1SiBnKi9iETATBTBBTHc_Yzx3bTJMaTksVzZOJFtlSX5caWcBWnd2Bhd8JDFACRBkUhFfRA4lYnEmUWk4DWMzcTk6EzJ3aRZdcxdbbQRCcGJ4f2BWZklqRzxmXBIfc2MxJhcoOUxSMjAILlMBciVwdDQycTBQeWAQaCspfyEoVBUAbgx_SU9QXyxRdAJrVmd1UC5XDD9HSzRMTiBSLgMTMDZnLQ10CA5fRTJQdkk0WhlUJh9rBmZZKAJrE3IHNSxPdj5jABZTHkZRXV1sbkxRdCBZYxdLBDpFeWBRUDtmWURIUVAhWQt2U0BhOhhpcEwofgU7dTQJbT17YCdbCHZ3OCNlUDFvdDEsdm4XIBNlFGRtYQNbXwV1EQF-JBBDKBJkWyxCGkM4dBN_Jy9UXhhRdzVKZ2wBSDMjZxJ7cSolPEhOe09QSU9LZhNgVhhVOBpcdSFPbBspdFhQTywyZjx-Iy9LRx1Rfnc3bSYHWj8QVR1jRBRfWV9SUwJ4djdRPR10SGtxBx9wZD4MSg52cGB0ASRMARoYD1BiDixXe0gteRd2Q2l0XjZdLhltF3VZYDRWUX1pSDB_HEhPd0pNZHNMcixQYy9fFid3Yz1IXihfLzJiXBos",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.victoryonline.co.il",
+          "referer": "https://www.victoryonline.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA6rCMjeQRxkfOowc6YzIrOAJyEm_UF17kqwMJAmdyKba2QVpMtnUZNlirDfA3tJMA3Gv97Okxt2r22K_Bza2KAZGjO_tAKsCVoTaqEkQm4ILEwNFrO0amMQB5e9ktcIiDVylZNNKMWQm3vf-vqIlQdgnM17afc24XdAhCW0QzmgHmnpRlZt-9xdGj2wIaIG4OUFl4OT3SVyCw7xIuiMHfHiQeVanoyKHauWpe8cZjQLrRzY2ZODnLmrvWuECQWvkUsbib_CFWlojo-K6s4QFjvBn9OLEl21A__BB6I2T9ZaL2miCcV1iagKmcr6ulgSFe9kzmmXIteHUKtnEZfTYeWvcwiPBVN80XBzlykClc4nDKZ121yoRyuQxkyH84JS8E4mH5TvCGzNp9oxoo9aDw6TEojv8P6n3aTTpSfm3ZXzyWuAGgYTVzBrxZ895hGsAH5NPM-SCo2S9Hv90kiewTAobkIzN2J-FcFfccwuOm3yBeMRCNLKKuk2PFow3mZBXo7aYGRCzfijimvugy4M4VAJxkMxlsYHppOYls-Ij-_nQOjMwcS52nS9KL1lDnyQQxgHpfTeTlkn3YxlSTkwVkXR4-kRos5sZedO97tMVB3ASn85qBU9S7nGQTezzKlWtKwP7SirDkeMs5LFkBYTwNFiXD3ZPiLZShQZVb-CCuQLNTwbW8qt5Ha77fkQXJsdqaLs6pG5QzhKKkWQXw9IGTeWX6XqGiri0d1oAYpToL0g_",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.victoryonline.co.il",
+          "referer": "https://www.victoryonline.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA6rCMjeQRxkfOowc6YzIrOAJyEm_UF17kqwMJAmdyKba2QVpMtnUZNlirDfA3tJMA3Gv97Okxt2r22K_Bza2KAZGjO_tAKsCVoTaqEkQm4ILEwNFrO0amMQB5e9ktcIiDVylZNNKMWQm3vf-vqIlQdgnM17afc24XdAhCW0QzmgHmnpRlZt-9xdGj2wIaIG4OUFl4OT3SVyCw7xIuiMHfHiQeVanoyKHauWpe8cZjQLrRzY2ZODnLmrvWuECQWvkUsbib_CFWlojo-K6s4QFjvBn9OLEl21A__BB6I2T9ZaL2miCcV1iagKmcr6ulgSFe9kzmmXIteHUKtnEZfTYeWvcwiPBVN80XBzlykClc4nDKZ121yoRyuQxkyH84JS8E4mH5TvCGzNp9oxoo9aDw6TEojv8P6n3aTTpSfm3ZXzyWuAGgYTVzBrxZ895hGsAH5NPM-SCo2S9Hv90kiewTAobkIzN2J-FcFfccwuOm3yBeMRCNLKKuk2PFow3mZBXo7aYGRCzfijimvugy4M4VAJxkMxlsYHppOYls-Ij-_nQOjMwcS52nS9KL1lDnyQQxgHpfTeTlkn3YxlSTkwVkXR4-kRos5sZedO97tMVB3ASn85qBU9S7nGQTezzKlWtKwP7SirDkeMs5LFkBYTwNFiXD3ZPiLZShQZVb-CCuQLNTwbW8qt5Ha77fkQXJsdqaLs6pG5QzhKKkWQXw9IGTeWX6XqGiri0d1oAYpToL0g_",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.victoryonline.co.il",
+          "referer": "https://www.victoryonline.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA6rCMjeQRxkfOowc6YzIrOAJyEm_UF17kqwMJAmdyKba2QVpMtnUZNlirDfA3tJMA3Gv97Okxt2r22K_Bza2KAZGjO_tAKsCVoTaqEkQm4ILEwNFrO0amMQB5e9ktcIiDVylZNNKMWQm3vf-vqIlQdgnM17afc24XdAhCW0QzmgHmnpRlZt-9xdGj2wIaIG4OUFl4OT3SVyCw7xIuiMHfHiQeVanoyKHauWpe8cZjQLrRzY2ZODnLmrvWuECQWvkUsbib_CFWlojo-K6s4QFjvBn9OLEl21A__BB6I2T9ZaL2miCcV1iagKmcr6ulgSFe9kzmmXIteHUKtnEZfTYeWvcwiPBVN80XBzlykClc4nDKZ121yoRyuQxkyH84JS8E4mH5TvCGzNp9oxoo9aDw6TEojv8P6n3aTTpSfm3ZXzyWuAGgYTVzBrxZ895hGsAH5NPM-SCo2S9Hv90kiewTAobkIzN2J-FcFfccwuOm3yBeMRCNLKKuk2PFow3mZBXo7aYGRCzfijimvugy4M4VAJxkMxlsYHppOYls-Ij-_nQOjMwcS52nS9KL1lDnyQQxgHpfTeTlkn3YxlSTkwVkXR4-kRos5sZedO97tMVB3ASn85qBU9S7nGQTezzKlWtKwP7SirDkeMs5LFkBYTwNFiXD3ZPiLZShQZVb-CCuQLNTwbW8qt5Ha77fkQXJsdqaLs6pG5QzhKKkWQXw9IGTeWX6XqGiri0d1oAYpToL0g_",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.victoryonline.co.il",
+          "referer": "https://www.victoryonline.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA6rCMjeQRxkfOowc6YzIrOAJyEm_UF17kqwMJAmdyKba2QVpMtnUZNlirDfA3tJMA3Gv97Okxt2r22K_Bza2KAZGjO_tAKsCVoTaqEkQm4ILEwNFrO0amMQB5e9ktcIiDVylZNNKMWQm3vf-vqIlQdgnM17afc24XdAhCW0QzmgHmnpRlZt-9xdGj2wIaIG4OUFl4OT3SVyCw7xIuiMHfHiQeVanoyKHauWpe8cZjQLrRzY2ZODnLmrvWuECQWvkUsbib_CFWlojo-K6s4QFjvBn9OLEl21A__BB6I2T9ZaL2miCcV1iagKmcr6ulgSFe9kzmmXIteHUKtnEZfTYeWvcwiPBVN80XBzlykClc4nDKZ121yoRyuQxkyH84JS8E4mH5TvCGzNp9oxoo9aDw6TEojv8P6n3aTTpSfm3ZXzyWuAGgYTVzBrxZ895hGsAH5NPM-SCo2S9Hv90kiewTAobkIzN2J-FcFfccwuOm3yBeMRCNLKKuk2PFow3mZBXo7aYGRCzfijimvugy4M4VAJxkMxlsYHppOYls-Ij-_nQOjMwcS52nS9KL1lDnyQQxgHpfTeTlkn3YxlSTkwVkXR4-kRos5sZedO97tMVB3ASn85qBU9S7nGQTezzKlWtKwP7SirDkeMs5LFkBYTwNFiXD3ZPiLZShQZVb-CCuQLNTwbW8qt5Ha77fkQXJsdqaLs6pG5QzhKKkWQXw9IGTeWX6XqGiri0d1oAYpToL0g_",
+        "type": "fetch"
+      }
+    ],
+    "register": {
+      "clicked": null,
+      "url": "https://www.victoryonline.co.il/?loginOrRegister=1",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "search",
+          "name": "search",
+          "placeholder": "חיפוש ",
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "otpPhoneOrEmail",
+          "id": "input_8",
+          "required": true,
+          "maxlength": 15,
+          "label": "מספר טלפון"
+        }
+      ],
+      "text": "דף הבית Type at least 3 characters to see suggestions. בית מבצעים כל המוצרים הרשימות שלי עגלה פירותדבשעוגות ועוגיות דבשבשר עוף ודגיםיינות ותירושמתנות לחגחלותירקותעלים ועשבי תיבולפירות יבשים ארוזפירות יבשים בתפזורתפיצוחים, אגוזים וגרעיניםפירותביצים טריותחלבמשקאות חלב ושוקומשקאות מועשרים בחלבוןקוטג' ו"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש ויקטורי אונליין",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "otpPhoneOrEmail",
+        "id": "input_8",
+        "required": true,
+        "maxlength": 15,
+        "label": "מספר טלפון"
+      }
+    ],
+    "filled": [
+      "text otpPhoneOrEmail input_8"
+    ],
+    "clicked": "שלח קוד",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש ויקטורי אונליין",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "otpPhoneOrEmail",
+        "id": "input_8",
+        "required": true,
+        "maxlength": 15,
+        "label": "מספר טלפון"
+      }
+    ]
+  },
+  "wolt": {
+    "id": "wolt",
+    "loginUrl": "https://wolt.com/he/isr",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://wolt.com/gtag-gw/ga/g/c?v=2&tid=G-CP7Z2F7NFM&gtm=45g92e6990v872181996z8810254873za20kzb810254873zd810254873&_p=1789064303766&gcs=G100&gcd=13p3p3p3p5l1&npa=1&dma_cps=-&dma=0&_eu=AAAAAGAC&_uip=%3A%3A&cid=622613320.1789064305&fp=1&frm=0&pscdl=denied&rcb=0&sr=390x844&ul=he-il&ur=IL-D&_gsid=rT-Dy",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/he/isr?no_universal_links=true"
+        },
+        "body": "en=LCP&gap.gtb=2&ep.web_vitals_measurement_name=LCP&ep.web_vitals_measurement_id=v5-1789064303531-5396491821664&epn.web_vitals_measurement_value=2112&epn.value=1100&ep.web_vitals_measurement_rating=good&_et=2\r\nen=LCP&gap.gtb=2&ep.web_vitals_measurement_name=LCP&ep.web_vitals_measurement_id=v5-1789064303531-5396491821664&epn.web_vitals_measurement_value=2112&epn.value=1100&ep.web_vitals_measurement_rating=good&_et=1\r\nen=LCP&gap.gtb=2&ep.web_vitals_measurement_name=LCP&ep.web_vitals_measurement_id=v5-1789064303531-5396491821664&epn.web_vitals_measurement_value=2421&epn.value=309&ep.web_vitals_measurement_rating=good&_et=1",
+        "type": "fetch"
+      }
+    ],
+    "register": {
+      "clicked": "<img loading=\"eager\" decoding=\"async\" si",
+      "url": "https://explore.wolt.com/he/isr/couriers",
+      "fields": [],
+      "text": "לשליחים ממקבלים משלוחים עם וולט ומרוויחים יותר! לחצו כאן להרשמה למה כדאי למקבל עם וולט? עם וולט אפשר לעשות משלוחים מתי, איפה ואיך שנח לך- ההחלטה בידיים שלך! ללא התחייבות, ללא צורך בניסיון קודם- פשוט להתחיל להרוויח! לבחור מתי ואיפה לבצע משלוחים ✔ לבחור איזה משלוח לבצע ✔ להחליט כמה משלוחים לבצע כל יום"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "_R_3pampj_",
+        "placeholder": "לאן לשלוח לך את ההזמנה?",
+        "autocomplete": "shipping street-address"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "name": "country",
+        "id": "country-select",
+        "label": "בחר מדינה"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "email",
+        "id": "method-select-email",
+        "autocomplete": "email"
+      }
+    ],
+    "filled": [
+      "email email method-select-email  email"
+    ],
+    "clicked": "אפשר להתחבר כדי לראות את הכתובות שלך",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "_R_3pampj_",
+        "placeholder": "לאן לשלוח לך את ההזמנה?",
+        "autocomplete": "shipping street-address"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "name": "country",
+        "id": "country-select",
+        "label": "בחר מדינה"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "email",
+        "id": "method-select-email",
+        "autocomplete": "email"
+      }
+    ]
+  },
+  "shufersal": {
+    "id": "shufersal",
+    "loginUrl": "https://www.shufersal.co.il/online/he/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=357991592.",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/968799975/?random=1789064328604&cv=11&fst=1789064328604&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/968799975/?random=1789064328604&cv=11&fst=1789064328604&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=18057657",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/16698827618/?random=1789064328619&cv=11&fst=1789064328619&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/16698827618/?random=1789064328619&cv=11&fst=1789064328619&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=17725015",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/11009984997/?random=1789064328631&cv=11&fst=1789064328631&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/11009984997/?random=1789064328631&cv=11&fst=1789064328631&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=756083089.",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/753169782/?random=1789064328643&cv=11&fst=1789064328643&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/753169782/?random=1789064328643&cv=11&fst=1789064328643&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fm",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/11034047891/?random=1789064328655&cv=11&fst=1789064328655&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~1202",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/11034047891/?random=1789064328655&cv=11&fst=1789064328655&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~1204691",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=71263950",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1789064328668&cv=11&fst=1789064328668&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~1203",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/985965165/?random=1789064328668&cv=11&fst=1789064328668&fmt=8&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~1204691",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=357991592.1789",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/968799975/?random=1789064328604&cv=11&fst=1789064328604&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=1805765723.1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/16698827618/?random=1789064328619&cv=11&fst=1789064328619&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=1772501539.1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/11009984997/?random=1789064328631&cv=11&fst=1789064328631&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=756083089.1789",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/753169782/?random=1789064328643&cv=11&fst=1789064328643&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=185",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/11034047891/?random=1789064328655&cv=11&fst=1789064328655&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~1204691",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=1&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=712639502.17",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/rmkt/collect/985965165/?random=1789064328668&cv=11&fst=1789064328668&fmt=3&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~1204691",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/968799975/?random=1789064328604&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~12046915",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/968799975/?random=1789064328604&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/11034047891/?random=1789064328655&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/11034047891/?random=1789064328655&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~1204",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/985965165/?random=1789064328668&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/985965165/?random=1789064328668&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~1204",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/753169782/?random=1789064328643&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~12046915",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/753169782/?random=1789064328643&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/11009984997/?random=1789064328631&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~12046",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/11009984997/?random=1789064328631&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.com/pagead/1p-user-list/16698827618/?random=1789064328619&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~12046",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.google.co.il/pagead/1p-user-list/16698827618/?random=1789064328619&cv=11&fst=1789063200000&bg=ffffff&guid=ON&async=1&en=form_start&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-0MFC0GEGNX&gtm=45je6990v9138604513z878932491za20gzb78932491zd78932491&_p=1789064322564&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=1946581447.1789064323&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=2&tag_exp=115938466~115938468~118897920",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-0MFC0GEGNX&gtm=45je6990v9138604513z878932491za20gzb78932491zd78932491&_p=1789064322564&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&cid=1946581447.1789064323&frm=0&ngs=1&pscdl=noapi&rcb=12&sr=390x844&ul=he-il&_s=2&tag_exp=115938466~115938468~118897920~118897930",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryVO1A2PARs1JrnShv",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n162754707711042\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.shufersal.co.il/online/he/login\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064329225\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryVO1A2PARs1JrnShv\r\nContent-Disposition: form-data; n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryDNSCe3lLNhuBnFJ9",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n3514539591903302\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.shufersal.co.il/online/he/login\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064329229\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryDNSCe3lLNhuBnFJ9\r\nContent-Disposition: form-data; ",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryNc6DhTpB9CfB6CTT",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n1267899853759359\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.shufersal.co.il/online/he/login\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064329231\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryNc6DhTpB9CfB6CTT\r\nContent-Disposition: form-data; ",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryBZWCZZDWNbsALf8G",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n562553493924121\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.shufersal.co.il/online/he/login\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064329233\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryBZWCZZDWNbsALf8G\r\nContent-Disposition: form-data; n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryBLlB7VSxKJNQvxn4",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n731087023668284\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.shufersal.co.il/online/he/login\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064329235\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryBLlB7VSxKJNQvxn4\r\nContent-Disposition: form-data; n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://ams.creativecdn.com/tags/v2?type=json",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/online/he/login"
+        },
+        "body": "{\"v\":\"v0.2.1\",\"sr\":\"\",\"su\":\"https://www.shufersal.co.il/online/he/login\",\"th\":\"lNeDPNjEYVbaGl9ZRTgj\",\"tags\":[{\"eventType\":\"custom\",\"name\":\"login\",\"value\":\"login\"},{\"eventType\":\"lid\",\"id\":\"Ugl7m7ZMRjIdXjKGKyCa\",\"expiryDate\":\"2027-09-10T18:18:43.418Z\"}]}",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=357991592.",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/968799975/?random=1789064329253&cv=11&fst=1789064329253&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~12038",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/968799975/?random=1789064329253&cv=11&fst=1789064329253&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~12046915",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=18057657",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/16698827618/?random=1789064329262&cv=11&fst=1789064329262&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~12",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/16698827618/?random=1789064329262&cv=11&fst=1789064329262&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~12046",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=17725015",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/11009984997/?random=1789064329268&cv=11&fst=1789064329268&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~12",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/11009984997/?random=1789064329268&cv=11&fst=1789064329268&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~12046",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=756083089.",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/753169782/?random=1789064329276&cv=11&fst=1789064329276&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~12038",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/753169782/?random=1789064329276&cv=11&fst=1789064329276&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~12046915",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fm",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/11034047891/?random=1789064329282&cv=11&fst=1789064329282&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/11034047891/?random=1789064329282&cv=11&fst=1789064329282&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/pagead/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/ccm/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=71263950",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/985965165/?random=1789064329290&cv=11&fst=1789064329290&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "script"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/rmkt/collect/985965165/?random=1789064329290&cv=11&fst=1789064329290&fmt=8&bg=ffffff&guid=ON&async=1&en=form_submit&gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.tiktok.com/api/v2/pixel/act",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "{\"event_id\":\"\",\"message_id\":\"messageId-1789064329316-7930530916091\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:18:49.316Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268P8T71Y4CKBBV9GFBBQTJ_.tt.2.1789064323911\"},\"pixel\":{\"code\":\"D5OT54JC77U96LQ56S7G\",\"runtime\":\"1\",\"codes\":\"D5OT54JC77U96LQ56S7G\"},\"page\":{\"url\":\"https://www.shufersal.co.il/online/he/login\",\"referrer\":\"\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"0e5afeb9-ad44-11f1-b35b-020017105710::zFMEAAIyt6Gx9oDYLq3f\",\"pageview_id\":\"0e5afeb9-ad44-11f1-b35b-020017105710-f_Fgt.0.0::0e5ab1c9-ad44-11f1-b35b-020017105710\",\"variation_id\":\"default\",\"userAgent\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KH",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/968799975?gtm=45be6990v892739020za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&rcb=18&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=357991592.1789",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/16698827618?gtm=45be6990v9195061731za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=1805765723.1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/11009984997?gtm=45be6990v9129950221za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=8&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=1772501539.1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/753169782?gtm=45be6990v890371664za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153&rcb=19&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=756083089.1789",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/11034047891?gtm=45be6990za20gzb811100856zd78932491xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~119793974~120213116~120385423~120469145~120469153&rcb=6&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=185",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/pagead/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&pscdl=noapi&ae=a&auid=1909040325.1789064323&gap.fsrc=2&fmt=8",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://google.com/ccm/form-data/985965165?gtm=45be6990v9116566563za200zd9116566563xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153&rcb=10&npa=0&frm=0&ae=a&pscdl=noapi&auid=1909040325.1789064323&ec_mode=a&ecsid2=712639502.17",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.shufersal.co.il/online/he/j_spring_security_check",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "origin": "https://www.shufersal.co.il",
+          "referer": "https://www.shufersal.co.il/online/he/login"
+        },
+        "body": "fail_url=%2Flogin%2F%3Ferror%3Dtrue&j_username=lab%40example.com&j_password=LabPassw0rd%21&remember-me=True&CSRFToken=e13ad6e0-ba89-4cc1-9049-baffb3fcd0d2",
+        "type": "document"
+      }
+    ],
+    "register": {
+      "clicked": "להרשמה",
+      "url": "https://www.shufersal.co.il/online/he/register",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "firstName",
+          "id": "register_firstName",
+          "label": "* שם פרטי"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "lastName",
+          "id": "register_lastName",
+          "label": "* שם משפחה"
+        },
+        {
+          "tag": "input",
+          "type": "number",
+          "name": "idNumber",
+          "id": "register_idNumber",
+          "label": "* תעודת זהות"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "mobileNumber",
+          "id": "register_phone",
+          "label": "* מספר טלפון נייד"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "email",
+          "id": "register_email",
+          "label": "* דואר אלקטרוני"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "dateOfBirth",
+          "id": "j_birthday",
+          "maxlength": 10,
+          "label": "* תאריך לידה dd/mm/yyyy"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "pwd",
+          "id": "password",
+          "autocomplete": "off",
+          "label": "* סיסמה כניסה לאתר"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "checkPwd",
+          "id": "register.checkPwd",
+          "autocomplete": "off",
+          "label": "* יש להזין סיסמה שוב"
+        }
+      ],
+      "text": "דלג לאזור תפריט נגישות וצור קשר דלג לאזור תפריט ראשי דלג לאזור תוכן העמוד קופונים, מבצעים, הטבות והנחות מחכים לך! כניסה אין לך חשבון? להרשמה 0 הסל שלי שנתחיל לקנות? כולל דמי משלוח/שרות הרשמה שמחים שבאת! רק כמה פרטים שנכיר אותך להרשמה כלקוח עסקי שם פרטי שם משפחה תעודת זהות מספר טלפון נייד דואר אלקטרו"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "text",
+        "id": "js-site-search-input",
+        "placeholder": "חיפוש פריט, קטגוריה או מותג..",
+        "autocomplete": "off",
+        "maxlength": 50
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "j_username",
+        "id": "j_username",
+        "label": "* כתובת מייל"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "j_password",
+        "id": "j_password",
+        "autocomplete": "off",
+        "label": "* סיסמה"
+      }
+    ],
+    "filled": [
+      "text j_username j_username",
+      "password j_password j_password  off"
+    ],
+    "clicked": "כניסה",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "text",
+        "id": "js-site-search-input",
+        "placeholder": "חיפוש פריט, קטגוריה או מותג..",
+        "autocomplete": "off",
+        "maxlength": 50
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "j_username",
+        "id": "j_username",
+        "label": "* כתובת מייל"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "j_password",
+        "id": "j_password",
+        "autocomplete": "off",
+        "label": "* סיסמה"
+      }
+    ]
+  },
+  "carrefour": {
+    "id": "carrefour",
+    "loginUrl": "https://www.ybitan.co.il/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699z872403628za20gzb72403628zd72403628&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQ&_ng=1&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=13&sr=390x844&ul=he-il&gaf=2&_s=2&tag_exp=115616986~11593846",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699z872403628za20gzb72403628zd72403628&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQ&_ng=1&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=13&sr=390x844&ul=he-il&gaf=3&_s=2&tag_exp=115616986~115938465~1159",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryrZpTxvcA8lAyIBLc",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n456029227933569\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.ybitan.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064349401\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryrZpTxvcA8lAyIBLc\r\nContent-Disposition: form-data; n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://v5-b75ccb2b73c54aa4a5098ab7f8533696.ecs.us-east-2.on.aws/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1623628335837242\\\",\\\"v\\\":[\\\"יינות ביתן באינטרנט, קניות באינטרנט, אוכל באינטרנט, סופרמרקט באינטרנט, מבצעים, ירקות, פירות, מוצרי תינוקות, לקנות באינטרנט, אתר יינות ביתן, יינות ביתן הזמנות, יינות ביתן משלוחים, יינות ביתן אונליין, ביתן אונליין, ביתן online\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_301dcc7f93214813b3a0e47cfd0b0e4cefa60d9cfdc2d7310ebe8370649b18a6\",\"fb.pixel_id\":\"2954102908172110\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.ybitan.co.il/?loginOrRegister=1\",\"referr",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryf282yow5eQk5kMJb",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n2954102908172110\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.ybitan.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064349404\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryf282yow5eQk5kMJb\r\nContent-Disposition: form-data; ",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryFeUv6nKlTBdGMCeb",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n200187617274016\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.ybitan.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064349407\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryFeUv6nKlTBdGMCeb\r\nContent-Disposition: form-data; n",
+        "type": "beacon"
+      },
+      {
+        "method": "GET",
+        "url": "https://mc.yandex.ru/clmap/74315446?page-url=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&pointer-click=rn%3A3615798%3Ax%3A-6910%3Ay%3A-742730%3At%3A53%3Ap%3A%3FA2A1*F*A7%3AX%3A0%3AY%3A0&hidv2=5294560224118309019&browser-info=u%3A1789064344400849588%3Av%3A2650%3Avf%3Ajeu2ees5yibfy9j2whppq",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://mc.yandex.ru/webvisor/74315446?wv-part=1&wv-check=30915&wv-type=0&wmode=0&wv-hit=232206695&page-url=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&rn=254723064&hidv2=5294560224118309019&browser-info=we%3A1%3Aet%3A1789064349%3Aw%3A390x664%3Av%3A2650%3Az%3A180%3Ai%3A20260910211909%3Au",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "wv-data=AQFEACsAAIcDmAUAAQJMAQ0AAQNEAhoAAIYDAAABBGYDBgBIAEUAQQBEAEUAUgAAhgOAAQYAaABlAGEAZABlAHIAAQVMBBoAAQZIBRoBAAEHRAYaAFGGAy8AAQhEBxoHByEhAAEJSAgPAQAgXwkAAAEBCmYFCgBNAEQALQBTAEkARABFAE4AQQBWAADTAt4EDgBoAGUAYQBkAGUAcgBfAHMAaQBkAGUAbgBhAHYAAQtMChoAAQxGCwoATQBEAC0AQwBPAE4AVABFAE4AVAA90wKhBAABDUQMDwA90wIlACBuDf4BAAEPeAEOQAIaBQAAhgOYBQABD0YOCQBNAEQALQBEAEkAQQBMAE8ARw6EAuoCjwEAARBGDxEATQBEAC0ARABJAEEATABPAEcALQBBAEMAVABJAE8ATgBTDtQC6gJAAAERRBAPKdQCtAIoABJ4EQ54ARJAAhoHAACGA5gFAAETbhIJAE0ARAAtAEQASQBBAEwATwBHDwBkAGkAYQBsAG8AZwBDAG8AbgB0AGUAbgB0AF8ANAABFEQTIAAAhgPNBAABFUYUCQBOAEcALQBTAFcASQBUAEMASCJ2wgLxAgABFkAVGgEirAHCArsCAAEXRBYaIqwBwgKfAQABGEYXEgBNAEQALQBJAE4AUABVAFQALQBDAE8ATgBUAEEASQBOAEUAUh63AcYCOgABGWQYLyC5AcICHgcAaQBuAHAAdQB0AF8ANQAHGQEABkUtbWFpbAAnkAEZDyAiICIgIiAiICIgIiAiICIgIiAiICIgIiAi",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://mc.yandex.ru/watch/74315446/1?page-url=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&charset=utf-8&uah=che%0A0&hidv2=5294560224118309019&hittoken=1789064344_5178fb64fec04b2c97d47044677d5dc5dca31570cb6d762f365f89c94a4d0611&browser-info=pa%3A1%3Aar%3A1%3Avf%3Ajeu2ees5yibfy9j2whppqcz5",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://mc.yandex.ru/watch/74315446/1?page-url=form%3A%2F%2Fwww.ybitan.co.il%2F%3Fn%3DloginOrRegisterCtrl.form%26p%3DF*A7&page-ref=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&charset=utf-8&uah=che%0A0&hidv2=5294560224118309019&hittoken=1789064344_5178fb64fec04b2c97d47044677d5dc5dca31570c",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://bded8a3c6ae-1-1053047382554.us-central1.run.app/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1623628335837242\\\",\\\"v\\\":[\\\"יינות ביתן באינטרנט, קניות באינטרנט, אוכל באינטרנט, סופרמרקט באינטרנט, מבצעים, ירקות, פירות, מוצרי תינוקות, לקנות באינטרנט, אתר יינות ביתן, יינות ביתן הזמנות, יינות ביתן משלוחים, יינות ביתן אונליין, ביתן אונליין, ביתן online\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_301dcc7f93214813b3a0e47cfd0b0e4cefa60d9cfdc2d7310ebe8370649b18a6\",\"fb.pixel_id\":\"2954102908172110\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.ybitan.co.il/?loginOrRegister=1\",\"referr",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://mc.yandex.ru/webvisor/74315446?wv-part=1&wv-check=30915&wv-type=0&wmode=0&wv-hit=232206695&page-url=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&rn=254723064&hidv2=5294560224118309019&browser-info=we%3A1%3Aet%3A1789064349%3Aw%3A390x664%3Av%3A2650%3Az%3A180%3Ai%3A20260910211909%3Au",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "wv-data=AQFEACsAAIcDmAUAAQJMAQ0AAQNEAhoAAIYDAAABBGYDBgBIAEUAQQBEAEUAUgAAhgOAAQYAaABlAGEAZABlAHIAAQVMBBoAAQZIBRoBAAEHRAYaAFGGAy8AAQhEBxoHByEhAAEJSAgPAQAgXwkAAAEBCmYFCgBNAEQALQBTAEkARABFAE4AQQBWAADTAt4EDgBoAGUAYQBkAGUAcgBfAHMAaQBkAGUAbgBhAHYAAQtMChoAAQxGCwoATQBEAC0AQwBPAE4AVABFAE4AVAA90wKhBAABDUQMDwA90wIlACBuDf4BAAEPeAEOQAIaBQAAhgOYBQABD0YOCQBNAEQALQBEAEkAQQBMAE8ARw6EAuoCjwEAARBGDxEATQBEAC0ARABJAEEATABPAEcALQBBAEMAVABJAE8ATgBTDtQC6gJAAAERRBAPKdQCtAIoABJ4EQ54ARJAAhoHAACGA5gFAAETbhIJAE0ARAAtAEQASQBBAEwATwBHDwBkAGkAYQBsAG8AZwBDAG8AbgB0AGUAbgB0AF8ANAABFEQTIAAAhgPNBAABFUYUCQBOAEcALQBTAFcASQBUAEMASCJ2wgLxAgABFkAVGgEirAHCArsCAAEXRBYaIqwBwgKfAQABGEYXEgBNAEQALQBJAE4AUABVAFQALQBDAE8ATgBUAEEASQBOAEUAUh63AcYCOgABGWQYLyC5AcICHgcAaQBuAHAAdQB0AF8ANQAHGQEABkUtbWFpbAAnkAEZDyAiICIgIiAiICIgIiAiICIgIiAiICIgIiAi",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://mc.yandex.ru/webvisor/74315446?wv-part=1&wv-check=30915&wv-type=0&wv-hit=232206695&page-url=https%3A%2F%2Fwww.ybitan.co.il%2F%3FloginOrRegister%3D1&rn=254723064&hidv2=5294560224118309019&browser-info=we%3A1%3Aet%3A1789064349%3Aw%3A390x664%3Av%3A2650%3Az%3A180%3Ai%3A20260910211909%3Au%3A17890",
+        "headers": {
+          "accept": "image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.8,image/png,image/svg+xml,image/*;q=0.8,*/*;q",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/reload?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "content-type": "application/x-protobuffer",
+          "accept": "*/*",
+          "origin": "https://www.google.com",
+          "referer": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2&co=aHR0cHM6Ly93d3cueWJpdGFu"
+        },
+        "body": "\n\u0018BnqMGSY_YP4cCmbNINHpJPkd\u0012�\r03AFcWeA4UsBbCSzqL1C99F8DFTPr-nSoH99fTii2-E2fQ8qiuufBAKlmtcOJfqAAt784-tqBmKm8vfsHli7-DXTGdrLKXs0pbsGUmlb_IYg13SAUvwOeYnqSdcVxY25Z-F4QXBd4nZ4OSX_507ZIC6KiydMCaYfUu-vxgklJ0M2eU1EZtbVeNvwp-RRw_AtqO5HNuuobFVqD3s5s4uUwdB3NtzbueIGVze9-d6gL8NsRXgGd_qjgrnDaDTUTCPlkZTjupPoHSAqFSgbOeSMzeMriR0CsVq5iXYdZmBusKzS7hv19Px6IeTQ_xxpGMiK-zp44aVWqe2QRN0O-eOojc0Vwt-_3EOzlznU5f4onO6gBMAjRtl-fW-3L8nIjivYoaAq4YUqnIu7QUnFkhybAMp3oFlb3ekntHCATwuP_J6o2qpc1xqDiv0pYwhd6QaoznL8ndzPFecgW9kAAlNJyBPcEEzgKqLZgGgvAU-XOWiquuqBo-r9BaYnhOxuPB2B_kFh5M0OMspAlz-VGD2tgdpQJUe04paRNNSkwhAOYBNfXkPKavgGvgxWgHiaf8Y-3FqK8lLI6XABM1pE7DIB-97ERblCZj9ECrqWEwE-4wiY1zvq19yL6gRyTM_EFU8azOtriWF3HXAyFRdG2CKshvPgoivOOrD4Dh9epKZAggDwHLoOCBuiI4cFuG_sSt8-REBpNhFBNyABjeOw4At4ymmZIxidmNI5takUsgLOBV79Y_2Rq9O_OdKrt-bXqHa-uZj",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.ybitan.co.il/v2/retailers/1131/sessions?appId=3",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/?loginOrRegister=1"
+        },
+        "body": "{\"username\":\"lab@example.com\",\"password\":\"LabPassw0rd!\",\"recaptchaHash\":\"HFaHFzewhVeCwYPkFGRltXRxl2PDcjSC8uGS4iawgoC3EEIBUxGEEjHilTKDVQfmEvcGQUGUJXanFuC1RYSzcuMmB9ewFMckk2DzIRKgFDOAcrZTcxVGZjNGlmD3YXG3ZFUjE7cnF5c3pUIHMpC3BIegFEHSV3d2tQa3oOLG9yOndZLEFADAN2GBl2PDcjSDsrE1V8LHFcbB9uQHEgSUFrTlVfFA9PRhR3VWQUGxUAagAbbVQ1OCAsMXlTahNbQRIRWUJBTGB6bHkoTnp8Yi0CQXwTTx1cel96HH9zX3p5NTZ_PHYXHWhNKkZkeld6d2lDYVsLOExWHGodYBAfXUFwRHcpNmR3eFZ1SCA_GWRPeCJDVWpMWTJ2TmhRDypTbhtVaCYXGmNzfEZJEHJJZGNPZltDcR0MNXxpbDRyV3FkKVtDOQwWfEpzNx8ZdHMEYllLQQtWakp2Um4XeGghTnVub34wXUMAXl5DYEIkEEtgLTN4ClNtaERDZgkMQGdkZHxfd2ZWbk8uTHJETFZwaDFIWGF0LyJ2SxJmVHgLTQZVZQhwLEVIbVV4XUl_bjZQREcAflV3TGNsdm9NZzY1dHoOVGkye2NVS39Xdgtvbl5ibkkKTWMQVCxNB2pmYntzbnd8eEd2NksmZE5Sbm1XfWFtUUQ0SV94QDNjUSMmPGpMTiMDSHNaGk0rSVR5MCQPWjNoHB4VbH9IRUpQCiJ2Pn1yT",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699za20gzb72403628zd72403628&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AEEAAGQ&_ng=1&ae=a&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=13&sr=390x844&ul=he-il&gaf=2&_s=3&tag_exp=115616986~115938465~115",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4UsBbCSzqL1C99F8DFTPr-nSoH99fTii2-E2fQ8qiuufBAKlmtcOJfqAAt784-tqBmKm8vfsHli7-DXTGdrLKXs0pbsGUmlb_IYg13SAUvwOeYnqSdcVxY25Z-F4QXBd4nZ4OSX_507ZIC6KiydMCaYfUu-vxgklJ0M2eU1EZtbVeNvwp-RRw_AtqO5HNuuobFVqD3s5s4uUwdB3NtzbueIGVze9-d6gL8NsRXgGd_qjgrnDaDTUTCPlkZTjupPoHSAqFSgbOeSMzeMriR0CsVq5iXYdZmBusKzS7hv19Px6IeTQ_xxpGMiK-zp44aVWqe2QRN0O-eOojc0Vwt-_3EOzlznU5f4onO6gBMAjRtl-fW-3L8nIjivYoaAq4YUqnIu7QUnFkhybAMp3oFlb3ekntHCATwuP_J6o2qpc1xqDiv0pYwhd6QaoznL8ndzPFecgW9kAAlNJyBPcEEzgKqLZgGgvAU-XOWiquuqBo-r9BaYnhOxuPB2B_kFh5M0OMspAlz-VGD2tgdpQJUe04paRNNSkwhAOYBNfXkPKavgGvgxWgHiaf8Y-3FqK8lLI6XABM1pE7DIB-97ERblCZj9ECrqWEwE-4wiY1zvq19yL6gRyTM_EFU8azOtriWF3HXAyFRdG2CKshvPgoivOOrD4Dh9epKZAggDwHLoOCBuiI4cFuG_sSt8-REBpNhFBNyABjeOw4At4ymmZIxidmNI5takUsgLOBV79Y_2Rq9O",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699za20gzb72403628zd72403628&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AEEAAGQ&_ng=1&ae=a&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=13&sr=390x844&ul=he-il&gaf=3&_s=3&tag_exp=115616986~115938465~115938469",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4UsBbCSzqL1C99F8DFTPr-nSoH99fTii2-E2fQ8qiuufBAKlmtcOJfqAAt784-tqBmKm8vfsHli7-DXTGdrLKXs0pbsGUmlb_IYg13SAUvwOeYnqSdcVxY25Z-F4QXBd4nZ4OSX_507ZIC6KiydMCaYfUu-vxgklJ0M2eU1EZtbVeNvwp-RRw_AtqO5HNuuobFVqD3s5s4uUwdB3NtzbueIGVze9-d6gL8NsRXgGd_qjgrnDaDTUTCPlkZTjupPoHSAqFSgbOeSMzeMriR0CsVq5iXYdZmBusKzS7hv19Px6IeTQ_xxpGMiK-zp44aVWqe2QRN0O-eOojc0Vwt-_3EOzlznU5f4onO6gBMAjRtl-fW-3L8nIjivYoaAq4YUqnIu7QUnFkhybAMp3oFlb3ekntHCATwuP_J6o2qpc1xqDiv0pYwhd6QaoznL8ndzPFecgW9kAAlNJyBPcEEzgKqLZgGgvAU-XOWiquuqBo-r9BaYnhOxuPB2B_kFh5M0OMspAlz-VGD2tgdpQJUe04paRNNSkwhAOYBNfXkPKavgGvgxWgHiaf8Y-3FqK8lLI6XABM1pE7DIB-97ERblCZj9ECrqWEwE-4wiY1zvq19yL6gRyTM_EFU8azOtriWF3HXAyFRdG2CKshvPgoivOOrD4Dh9epKZAggDwHLoOCBuiI4cFuG_sSt8-REBpNhFBNyABjeOw4At4ymmZIxidmNI5takUsgLOBV79Y_2Rq9O",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4UsBbCSzqL1C99F8DFTPr-nSoH99fTii2-E2fQ8qiuufBAKlmtcOJfqAAt784-tqBmKm8vfsHli7-DXTGdrLKXs0pbsGUmlb_IYg13SAUvwOeYnqSdcVxY25Z-F4QXBd4nZ4OSX_507ZIC6KiydMCaYfUu-vxgklJ0M2eU1EZtbVeNvwp-RRw_AtqO5HNuuobFVqD3s5s4uUwdB3NtzbueIGVze9-d6gL8NsRXgGd_qjgrnDaDTUTCPlkZTjupPoHSAqFSgbOeSMzeMriR0CsVq5iXYdZmBusKzS7hv19Px6IeTQ_xxpGMiK-zp44aVWqe2QRN0O-eOojc0Vwt-_3EOzlznU5f4onO6gBMAjRtl-fW-3L8nIjivYoaAq4YUqnIu7QUnFkhybAMp3oFlb3ekntHCATwuP_J6o2qpc1xqDiv0pYwhd6QaoznL8ndzPFecgW9kAAlNJyBPcEEzgKqLZgGgvAU-XOWiquuqBo-r9BaYnhOxuPB2B_kFh5M0OMspAlz-VGD2tgdpQJUe04paRNNSkwhAOYBNfXkPKavgGvgxWgHiaf8Y-3FqK8lLI6XABM1pE7DIB-97ERblCZj9ECrqWEwE-4wiY1zvq19yL6gRyTM_EFU8azOtriWF3HXAyFRdG2CKshvPgoivOOrD4Dh9epKZAggDwHLoOCBuiI4cFuG_sSt8-REBpNhFBNyABjeOw4At4ymmZIxidmNI5takUsgLOBV79Y_2Rq9O",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4UsBbCSzqL1C99F8DFTPr-nSoH99fTii2-E2fQ8qiuufBAKlmtcOJfqAAt784-tqBmKm8vfsHli7-DXTGdrLKXs0pbsGUmlb_IYg13SAUvwOeYnqSdcVxY25Z-F4QXBd4nZ4OSX_507ZIC6KiydMCaYfUu-vxgklJ0M2eU1EZtbVeNvwp-RRw_AtqO5HNuuobFVqD3s5s4uUwdB3NtzbueIGVze9-d6gL8NsRXgGd_qjgrnDaDTUTCPlkZTjupPoHSAqFSgbOeSMzeMriR0CsVq5iXYdZmBusKzS7hv19Px6IeTQ_xxpGMiK-zp44aVWqe2QRN0O-eOojc0Vwt-_3EOzlznU5f4onO6gBMAjRtl-fW-3L8nIjivYoaAq4YUqnIu7QUnFkhybAMp3oFlb3ekntHCATwuP_J6o2qpc1xqDiv0pYwhd6QaoznL8ndzPFecgW9kAAlNJyBPcEEzgKqLZgGgvAU-XOWiquuqBo-r9BaYnhOxuPB2B_kFh5M0OMspAlz-VGD2tgdpQJUe04paRNNSkwhAOYBNfXkPKavgGvgxWgHiaf8Y-3FqK8lLI6XABM1pE7DIB-97ERblCZj9ECrqWEwE-4wiY1zvq19yL6gRyTM_EFU8azOtriWF3HXAyFRdG2CKshvPgoivOOrD4Dh9epKZAggDwHLoOCBuiI4cFuG_sSt8-REBpNhFBNyABjeOw4At4ymmZIxidmNI5takUsgLOBV79Y_2Rq9O",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-BNT62HCC1V&gtm=45je6990v868928777z876336886za20gzb76336886zd76336886&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=17&sr=390x844&ul=he-il&gaf=2&tag_exp=115938465~115938469~118897920",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "en=login_view&_et=1118\r\nen=login_fail&_et=2254",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-BNT62HCC1V&gtm=45je6990v868928777z876336886za20gzb76336886zd76336886&_p=1789064342124&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&cid=2055544777.1789064343&frm=0&pscdl=noapi&rcb=17&sr=390x844&ul=he-il&gaf=3&tag_exp=115938465~115938469~118897920~11889",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.ybitan.co.il",
+          "referer": "https://www.ybitan.co.il/"
+        },
+        "body": "en=login_view&_et=1118\r\nen=login_fail&_et=2254",
+        "type": "fetch"
+      }
+    ],
+    "register": {
+      "clicked": null,
+      "url": "https://www.ybitan.co.il/?loginOrRegister=1",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "search",
+          "name": "search",
+          "placeholder": "חיפוש ביתן Online",
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "E-mail",
+          "id": "input_5",
+          "required": true,
+          "label": "דואר אלקטרוני"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "Password",
+          "id": "input_6",
+          "required": true,
+          "label": "סיסמה"
+        }
+      ],
+      "text": "דף הבית Type at least 3 characters to see suggestions. ניתן לבחור את זמן המשלוח בשלב סיום הקניה בית מבצעים כל המוצרים הרשימות שלי עגלה פירותדבשעוגות ועוגיות דבשבשר עוף ודגיםיינות ותירושמתנות לחגחלותעוף טריהודו טריעוף קפואהודו קפואבשר בקר טריחלקי פנים בקר טריבשר כבש וחלקי כבשבשר קפואקבב, המבורגר ונקנ"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש ביתן Online",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ],
+    "filled": [
+      "email E-mail input_5",
+      "password Password input_6"
+    ],
+    "clicked": "כניסה",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש ביתן Online",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ]
+  },
+  "keshet-teamim": {
+    "id": "keshet-teamim",
+    "loginUrl": "https://www.keshet-teamim.co.il/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://v5-b75ccb2b73c54aa4a5098ab7f8533696.ecs.us-east-2.on.aws/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_description\\\":[{\\\"rid\\\":\\\"1776404640414194\\\",\\\"v\\\":[\\\"דף הבית\\\"]}],\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1550801426241900\\\",\\\"v\\\":[\\\"קשת טעמים | סופרמרקט אונליין\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_0cb8c8a70c4b7795a45dc9d1c18d4934620d0068c6b85e9ef821ae559637371d\",\"fb.pixel_id\":\"1795783910728524\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.keshet-teamim.co.il/?loginOrRegister=1\",\"referrer\":\"\",\"isInIFrame\":false},\"fb.fbp\":\"fb.2.1789064366323.729922881687970258\",\"event_meta_info\":{\"cs_est\":true,\"es\":\"",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryUDRBa2AwmnVt2FBg",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n1795783910728524\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.keshet-teamim.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064372102\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryUDRBa2AwmnVt2FBg\r\nContent-Disposition: form",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics-ipv6.tiktokw.us/ipv6/enrich_ipv6",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "{\"event\":\"EnrichIpv6\",\"event_id\":\"\",\"message_id\":\"messageId-1789064372117-6282512853321-CNBHAB3C77UEVSAQEFEG#source=2\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:19:32.117Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268QJ6KN91H5HYMKRCWXSS0_.tt.2.1789064366291\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"CNBHAB3C77UEVSAQEFEG\",\"runtime\":\"1\"},\"page\":{\"url\":\"https://www.keshet-teamim.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.keshet-teamim.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc::0bEYAGilIrN6L-dxgv-D-CNBHAB3C77UEVSAQEFEG\",\"pageview_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc-C9z4c.",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.tiktok.com/api/v2/pixel",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "{\"event\":\"EnrichAM\",\"event_id\":\"\",\"message_id\":\"messageId-1789064372117-6282512853321-CNBHAB3C77UEVSAQEFEG\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:19:32.117Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268QJ6KN91H5HYMKRCWXSS0_.tt.2.1789064366291\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"CNBHAB3C77UEVSAQEFEG\",\"runtime\":\"1\"},\"page\":{\"url\":\"https://www.keshet-teamim.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.keshet-teamim.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc::0bEYAGilIrN6L-dxgv-D-CNBHAB3C77UEVSAQEFEG\",\"pageview_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc-C9z4c.0.1::27a037",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.tiktok.com/api/v2/pixel/act",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "{\"event_id\":\"\",\"message_id\":\"messageId-1789064372119-6257546166518\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:19:32.119Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268QJ6KN91H5HYMKRCWXSS0_.tt.2.1789064366291\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"CNBHAB3C77UEVSAQEFEG\",\"runtime\":\"1\",\"codes\":\"CNBHAB3C77UEVSAQEFEG|D49JBKRC77U6M9K6RB40\"},\"page\":{\"url\":\"https://www.keshet-teamim.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.keshet-teamim.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc::0bEYAGilIrN6L-dxgv-D\",\"pageview_id\":\"27a0844e-ad44-11f1-a3ba-020017010dfc-C9z4c.0.1::27a0374e-ad44-1",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://bded8a3c6ae-1-1053047382554.us-central1.run.app/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_description\\\":[{\\\"rid\\\":\\\"1776404640414194\\\",\\\"v\\\":[\\\"דף הבית\\\"]}],\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1550801426241900\\\",\\\"v\\\":[\\\"קשת טעמים | סופרמרקט אונליין\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_0cb8c8a70c4b7795a45dc9d1c18d4934620d0068c6b85e9ef821ae559637371d\",\"fb.pixel_id\":\"1795783910728524\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.keshet-teamim.co.il/?loginOrRegister=1\",\"referrer\":\"\",\"isInIFrame\":false},\"fb.fbp\":\"fb.2.1789064366323.729922881687970258\",\"event_meta_info\":{\"cs_est\":true,\"es\":\"",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/reload?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "content-type": "application/x-protobuffer",
+          "accept": "*/*",
+          "origin": "https://www.google.com",
+          "referer": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2&co=aHR0cHM6Ly93d3cua2VzaGV0"
+        },
+        "body": "\n\u0018BnqMGSY_YP4cCmbNINHpJPkd\u0012�\r03AFcWeA4vzxz4oqb6eTIQUIcQphxw2jSvcpeFr2ECFPnrd5Q7nKmromM5oEc4qSSAicasGuk0yd5tZ302L1_G-eesKtj_K97bOBix3nseEm-Xg2wMMOIuVagOjfomsTD1UZbFCE0XapR-yJXVAy7Wd7RIcAy4FRUiO6KAtq3zvfX7sDPAfZNbfjboojdTgNItZKEIcrI_Gb03ZfF0lZW6K7lyBpfKTg-Mf9_O_2dmXwMTJO7G-OP6nJrFmbsHHYoOR4yedSDig69KgGhts0gtGsNKnpL6iM7kEdgo9_JsXrsoWPgFxkfLoQ6ZSxLoH17nBvwLkA4HePbf3V_0OzxXFWNo79M5VY0cZ1Uucy8G2DWF7HY9i1KXeMrKN0nkdisY9jPID01z5gdntUbY3ZyFTRTlTm7wyfuwliz3my3BxX2SpakRRvcQERsU6pkD6mnpNpfbWXfACSHtJpkEc7swwj-uqO3Z-0dfBuWWrrNFg6HupjzRjgbHGAwg3EuMrmPOjhkKMdRNITJ-d-lhuyJXfIOGE2bGKgtk8Ykl14uFtKel-TIEYz4CUoLzz8gteYKMJCg32cdLrA2-1Tg2YBP2lGr594OqAiqOSCqoVE2y3E38FRAy6x9DDuKAHo8nCpIvatBe1bQYnrjHzqkuRy8V-QxHVWl3wC_4OWGPjmm7n44F254TsM89cjKf_M7UOeN03ISZfukzzZBOH51M0FJ8EmzNY9jZebxfRVUHMyEjw6Vs3pNXfH7T0zz9NUdvuInib",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.keshet-teamim.co.il/v2/retailers/1219/sessions?appId=3",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/?loginOrRegister=1"
+        },
+        "body": "{\"username\":\"lab@example.com\",\"password\":\"LabPassw0rd!\",\"recaptchaHash\":\"HFbGE1fxgTfDxeOlEAQksRQwkwOCdlTD9oHT5kbxhuDGZELQd3HFFlGjkVLCUWenFpdHRSHVIRbmEoD0QeTydoNnA7fxEKdllwCyJXLhEFPBdtYSd3UHYlMHkgC2ZRH2YDViF9ZGYla24IJ3RlQGQLNg0nUygeczFDQCE0HEE-PmcCE0YmSEcdXlhneCdkSz96FzVxa294CWQ1c0AfaUEZd1IAajQ6ZTYUfB8oXWokRkRdaTVzPEFqIxoQKGZKNAVDaHMybmJyb18nc2dsUWc2ZmxMaHU9TnEESS4kPWkFdWgMb0ZyE0whHXMqTmJCTiMfTWl1NUAcbGEpPwAFfnM1RE9jeUUiZD4mQTIgAx9tCRpGQnZ_S3czY386ARxAPzYVdzgYHk4HSGUVdl8xPHUXS2caeAIZY3loSH8IeHcCKHAFaxVAZTVYYkhXFFk-dXY1WGEEazQESmg9czRGc1wLFBUPfXIGLG4HYFwwKWkBGGg2ElYSR0IbQkZmXmUZRnoFbkIdOl4UZBEVLQIISFRwRFEHaBxOZC0YRTcreUdZYEZBBEgJPGY3Xl8eWR43M3EvYUBTZWk0X0g9ehtLeWpPUQx8XEQnaUkTF28YaEQ-d3hMbXRHUkcpNVMICm86KH80YmNoY3IbKlYeL1sjfUcyVUdkRm0GOVQMXUs7ER1qVRQBan05byYITVsyOGQvV2QVTyk4a3c6QhdBFjIAVzI5X",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4vzxz4oqb6eTIQUIcQphxw2jSvcpeFr2ECFPnrd5Q7nKmromM5oEc4qSSAicasGuk0yd5tZ302L1_G-eesKtj_K97bOBix3nseEm-Xg2wMMOIuVagOjfomsTD1UZbFCE0XapR-yJXVAy7Wd7RIcAy4FRUiO6KAtq3zvfX7sDPAfZNbfjboojdTgNItZKEIcrI_Gb03ZfF0lZW6K7lyBpfKTg-Mf9_O_2dmXwMTJO7G-OP6nJrFmbsHHYoOR4yedSDig69KgGhts0gtGsNKnpL6iM7kEdgo9_JsXrsoWPgFxkfLoQ6ZSxLoH17nBvwLkA4HePbf3V_0OzxXFWNo79M5VY0cZ1Uucy8G2DWF7HY9i1KXeMrKN0nkdisY9jPID01z5gdntUbY3ZyFTRTlTm7wyfuwliz3my3BxX2SpakRRvcQERsU6pkD6mnpNpfbWXfACSHtJpkEc7swwj-uqO3Z-0dfBuWWrrNFg6HupjzRjgbHGAwg3EuMrmPOjhkKMdRNITJ-d-lhuyJXfIOGE2bGKgtk8Ykl14uFtKel-TIEYz4CUoLzz8gteYKMJCg32cdLrA2-1Tg2YBP2lGr594OqAiqOSCqoVE2y3E38FRAy6x9DDuKAHo8nCpIvatBe1bQYnrjHzqkuRy8V-QxHVWl3wC_4OWGPjmm7n44F254TsM89cjKf_M7UOeN03ISZfukzzZBOH51M0FJ8EmzNY9jZebxfRVUHMyEjw6Vs3pNXf",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4vzxz4oqb6eTIQUIcQphxw2jSvcpeFr2ECFPnrd5Q7nKmromM5oEc4qSSAicasGuk0yd5tZ302L1_G-eesKtj_K97bOBix3nseEm-Xg2wMMOIuVagOjfomsTD1UZbFCE0XapR-yJXVAy7Wd7RIcAy4FRUiO6KAtq3zvfX7sDPAfZNbfjboojdTgNItZKEIcrI_Gb03ZfF0lZW6K7lyBpfKTg-Mf9_O_2dmXwMTJO7G-OP6nJrFmbsHHYoOR4yedSDig69KgGhts0gtGsNKnpL6iM7kEdgo9_JsXrsoWPgFxkfLoQ6ZSxLoH17nBvwLkA4HePbf3V_0OzxXFWNo79M5VY0cZ1Uucy8G2DWF7HY9i1KXeMrKN0nkdisY9jPID01z5gdntUbY3ZyFTRTlTm7wyfuwliz3my3BxX2SpakRRvcQERsU6pkD6mnpNpfbWXfACSHtJpkEc7swwj-uqO3Z-0dfBuWWrrNFg6HupjzRjgbHGAwg3EuMrmPOjhkKMdRNITJ-d-lhuyJXfIOGE2bGKgtk8Ykl14uFtKel-TIEYz4CUoLzz8gteYKMJCg32cdLrA2-1Tg2YBP2lGr594OqAiqOSCqoVE2y3E38FRAy6x9DDuKAHo8nCpIvatBe1bQYnrjHzqkuRy8V-QxHVWl3wC_4OWGPjmm7n44F254TsM89cjKf_M7UOeN03ISZfukzzZBOH51M0FJ8EmzNY9jZebxfRVUHMyEjw6Vs3pNXf",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4vzxz4oqb6eTIQUIcQphxw2jSvcpeFr2ECFPnrd5Q7nKmromM5oEc4qSSAicasGuk0yd5tZ302L1_G-eesKtj_K97bOBix3nseEm-Xg2wMMOIuVagOjfomsTD1UZbFCE0XapR-yJXVAy7Wd7RIcAy4FRUiO6KAtq3zvfX7sDPAfZNbfjboojdTgNItZKEIcrI_Gb03ZfF0lZW6K7lyBpfKTg-Mf9_O_2dmXwMTJO7G-OP6nJrFmbsHHYoOR4yedSDig69KgGhts0gtGsNKnpL6iM7kEdgo9_JsXrsoWPgFxkfLoQ6ZSxLoH17nBvwLkA4HePbf3V_0OzxXFWNo79M5VY0cZ1Uucy8G2DWF7HY9i1KXeMrKN0nkdisY9jPID01z5gdntUbY3ZyFTRTlTm7wyfuwliz3my3BxX2SpakRRvcQERsU6pkD6mnpNpfbWXfACSHtJpkEc7swwj-uqO3Z-0dfBuWWrrNFg6HupjzRjgbHGAwg3EuMrmPOjhkKMdRNITJ-d-lhuyJXfIOGE2bGKgtk8Ykl14uFtKel-TIEYz4CUoLzz8gteYKMJCg32cdLrA2-1Tg2YBP2lGr594OqAiqOSCqoVE2y3E38FRAy6x9DDuKAHo8nCpIvatBe1bQYnrjHzqkuRy8V-QxHVWl3wC_4OWGPjmm7n44F254TsM89cjKf_M7UOeN03ISZfukzzZBOH51M0FJ8EmzNY9jZebxfRVUHMyEjw6Vs3pNXf",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA4vzxz4oqb6eTIQUIcQphxw2jSvcpeFr2ECFPnrd5Q7nKmromM5oEc4qSSAicasGuk0yd5tZ302L1_G-eesKtj_K97bOBix3nseEm-Xg2wMMOIuVagOjfomsTD1UZbFCE0XapR-yJXVAy7Wd7RIcAy4FRUiO6KAtq3zvfX7sDPAfZNbfjboojdTgNItZKEIcrI_Gb03ZfF0lZW6K7lyBpfKTg-Mf9_O_2dmXwMTJO7G-OP6nJrFmbsHHYoOR4yedSDig69KgGhts0gtGsNKnpL6iM7kEdgo9_JsXrsoWPgFxkfLoQ6ZSxLoH17nBvwLkA4HePbf3V_0OzxXFWNo79M5VY0cZ1Uucy8G2DWF7HY9i1KXeMrKN0nkdisY9jPID01z5gdntUbY3ZyFTRTlTm7wyfuwliz3my3BxX2SpakRRvcQERsU6pkD6mnpNpfbWXfACSHtJpkEc7swwj-uqO3Z-0dfBuWWrrNFg6HupjzRjgbHGAwg3EuMrmPOjhkKMdRNITJ-d-lhuyJXfIOGE2bGKgtk8Ykl14uFtKel-TIEYz4CUoLzz8gteYKMJCg32cdLrA2-1Tg2YBP2lGr594OqAiqOSCqoVE2y3E38FRAy6x9DDuKAHo8nCpIvatBe1bQYnrjHzqkuRy8V-QxHVWl3wC_4OWGPjmm7n44F254TsM89cjKf_M7UOeN03ISZfukzzZBOH51M0FJ8EmzNY9jZebxfRVUHMyEjw6Vs3pNXf",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-TTJG936MZN&gtm=45je6990v9130044541z879294800za20gzb79294800zd79294800&_p=1789064364866&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&ecid=841118216&_eu=EAAAAGQC&cid=678959146.1789064366&frm=0&ir=1&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=2&tag_exp=115938465~",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "en=login_view&_et=3681\r\nen=login_fail&_et=2240",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-TTJG936MZN&gtm=45je6990v9130044541z879294800za20gzb79294800zd79294800&_p=1789064364866&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&ecid=841118216&_eu=EAAAAGQC&cid=678959146.1789064366&frm=0&ir=1&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=3&tag_exp=115938465~115938",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.keshet-teamim.co.il",
+          "referer": "https://www.keshet-teamim.co.il/"
+        },
+        "body": "en=login_view&_et=3681\r\nen=login_fail&_et=2240",
+        "type": "fetch"
+      }
+    ],
+    "register": {
+      "clicked": null,
+      "url": "https://www.keshet-teamim.co.il/?loginOrRegister=1",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "search",
+          "name": "search",
+          "placeholder": "חיפוש קשת טעמים",
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "E-mail",
+          "id": "input_4",
+          "required": true,
+          "label": "דואר אלקטרוני"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "Password",
+          "id": "input_5",
+          "required": true,
+          "label": "סיסמה"
+        }
+      ],
+      "text": "דף הבית Type at least 3 characters to see suggestions. 0 בית מבצעים כל המוצרים הרשימה שלי 0 קופונים פסטרמה הודו / עוף / אווזפסטרמה לבנהפסטרמה בקרפסטרמות ארוזותנקניק חצי יבשנקניק חי- Rawנקניק מבושלקבנוסנקניקים ארוזיםנקניקיות במשקלנקניקיות ארוזותממרחיםגבינות קשות / חצי קשותגבינות עובש / מיוחדותגבינות "
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש קשת טעמים",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_4",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_5",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ],
+    "filled": [
+      "email E-mail input_4",
+      "password Password input_5"
+    ],
+    "clicked": "כניסה",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש קשת טעמים",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_4",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_5",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ]
+  },
+  "mahsanei-hashuk": {
+    "id": "mahsanei-hashuk",
+    "loginUrl": "https://www.mck.co.il/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699z872403628za20gzb72403628zd72403628&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQ&_ng=1&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=6&sr=390x844&ul=he-il&gaf=2&_s=3&tag_exp=115616986~115938465~",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699z872403628za20gzb72403628zd72403628&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQ&_ng=1&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=6&sr=390x844&ul=he-il&gaf=3&_s=3&tag_exp=115616986~115938465~115938",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://mpc2-prod-29-is5qnl632q-uc.a.run.app/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_keywords\\\":[{\\\"rid\\\":\\\"2525235684648442\\\",\\\"v\\\":[\\\"מחסני השוק, מחסני השוק אונליין, מחסני השוק משלוחים, קניות אונליין, קניות באינטרנט, סופר אונליין, סופרמרקט אונליין, קניות בסופר אונליין, הזמנת סופר אונליין, משלוחים מהסופר עד הבית, מבצעים בסופר, קניות אוכל באינטרנט, בשר אונליין, מחנה יהודה\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_4a7b0ea4d51b666633136f6155ce7bbe5d606aebaf7d0b336fd4892161531c67\",\"fb.pixel_id\":\"665080921986370\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.mck.co.il/?loginOrRegister=",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryFaX18VWmosfiITsL",
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n665080921986370\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.mck.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064391938\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryFaX18VWmosfiITsL\r\nContent-Disposition: form-data; name",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699za20gzb72403628zd72403628&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AEEAAGQ&_ng=1&ae=a&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=6&sr=390x844&ul=he-il&gaf=2&_s=4&tag_exp=115616986~115938465~11593",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/measurement/conversion?random=1789064391951&cv=11&tid=G-N7W00TNBWK&fst=1789064391951&fmt=8&en=select_content&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232xec&gcs=G111&gcd=13n3n3l3l5l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120213116~120385423~1204691",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-N7W00TNBWK&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&_ng=1&_prs=ok&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=2&_s=3&tag_exp=115938465~11",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://5z-2b6b7616f94640c2840d1841e1ac24c3.ecs.us-east-1.on.aws/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"smart_setup\":{\"auto_web_details_data\":\"{\\\"page_keywords\\\":[{\\\"rid\\\":\\\"2525235684648442\\\",\\\"v\\\":[\\\"מחסני השוק, מחסני השוק אונליין, מחסני השוק משלוחים, קניות אונליין, קניות באינטרנט, סופר אונליין, סופרמרקט אונליין, קניות בסופר אונליין, הזמנת סופר אונליין, משלוחים מהסופר עד הבית, מבצעים בסופר, קניות אוכל באינטרנט, בשר אונליין, מחנה יהודה\\\"]}]}\",\"is_auto_web_details\":true},\"event_id\":\"ob3_plugin-set_4a7b0ea4d51b666633136f6155ce7bbe5d606aebaf7d0b336fd4892161531c67\",\"fb.pixel_id\":\"665080921986370\",\"fb.advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"fb.alternative_advanced_matching\":{\"em\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"website_context\":{\"location\":\"https://www.mck.co.il/?loginOrRegister=",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-5MXSECGZL4&gtm=45je6990v9165173699za20gzb72403628zd72403628&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AEEAAGQ&_ng=1&ae=a&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=6&sr=390x844&ul=he-il&gaf=3&_s=4&tag_exp=115616986~115938465~115938468~1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-N7W00TNBWK&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&_ng=1&_prs=ok&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=3&_s=3&tag_exp=115938465~11593846",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/reload?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "content-type": "application/x-protobuffer",
+          "accept": "*/*",
+          "origin": "https://www.google.com",
+          "referer": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2&co=aHR0cHM6Ly93d3cubWNrLmNv"
+        },
+        "body": "\n\u0018BnqMGSY_YP4cCmbNINHpJPkd\u0012�\r03AFcWeA53q55d7hx_Db4S3wJe7w-Au0lvOuNhVn2UDqfCPSnzEqpHM975dsYbKJQQ3i7mQo32LBiqMvp4-QgcoRA1D2DpDT-ppXdhatNpIGCShvy91q-SJ90Ho2yrrA78FTURQARGep45u9H7zk8axxPFSJicik9RSrZIJ4if3wG1FQ44g_hBufDojSb2PkEibqbzYVio6hGqJWLjZ8csZOpJvbyrZCyz9coY8QwtulDZIq2HGA5p6T9JSgoJuhgPIa1FdCf-etm-QZfS5JrKmCnks8HZ8TVvQnJnCdW451JtMEOMbBSCo-19zkC9FoONQaVe0FM_f4qSmapWTqaVBAIuJx9NByD09Zn8hcb-iqVF9szs8520rMCRIG1589aORMzdYFvfh8X00jzQ95iNahZaVMUgoPDtYJuouEp-DgzKCgjYteRcygJZT8sHmxtfFnUlTF8cZGwN0rsuiJAozAfBa-Vmpi2s61a9lKzx8Eu97n1fOwFvFS6mXjGC7XCSCbQ-7nWeH8mfT7Z7OMC4JRPHvf4YfoVaaQSUpZYo6gs4bZWMsd68ECw2kJdYMdOktbDY1JNw0pPmypl1cbx28kogPy-qA6M8I0ae07YERmSk4c3pAfyzLa5LqiPdkbcKVygFn69xZZeNtk0H_z4PNOf30PGzdHl8MFwOfCczT6WYeaINI9js08x_BZeTByU1yoH72yYxmaEn3blRQquGu8HVy3PIzi0M_R3cHNXFlI4YU6rF8ip8cG1uy4aNYYk8X",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.mck.co.il/v2/retailers/1107/sessions?appId=3",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/?loginOrRegister=1"
+        },
+        "body": "{\"username\":\"lab@example.com\",\"password\":\"LabPassw0rd!\",\"recaptchaHash\":\"HFcjhjYUFFYmUIJAhWXBJHXVBmJn4zUmY-A2cycUE4HTYYMF8hAggzBGBDMnxAZCg_ai0EAwtHcDh-ER1IUX4-KCltYUhcaAAmFXsBMEhTIk47f34hTi9zLiB2FT8HAT9VSHgrfDlrMzFFOjA6GmJyYElUTjBGaCNoag80Ix10MzJIZ15mAlwQAVBmV34zIxVnShNFFCxUfF8VYCtpUgVfeBp2Cl5Ecig-GS0EcEkHAToLd2wwIxpKeyZgUjgda1phVH5bbSVUZUhaJH0fW2shMCAmFxVUfAxsV1lrIw9EbDRpRAo4RRVFNTJfG2gUZT5-ehYbFSU0LmBXEwIRATVgWgQZYis1PAZuWDFQBkRPF0tRRzwpQDtOUjpnNEBfX0pPeGBASkATQlR9D2cwWDQ-YQN3UjoWXDsBYhhyRz11d0g8YjMdCSY9JQArXylkYDNLXGZuKAhTbwhjXm0_WWNDAktUc2sVZhJPWig3ABttFDUIEgZnWhtTUQ8NQjJuJz9OShRVCx9RHWxSWSd0ej10TyBcA3dVL25jcjBnRA1XXz10DC8yWBxNLQEzRzRkSQg7ejxbcipZZk1Pc0kzEzkicEwCfR9xBjNQdGJGfzFzJRpwLA0ASQFaDxRRRggVNHxtbBAUCzllBQR5LUATCgNJcEwSexRPQDZfXm5ECiptEX5ybgl0Zx9nVwREAUdaXHU1ZUpPd0kbaRcWLT1iPTJ9T",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/measurement/conversion?random=1789064392023&cv=11&tid=G-N7W00TNBWK&fst=1789064392023&fmt=8&en=login_fail&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232xec&gcs=G111&gcd=13n3n3l3l5l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120213116~120385423~120469145~1",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.google.com/g/collect?v=2&tid=G-N7W00TNBWK&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&_ng=1&_prs=ok&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=2&_s=4&tag_exp=115938465~11",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA53q55d7hx_Db4S3wJe7w-Au0lvOuNhVn2UDqfCPSnzEqpHM975dsYbKJQQ3i7mQo32LBiqMvp4-QgcoRA1D2DpDT-ppXdhatNpIGCShvy91q-SJ90Ho2yrrA78FTURQARGep45u9H7zk8axxPFSJicik9RSrZIJ4if3wG1FQ44g_hBufDojSb2PkEibqbzYVio6hGqJWLjZ8csZOpJvbyrZCyz9coY8QwtulDZIq2HGA5p6T9JSgoJuhgPIa1FdCf-etm-QZfS5JrKmCnks8HZ8TVvQnJnCdW451JtMEOMbBSCo-19zkC9FoONQaVe0FM_f4qSmapWTqaVBAIuJx9NByD09Zn8hcb-iqVF9szs8520rMCRIG1589aORMzdYFvfh8X00jzQ95iNahZaVMUgoPDtYJuouEp-DgzKCgjYteRcygJZT8sHmxtfFnUlTF8cZGwN0rsuiJAozAfBa-Vmpi2s61a9lKzx8Eu97n1fOwFvFS6mXjGC7XCSCbQ-7nWeH8mfT7Z7OMC4JRPHvf4YfoVaaQSUpZYo6gs4bZWMsd68ECw2kJdYMdOktbDY1JNw0pPmypl1cbx28kogPy-qA6M8I0ae07YERmSk4c3pAfyzLa5LqiPdkbcKVygFn69xZZeNtk0H_z4PNOf30PGzdHl8MFwOfCczT6WYeaINI9js08x_BZeTByU1yoH72yYxmaEn3blRQquGu8HVy3PIzi0M_R3cHNXFlI4YU6rF8",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/g/collect?v=2&tid=G-N7W00TNBWK&gtm=45je6990v898568894z876074232za20gzb76074232zd76074232&_p=1789064384775&gcs=G111&gcd=13n3n3l3l5l1&npa=0&dma=0&_eu=AAAAAGQC&_ng=1&_prs=ok&cid=326450491.1789064386&frm=0&pscdl=noapi&rcb=2&sr=390x844&ul=he-il&gaf=3&_s=4&tag_exp=115938465~11593846",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA53q55d7hx_Db4S3wJe7w-Au0lvOuNhVn2UDqfCPSnzEqpHM975dsYbKJQQ3i7mQo32LBiqMvp4-QgcoRA1D2DpDT-ppXdhatNpIGCShvy91q-SJ90Ho2yrrA78FTURQARGep45u9H7zk8axxPFSJicik9RSrZIJ4if3wG1FQ44g_hBufDojSb2PkEibqbzYVio6hGqJWLjZ8csZOpJvbyrZCyz9coY8QwtulDZIq2HGA5p6T9JSgoJuhgPIa1FdCf-etm-QZfS5JrKmCnks8HZ8TVvQnJnCdW451JtMEOMbBSCo-19zkC9FoONQaVe0FM_f4qSmapWTqaVBAIuJx9NByD09Zn8hcb-iqVF9szs8520rMCRIG1589aORMzdYFvfh8X00jzQ95iNahZaVMUgoPDtYJuouEp-DgzKCgjYteRcygJZT8sHmxtfFnUlTF8cZGwN0rsuiJAozAfBa-Vmpi2s61a9lKzx8Eu97n1fOwFvFS6mXjGC7XCSCbQ-7nWeH8mfT7Z7OMC4JRPHvf4YfoVaaQSUpZYo6gs4bZWMsd68ECw2kJdYMdOktbDY1JNw0pPmypl1cbx28kogPy-qA6M8I0ae07YERmSk4c3pAfyzLa5LqiPdkbcKVygFn69xZZeNtk0H_z4PNOf30PGzdHl8MFwOfCczT6WYeaINI9js08x_BZeTByU1yoH72yYxmaEn3blRQquGu8HVy3PIzi0M_R3cHNXFlI4YU6rF8",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA53q55d7hx_Db4S3wJe7w-Au0lvOuNhVn2UDqfCPSnzEqpHM975dsYbKJQQ3i7mQo32LBiqMvp4-QgcoRA1D2DpDT-ppXdhatNpIGCShvy91q-SJ90Ho2yrrA78FTURQARGep45u9H7zk8axxPFSJicik9RSrZIJ4if3wG1FQ44g_hBufDojSb2PkEibqbzYVio6hGqJWLjZ8csZOpJvbyrZCyz9coY8QwtulDZIq2HGA5p6T9JSgoJuhgPIa1FdCf-etm-QZfS5JrKmCnks8HZ8TVvQnJnCdW451JtMEOMbBSCo-19zkC9FoONQaVe0FM_f4qSmapWTqaVBAIuJx9NByD09Zn8hcb-iqVF9szs8520rMCRIG1589aORMzdYFvfh8X00jzQ95iNahZaVMUgoPDtYJuouEp-DgzKCgjYteRcygJZT8sHmxtfFnUlTF8cZGwN0rsuiJAozAfBa-Vmpi2s61a9lKzx8Eu97n1fOwFvFS6mXjGC7XCSCbQ-7nWeH8mfT7Z7OMC4JRPHvf4YfoVaaQSUpZYo6gs4bZWMsd68ECw2kJdYMdOktbDY1JNw0pPmypl1cbx28kogPy-qA6M8I0ae07YERmSk4c3pAfyzLa5LqiPdkbcKVygFn69xZZeNtk0H_z4PNOf30PGzdHl8MFwOfCczT6WYeaINI9js08x_BZeTByU1yoH72yYxmaEn3blRQquGu8HVy3PIzi0M_R3cHNXFlI4YU6rF8",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.mck.co.il",
+          "referer": "https://www.mck.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA53q55d7hx_Db4S3wJe7w-Au0lvOuNhVn2UDqfCPSnzEqpHM975dsYbKJQQ3i7mQo32LBiqMvp4-QgcoRA1D2DpDT-ppXdhatNpIGCShvy91q-SJ90Ho2yrrA78FTURQARGep45u9H7zk8axxPFSJicik9RSrZIJ4if3wG1FQ44g_hBufDojSb2PkEibqbzYVio6hGqJWLjZ8csZOpJvbyrZCyz9coY8QwtulDZIq2HGA5p6T9JSgoJuhgPIa1FdCf-etm-QZfS5JrKmCnks8HZ8TVvQnJnCdW451JtMEOMbBSCo-19zkC9FoONQaVe0FM_f4qSmapWTqaVBAIuJx9NByD09Zn8hcb-iqVF9szs8520rMCRIG1589aORMzdYFvfh8X00jzQ95iNahZaVMUgoPDtYJuouEp-DgzKCgjYteRcygJZT8sHmxtfFnUlTF8cZGwN0rsuiJAozAfBa-Vmpi2s61a9lKzx8Eu97n1fOwFvFS6mXjGC7XCSCbQ-7nWeH8mfT7Z7OMC4JRPHvf4YfoVaaQSUpZYo6gs4bZWMsd68ECw2kJdYMdOktbDY1JNw0pPmypl1cbx28kogPy-qA6M8I0ae07YERmSk4c3pAfyzLa5LqiPdkbcKVygFn69xZZeNtk0H_z4PNOf30PGzdHl8MFwOfCczT6WYeaINI9js08x_BZeTByU1yoH72yYxmaEn3blRQquGu8HVy3PIzi0M_R3cHNXFlI4YU6rF8",
+        "type": "fetch"
+      }
+    ],
+    "register": {
+      "clicked": null,
+      "url": "https://www.mck.co.il/?loginOrRegister=1",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "search",
+          "name": "search",
+          "placeholder": "חיפוש מחסני השוק Online | אונליין",
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "E-mail",
+          "id": "input_5",
+          "required": true,
+          "label": "דואר אלקטרוני"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "Password",
+          "id": "input_6",
+          "required": true,
+          "label": "סיסמה"
+        }
+      ],
+      "text": "דף הבית Type at least 3 characters to see suggestions. חלונות המשלוח הזמינים לך יוצגו בשלב התשלום בית מבצעים כל המוצרים הרשימות שלי עגלה מגוון חטיפי חלבוןמוצרי חלב בתוספת חלבוןפירותדבשעוגות ועוגיות דבשבשר עוף ודגיםיינות ותירושמתנות לחגחלותירקותעלים ועשבי תיבולפירותפירות יבשים ארוזפירות יבשים טרייםפי"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש מחסני השוק Online | אונליין",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ],
+    "filled": [
+      "email E-mail input_5",
+      "password Password input_6"
+    ],
+    "clicked": "כניסה",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש מחסני השוק Online | אונליין",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ]
+  },
+  "tiv-taam": {
+    "id": "tiv-taam",
+    "loginUrl": "https://www.tivtaam.co.il/login",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryspfQ90EgQycYwMaK",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n396967470933350\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nPageView\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.tivtaam.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064411954\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryspfQ90EgQycYwMaK\r\nContent-Disposition: form-data; name=\"sw\"\r\n\r\n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.tivtaam.co.il/%7B%7BSERVER_URL%7D%7DEcommerceProxy?action=capi_event&event_id=ascl-jhhkpjho-yus7-vrks-trtjyhmptylk-1&event_name=PageView&product_id=undefined&currency=undefined&adscale_token=null&adscale_fingerprint=null&fbp=null&fbc=&fbc=&fbclid=&url=https://www.tivtaam.co.il/?loginOrRe",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/?loginOrRegister=1"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.tivtaam.co.il/%7B%7BSERVER_URL%7D%7DEcommerceProxy?action=event&type=adscale_visit&page=https://www.tivtaam.co.il/?loginOrRegister=1",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.tivtaam.co.il/?loginOrRegister=1"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryCH2O8eRiwFxeO9zQ",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n396967470933350\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nPageView\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.tivtaam.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064411966\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryCH2O8eRiwFxeO9zQ\r\nContent-Disposition: form-data; name=\"sw\"\r\n\r\n",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.tivtaam.co.il/%7B%7BSERVER_URL%7D%7DEcommerceProxy?action=capi_event&event_id=ascl-yjd1fnyi-gjle-urgi-zb7yr3b14wdw-2&event_name=PageView&product_id=undefined&currency=undefined&adscale_token=null&adscale_fingerprint=null&fbp=null&fbc=&fbc=&fbclid=&url=https://www.tivtaam.co.il/?loginOrRe",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/?loginOrRegister=1"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "GET",
+        "url": "https://www.tivtaam.co.il/%7B%7BSERVER_URL%7D%7DEcommerceProxy?action=event&type=adscale_visit&page=https://www.tivtaam.co.il/?loginOrRegister=1",
+        "headers": {
+          "accept": "*/*",
+          "referer": "https://www.tivtaam.co.il/?loginOrRegister=1"
+        },
+        "body": "",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://mpc2-prod-25-is5qnl632q-wl.a.run.app/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"automatic_parameters\":{\"currency\":\"ILS\",\"contents\":\"[{\\\"item_price\\\":19.9}]\"},\"smart_setup\":{\"auto_web_details_data\":\"{\\\"currency\\\":[{\\\"rid\\\":\\\"1747495976380317\\\",\\\"v\\\":[\\\"ILS\\\"]},{\\\"rid\\\":\\\"1523718162802617\\\",\\\"v\\\":[\\\"ILS\\\"]},{\\\"rid\\\":\\\"1607883174347117\\\",\\\"v\\\":[\\\"ILS\\\"]}],\\\"page_title\\\":[{\\\"rid\\\":\\\"2079179189481630\\\",\\\"v\\\":[\\\"דף הבית\\\"]}],\\\"image_url\\\":[{\\\"rid\\\":\\\"1850502315617428\\\",\\\"v\\\":[\\\"https://t.teads.tv/track?action=pageView&env=js-web&tag_version=8.14.1_bd426f7&provider=tag&buyer_pixel_id=15891&referer=https%3A%2F%2Fwww.tivtaam.co.il%2F&user_session_id=f7d4724e-248c-4b5b-b952-7ec758cf2bc9&hasConsent=true&cht=timeout\\\"]}],\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1477164337581185\\\",\\\"v\\\":[\\\"טיב טעם, משלוח, און ליין, סופרמרקט אינטרנט, משלוח אינטרנט, קניות בסופר, קניו",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryuvnSf5saSBtzrLcs",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n666556713446727\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.tivtaam.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064412194\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryuvnSf5saSBtzrLcs\r\nContent-Disposition: form-data; ",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.facebook.com/tr/",
+        "headers": {
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryIgyMVfG5APuGTcbo",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n396967470933350\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"ev\"\r\n\r\nSubscribedButtonClick\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"dl\"\r\n\r\nhttps://www.tivtaam.co.il/?loginOrRegister=1\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"rl\"\r\n\r\n\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"if\"\r\n\r\nfalse\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"ts\"\r\n\r\n1789064412200\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; name=\"iw\"\r\n\r\nfalse\r\n------WebKitFormBoundaryIgyMVfG5APuGTcbo\r\nContent-Disposition: form-data; ",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics-ipv6.tiktokw.us/ipv6/enrich_ipv6",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "{\"event\":\"EnrichIpv6\",\"event_id\":\"\",\"message_id\":\"messageId-1789064412228-4738475113594-C6SCC8I8DUFA74AOHI20#source=2\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:20:12.228Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268RSQ703PFK6XG5V25YD2E_.tt.2.1789064406759\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"C6SCC8I8DUFA74AOHI20\",\"runtime\":\"1\"},\"page\":{\"url\":\"https://www.tivtaam.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.tivtaam.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7::73oQPSsPbExNolTaH1kn-C6SCC8I8DUFA74AOHI20\",\"pageview_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7-CfQlZ.0.1::3f7c333",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.tiktok.com/api/v2/pixel",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "{\"event\":\"EnrichAM\",\"event_id\":\"\",\"message_id\":\"messageId-1789064412228-4738475113594-C6SCC8I8DUFA74AOHI20\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:20:12.228Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268RSQ703PFK6XG5V25YD2E_.tt.2.1789064406759\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"C6SCC8I8DUFA74AOHI20\",\"runtime\":\"1\"},\"page\":{\"url\":\"https://www.tivtaam.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.tivtaam.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7::73oQPSsPbExNolTaH1kn-C6SCC8I8DUFA74AOHI20\",\"pageview_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7-CfQlZ.0.1::3f7c3336-ad44-11f1",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://analytics.tiktok.com/api/v2/pixel/act",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "{\"event_id\":\"\",\"message_id\":\"messageId-1789064412231-1120042685852\",\"is_onsite\":false,\"timestamp\":\"2026-09-10T18:20:12.231Z\",\"context\":{\"ad\":{\"sdk_env\":\"external\",\"jsb_status\":2},\"device\":{\"platform\":\"ios\"},\"user\":{\"anonymous_id\":\"01M268RSQ703PFK6XG5V25YD2E_.tt.2.1789064406759\",\"auto_email\":\"b299513e33bc52a64217ba4a08c0afad2789085cdced57329d0a0ef91accbac1\"},\"pixel\":{\"code\":\"C6SCC8I8DUFA74AOHI20\",\"runtime\":\"1\",\"codes\":\"C6SCC8I8DUFA74AOHI20|C6SCCPSOEC724R8P2RUG\"},\"page\":{\"url\":\"https://www.tivtaam.co.il/?loginOrRegister=1\",\"referrer\":\"https://www.tivtaam.co.il/\",\"load_progress\":\"2\"},\"library\":{\"name\":\"pixel.js\",\"version\":\"2.2.1\"},\"session_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7::73oQPSsPbExNolTaH1kn\",\"pageview_id\":\"3f7c7664-ad44-11f1-be58-02001737b0d7-CfQlZ.0.1::3f7c3336-ad44-11f1-be58-020",
+        "type": "beacon"
+      },
+      {
+        "method": "POST",
+        "url": "https://5z-2b6b7616f94640c2840d1841e1ac24c3.ecs.us-east-1.on.aws/events?cee=no",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "{\"event_name\":\"InputData\",\"automatic_parameters\":{\"currency\":\"ILS\",\"contents\":\"[{\\\"item_price\\\":19.9}]\"},\"smart_setup\":{\"auto_web_details_data\":\"{\\\"currency\\\":[{\\\"rid\\\":\\\"1747495976380317\\\",\\\"v\\\":[\\\"ILS\\\"]},{\\\"rid\\\":\\\"1523718162802617\\\",\\\"v\\\":[\\\"ILS\\\"]},{\\\"rid\\\":\\\"1607883174347117\\\",\\\"v\\\":[\\\"ILS\\\"]}],\\\"page_title\\\":[{\\\"rid\\\":\\\"2079179189481630\\\",\\\"v\\\":[\\\"דף הבית\\\"]}],\\\"image_url\\\":[{\\\"rid\\\":\\\"1850502315617428\\\",\\\"v\\\":[\\\"https://t.teads.tv/track?action=pageView&env=js-web&tag_version=8.14.1_bd426f7&provider=tag&buyer_pixel_id=15891&referer=https%3A%2F%2Fwww.tivtaam.co.il%2F&user_session_id=f7d4724e-248c-4b5b-b952-7ec758cf2bc9&hasConsent=true&cht=timeout\\\"]}],\\\"page_keywords\\\":[{\\\"rid\\\":\\\"1477164337581185\\\",\\\"v\\\":[\\\"טיב טעם, משלוח, און ליין, סופרמרקט אינטרנט, משלוח אינטרנט, קניות בסופר, קניו",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/reload?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "content-type": "application/x-protobuffer",
+          "accept": "*/*",
+          "origin": "https://www.google.com",
+          "referer": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2&co=aHR0cHM6Ly93d3cudGl2dGFh"
+        },
+        "body": "\n\u0018BnqMGSY_YP4cCmbNINHpJPkd\u0012�\r03AFcWeA7RRa40SmU_EE3DrydEb0bBrixS1Al4PwBVo3LaMCEDTMLOEM12bCqD17Zw3fJngcsyY1x2I4QW_uCwuyN-BYkqqkQEJMfM7tgms-69QxDPqQyKLF3EKZxv12HlDRX_BiDmJJUmt6jBkrl-JT5j8dyYqVjJ3w56A5iNMWi4MTaqvvMBbMfl59XKzjkCxJa9hadPkctxkZzJNYYj-oKYPYEE1wvIl9Q2g1HEI_SV8qsJgOMyWjsWtJWCwDhYgaWu8CiQsvR84kSqHRbSPubSjq_Frneb0jGNOodSAj_Kl-oHxyz_e-UNO81Fzn1JcYTxde_qMnwf9Tn0UYnt8Zh1HCzKcuvWNREu-9iSYtGGZj6GPaQkdXRCIu2-E7awX5l8aaJZbECy0c4jBn5O5OChox6qujOqIpmk5hN6xt_rch50c82PddcHz4Pg6quDPFY5INXoUdQOLUEGtAf6a6ZP4iR7rUE1ThipF--2XMcrL7oE6Fn8F7y9gbGTkCQhHcsCvNiRxzyJGC7iIP_wKNFs5V32Y9LYNbZQjYrzDJlPM9nNHeOMuy1vzh7HdCAwpgNmnkqVrPye9CciJUS_1zEMxxnHdkw_uPnr2_J0A9mZUt4iEgKcU0N3fk9ecEgGOCYktgipCcZh6EDtPLfxM1igqAluIbDVSuRkE_6fQ5RrGrBsJeU1aq656q3WdKXBfYMH_rINPwAnCDLhwcjkulyZN4EGZlpXTgd_R3kLdkvuMxKjxMwQe54B_lVUniZ1i",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.tivtaam.co.il/v2/retailers/1062/sessions?appId=3",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/?loginOrRegister=1"
+        },
+        "body": "{\"username\":\"lab@example.com\",\"password\":\"LabPassw0rd!\",\"recaptchaHash\":\"HFa2RzeB1VezkYPVRGRU5XRAx2PyIjSzouGjsiaB0vDWMALAMxG1QjHTxTKyBQfXQvc3EUGldXaWRuCEFYSCIuMXV9eBRMcVw2DCcRKRRDOxIrZiIxV3NjN3xmDGMXGGNFUSQ7fG9mcG9bYCslSSJNMAMwfSYCXn1YZmgvElpFO2xDKEVXWAABbhhhPzU0Okg8EDBQMFhWewBoRW1EHXRFQmxYEBx3fxtMWTADGBcXGGYOeTBTLDUuMR5UTDJpZnJze0dCOBZTc3VGSxN2Y3I_YHghDkdwWExKdWJUZDJAc0xsYjYKR0FnGWJWdk9-XVwGM2MCLGwmaVFdaFd4REJRWVAdPH8jQT9IdV1nHV5uRR0cWG1_WGZtfktcFDRyOCV7XycLHBxjUmFuLVNpQktaMmheUClIMgEMRVFxVHlCd2R0RBwQSnRwbn8oTEkfYHEHTGtxcV9hUmRwPnJzEE0RNWhPbGoFVUVWcHc3EGp1E21GbghqYV9YQWo8R2YoYGp9cmlxKlFwZil7VG1NQzppZFdGABd6PiZqezgfexdVG217FV1DXz9tcmdyRRxHVFk3fmFpW2V3WkhAaTcSUjgFbWwwSHcKHk5hVxtHalVAcWxpZ3QZYH5KOUQyUUR_V35TUkArAmN7c2RiI0hIdUAff2cLNTZXcmUoaGFLClF_WQxAV1pjTy5SQT5DADxLNwt0AxxlUG5RX1NpElBVfCola",
+        "type": "xhr"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA7RRa40SmU_EE3DrydEb0bBrixS1Al4PwBVo3LaMCEDTMLOEM12bCqD17Zw3fJngcsyY1x2I4QW_uCwuyN-BYkqqkQEJMfM7tgms-69QxDPqQyKLF3EKZxv12HlDRX_BiDmJJUmt6jBkrl-JT5j8dyYqVjJ3w56A5iNMWi4MTaqvvMBbMfl59XKzjkCxJa9hadPkctxkZzJNYYj-oKYPYEE1wvIl9Q2g1HEI_SV8qsJgOMyWjsWtJWCwDhYgaWu8CiQsvR84kSqHRbSPubSjq_Frneb0jGNOodSAj_Kl-oHxyz_e-UNO81Fzn1JcYTxde_qMnwf9Tn0UYnt8Zh1HCzKcuvWNREu-9iSYtGGZj6GPaQkdXRCIu2-E7awX5l8aaJZbECy0c4jBn5O5OChox6qujOqIpmk5hN6xt_rch50c82PddcHz4Pg6quDPFY5INXoUdQOLUEGtAf6a6ZP4iR7rUE1ThipF--2XMcrL7oE6Fn8F7y9gbGTkCQhHcsCvNiRxzyJGC7iIP_wKNFs5V32Y9LYNbZQjYrzDJlPM9nNHeOMuy1vzh7HdCAwpgNmnkqVrPye9CciJUS_1zEMxxnHdkw_uPnr2_J0A9mZUt4iEgKcU0N3fk9ecEgGOCYktgipCcZh6EDtPLfxM1igqAluIbDVSuRkE_6fQ5RrGrBsJeU1aq656q3WdKXBfYMH_rINPwAnCDLhwcjkulyZN4EGZlpXTgd_R3kLdkvuMxKjx",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA7RRa40SmU_EE3DrydEb0bBrixS1Al4PwBVo3LaMCEDTMLOEM12bCqD17Zw3fJngcsyY1x2I4QW_uCwuyN-BYkqqkQEJMfM7tgms-69QxDPqQyKLF3EKZxv12HlDRX_BiDmJJUmt6jBkrl-JT5j8dyYqVjJ3w56A5iNMWi4MTaqvvMBbMfl59XKzjkCxJa9hadPkctxkZzJNYYj-oKYPYEE1wvIl9Q2g1HEI_SV8qsJgOMyWjsWtJWCwDhYgaWu8CiQsvR84kSqHRbSPubSjq_Frneb0jGNOodSAj_Kl-oHxyz_e-UNO81Fzn1JcYTxde_qMnwf9Tn0UYnt8Zh1HCzKcuvWNREu-9iSYtGGZj6GPaQkdXRCIu2-E7awX5l8aaJZbECy0c4jBn5O5OChox6qujOqIpmk5hN6xt_rch50c82PddcHz4Pg6quDPFY5INXoUdQOLUEGtAf6a6ZP4iR7rUE1ThipF--2XMcrL7oE6Fn8F7y9gbGTkCQhHcsCvNiRxzyJGC7iIP_wKNFs5V32Y9LYNbZQjYrzDJlPM9nNHeOMuy1vzh7HdCAwpgNmnkqVrPye9CciJUS_1zEMxxnHdkw_uPnr2_J0A9mZUt4iEgKcU0N3fk9ecEgGOCYktgipCcZh6EDtPLfxM1igqAluIbDVSuRkE_6fQ5RrGrBsJeU1aq656q3WdKXBfYMH_rINPwAnCDLhwcjkulyZN4EGZlpXTgd_R3kLdkvuMxKjx",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA7RRa40SmU_EE3DrydEb0bBrixS1Al4PwBVo3LaMCEDTMLOEM12bCqD17Zw3fJngcsyY1x2I4QW_uCwuyN-BYkqqkQEJMfM7tgms-69QxDPqQyKLF3EKZxv12HlDRX_BiDmJJUmt6jBkrl-JT5j8dyYqVjJ3w56A5iNMWi4MTaqvvMBbMfl59XKzjkCxJa9hadPkctxkZzJNYYj-oKYPYEE1wvIl9Q2g1HEI_SV8qsJgOMyWjsWtJWCwDhYgaWu8CiQsvR84kSqHRbSPubSjq_Frneb0jGNOodSAj_Kl-oHxyz_e-UNO81Fzn1JcYTxde_qMnwf9Tn0UYnt8Zh1HCzKcuvWNREu-9iSYtGGZj6GPaQkdXRCIu2-E7awX5l8aaJZbECy0c4jBn5O5OChox6qujOqIpmk5hN6xt_rch50c82PddcHz4Pg6quDPFY5INXoUdQOLUEGtAf6a6ZP4iR7rUE1ThipF--2XMcrL7oE6Fn8F7y9gbGTkCQhHcsCvNiRxzyJGC7iIP_wKNFs5V32Y9LYNbZQjYrzDJlPM9nNHeOMuy1vzh7HdCAwpgNmnkqVrPye9CciJUS_1zEMxxnHdkw_uPnr2_J0A9mZUt4iEgKcU0N3fk9ecEgGOCYktgipCcZh6EDtPLfxM1igqAluIbDVSuRkE_6fQ5RrGrBsJeU1aq656q3WdKXBfYMH_rINPwAnCDLhwcjkulyZN4EGZlpXTgd_R3kLdkvuMxKjx",
+        "type": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.google.com/recaptcha/api2/clr?k=6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "\n(6Ld5oY0UAAAAAM7fcbcojIfa5MhW7BqPgBsuDje2\u0012�\r03AFcWeA7RRa40SmU_EE3DrydEb0bBrixS1Al4PwBVo3LaMCEDTMLOEM12bCqD17Zw3fJngcsyY1x2I4QW_uCwuyN-BYkqqkQEJMfM7tgms-69QxDPqQyKLF3EKZxv12HlDRX_BiDmJJUmt6jBkrl-JT5j8dyYqVjJ3w56A5iNMWi4MTaqvvMBbMfl59XKzjkCxJa9hadPkctxkZzJNYYj-oKYPYEE1wvIl9Q2g1HEI_SV8qsJgOMyWjsWtJWCwDhYgaWu8CiQsvR84kSqHRbSPubSjq_Frneb0jGNOodSAj_Kl-oHxyz_e-UNO81Fzn1JcYTxde_qMnwf9Tn0UYnt8Zh1HCzKcuvWNREu-9iSYtGGZj6GPaQkdXRCIu2-E7awX5l8aaJZbECy0c4jBn5O5OChox6qujOqIpmk5hN6xt_rch50c82PddcHz4Pg6quDPFY5INXoUdQOLUEGtAf6a6ZP4iR7rUE1ThipF--2XMcrL7oE6Fn8F7y9gbGTkCQhHcsCvNiRxzyJGC7iIP_wKNFs5V32Y9LYNbZQjYrzDJlPM9nNHeOMuy1vzh7HdCAwpgNmnkqVrPye9CciJUS_1zEMxxnHdkw_uPnr2_J0A9mZUt4iEgKcU0N3fk9ecEgGOCYktgipCcZh6EDtPLfxM1igqAluIbDVSuRkE_6fQ5RrGrBsJeU1aq656q3WdKXBfYMH_rINPwAnCDLhwcjkulyZN4EGZlpXTgd_R3kLdkvuMxKjx",
+        "type": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://app.adoric-om.com/v1/statistics/showed?lightboxId=6998493a331cf5001252c683&campaignId=6998493a331cf5001252c684&domainId=5be7ead3408ccfa900f6ab77&planId=5bbee0b0a7d8e4ac0033d40d&planType=freeMonthly&userId=5bbee0b0a7d8e4ac0033d40c&newPeople=&control=&clientId=mtvur6hevrs3wu2bbw7&robotStatisti",
+        "headers": {
+          "accept": "*/*",
+          "origin": "https://www.tivtaam.co.il",
+          "referer": "https://www.tivtaam.co.il/"
+        },
+        "body": "",
+        "type": "xhr"
+      }
+    ],
+    "register": {
+      "clicked": null,
+      "url": "https://www.tivtaam.co.il/?loginOrRegister=1",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "search",
+          "name": "search",
+          "placeholder": "חיפוש טיב  טעם",
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "E-mail",
+          "id": "input_5",
+          "required": true,
+          "label": "דואר אלקטרוני"
+        },
+        {
+          "tag": "input",
+          "type": "password",
+          "name": "Password",
+          "id": "input_6",
+          "required": true,
+          "label": "סיסמה"
+        }
+      ],
+      "text": "עבור לסרגל הכלים של הנגישותדלג לתפריט האתרדלג לתחתית האתר דף הבית Type at least 3 characters to see suggestions. 0 הרשימות שלי קופונים אישיים חדש על המדף צור קשר מבצעים סניפים האזור האישי המשלוח הבא: שישי 11/09 16:30 ניתן לבחור את חלון המשלוח במהלך התשלום בלבד מבצעי חגים לעמוד המלא>>>> מוצר קודם פרי"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש טיב  טעם",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ],
+    "filled": [
+      "email E-mail input_5",
+      "password Password input_6"
+    ],
+    "clicked": "כניסה",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "search",
+        "name": "search",
+        "placeholder": "חיפוש טיב  טעם",
+        "autocomplete": "off"
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "E-mail",
+        "id": "input_5",
+        "required": true,
+        "label": "דואר אלקטרוני"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "Password",
+        "id": "input_6",
+        "required": true,
+        "label": "סיסמה"
+      }
+    ]
+  },
+  "hazi-hinam": {
+    "id": "hazi-hinam",
+    "loginUrl": "https://shop.hazi-hinam.co.il/authentication/login",
+    "requests": [],
+    "register": {
+      "clicked": "הרשמה",
+      "url": "https://shop.hazi-hinam.co.il/registration/personalDetails",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "id": "selfPickUpSwitcher"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "chukumuku_firstNameOther",
+          "id": "firstNameOther",
+          "autocomplete": "off",
+          "maxlength": 40,
+          "label": "*שם פרטי"
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "chukumuku_lasttNameOther",
+          "id": "lasttNameOther",
+          "autocomplete": "off",
+          "maxlength": 40,
+          "label": "*שם משפחה"
+        },
+        {
+          "tag": "input",
+          "type": "number",
+          "name": "chukumuku_idNumberNumber",
+          "id": "idNumberNumber",
+          "autocomplete": "off",
+          "maxlength": 9,
+          "label": "*מספר ת.ז/ח.פ (9 ספרות)"
+        },
+        {
+          "tag": "input",
+          "type": "tel",
+          "id": "mobileOther",
+          "autocomplete": "off",
+          "maxlength": 7,
+          "label": "*מספר טלפון*מספר טלפון"
+        },
+        {
+          "tag": "input",
+          "type": "tel",
+          "id": "extraPhoneOther",
+          "autocomplete": "off",
+          "maxlength": 7,
+          "label": "טלפון נוסףטלפון נוסף"
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "chukumuku_emailOther",
+          "id": "emailOther",
+          "autocomplete": "off",
+          "maxlength": 50,
+          "label": "*כתובת דוא\"ל"
+        }
+      ],
+      "text": "לכל המוצרים 0 כניסה לחשבון שירות לקוחות הגעת למסך יצירת חשבון יצירת חשבון לפניך רכיב הרשמה בן 3 שלבים1 פרטים אישיים2 כתובת3 בחירת סיסמה אגיע לאיסוף עצמי מהסניף *השדות בכוכבית הם שדות חובה. אל תשכחו אותם *שם פרטי *שם משפחה *מספר ת.ז/ח.פ (9 ספרות) *בחירה *מספר טלפון*מספר טלפון בחירה טלפון נוסףטלפון נו"
+    },
+    "note": "",
+    "loginFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "name_userName",
+        "id": "userName",
+        "placeholder": "*דוא\"ל/ת.ז/ח.פ (9 ספרות)"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "name_password",
+        "id": "password",
+        "placeholder": "*סיסמה"
+      }
+    ],
+    "filled": [
+      "text name_userName userName *דוא\"ל/ת.ז/ח.פ (9 ספרות)",
+      "password name_password password *סיסמה"
+    ],
+    "clicked": "כניסה לחשבון שלי",
+    "afterFields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "name_userName",
+        "id": "userName",
+        "placeholder": "*דוא\"ל/ת.ז/ח.פ (9 ספרות)",
+        "label": "*דוא\"ל/ת.ז/ח.פ (9 ספרות)"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "name": "name_password",
+        "id": "password",
+        "placeholder": "*סיסמה",
+        "label": "*סיסמה"
+      }
+    ]
+  }
+}

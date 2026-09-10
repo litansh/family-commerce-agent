@@ -1,7 +1,7 @@
 /**
  * Design system. One file, so the app reads as one thing.
  *
- * Kanili's look is "fresh, precise, new-era": a clean near-white ground, deep
+ * Kaniti's look is "fresh, precise, new-era": a clean near-white ground, deep
  * ink, and a signature emerald that runs from spring green to forest in the
  * one gradient the eye is meant to follow — the action that matters on each
  * screen. Amber means "you might have forgotten"; red means "this will not

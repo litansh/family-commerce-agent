@@ -171,7 +171,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           <View style={[s.card, { backgroundColor: t.accentSoft }]}>
             <Text style={[s.title, { color: t.accent, fontSize: 17 }]}>{tr('connectTitle', { r: firstRetailer })}</Text>
             <Text style={[s.small, { marginBottom: 10 }]}>{tr('connectSub')}</Text>
-            <Text style={[s.faint, { fontFamily: 'Menlo', marginBottom: 10 }]}>KANILI_HOUSEHOLD={household.id} npm run link -w @fca/order-worker</Text>
+            <Text style={[s.faint, { fontFamily: 'Menlo', marginBottom: 10 }]}>KANITI_HOUSEHOLD={household.id} npm run link -w @fca/order-worker</Text>
             {imp && ['queued', 'connecting', 'reading', 'resolving'].includes(imp.status) ? <Text style={s.small}>{tr('importing')}</Text>
               : imp?.status === 'failed' ? <Text style={[s.small, { color: t.red }]}>{/no saved session/.test(imp.error ?? '') ? tr('importNeedsLink') : tr('importFailed', { e: imp.error ?? '' })}</Text>
               : <Button title={tr('importBtn')} kind="secondary" onPress={startImport} />}

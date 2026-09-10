@@ -1,7 +1,7 @@
 /**
  * End-to-end: the store flow on the live site, as a person taps it.
  *
- *   KANILI_E2E_TOKEN=<cognito id token> npx playwright test
+ *   KANITI_E2E_TOKEN=<cognito id token> npx playwright test
  *
  * Signs in by injecting a token (no password anywhere), opens an aisle,
  * switches sub-aisles, opens a product sheet, and asserts that products and
@@ -9,8 +9,8 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const SITE = process.env['KANILI_E2E_SITE'] ?? 'https://d3lykvs28o7qrc.cloudfront.net';
-const TOKEN = process.env['KANILI_E2E_TOKEN'] ?? '';
+const SITE = process.env['KANITI_E2E_SITE'] ?? 'https://d3lykvs28o7qrc.cloudfront.net';
+const TOKEN = process.env['KANITI_E2E_TOKEN'] ?? '';
 const SHOTS = 'e2e/shots';
 
 /**
@@ -24,7 +24,7 @@ async function lenses(page: Page, name: string): Promise<void> {
   const skeletons = await page.locator('[style*="opacity: 0.6"]').count();
   // React Native on the web renders pressables as focusable divs, not <button>.
   const buttons = await page.locator('button, [role="button"], div[tabindex="0"]').count();
-  const latinUi = await page.evaluate(() => [...document.querySelectorAll('div,span')].map((e) => e.textContent ?? '').filter((t) => /^[A-Za-z ]{4,}$/.test(t.trim()) && !/Kanili|English|Smoke family|ONLINE/.test(t)).slice(0, 5));
+  const latinUi = await page.evaluate(() => [...document.querySelectorAll('div,span')].map((e) => e.textContent ?? '').filter((t) => /^[A-Za-z ]{4,}$/.test(t.trim()) && !/Kaniti|English|Smoke family|ONLINE/.test(t)).slice(0, 5));
   expect(skeletons, `${name}: still showing skeleton placeholders`).toBeLessThan(3);
   expect(buttons, `${name}: no tappable action on screen`).toBeGreaterThan(0);
   expect(latinUi, `${name}: English UI text on a Hebrew screen`).toEqual([]);
@@ -49,7 +49,7 @@ const loadedImages = (page: Page) =>
   });
 
 test.describe('store', () => {
-  test.skip(!TOKEN, 'KANILI_E2E_TOKEN is required');
+  test.skip(!TOKEN, 'KANITI_E2E_TOKEN is required');
 
   test('aisle → sub-aisle → product sheet, with pictures', async ({ page }) => {
     await signIn(page);

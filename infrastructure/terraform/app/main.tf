@@ -49,7 +49,7 @@ variable "google_client_secret" {
 # built app uses its own scheme; both are listed.
 variable "callback_urls" {
   type    = list(string)
-  default = ["kanili://auth", "exp://127.0.0.1:8081/--/auth", "http://localhost:8081/auth"]
+  default = ["kaniti://auth", "kanili://auth", "exp://127.0.0.1:8081/--/auth", "http://localhost:8081/auth"]
 }
 
 locals {
@@ -106,6 +106,12 @@ resource "aws_cognito_identity_provider" "google" {
     name     = "name"
     username = "sub"
   }
+}
+
+# Store sessions (ADR 0008) are AES-256-GCM sealed under this key; rotating it
+# signs every household out of every store, nothing worse.
+resource "random_bytes" "session_key" {
+  length = 32
 }
 
 resource "random_id" "domain" {
@@ -246,6 +252,8 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
+      # Seals store sessions at rest (ADR 0008). Exists only here and in state.
+      SESSION_KEY  = random_bytes.session_key.base64
       TABLE_NAME   = aws_dynamodb_table.main.name
       ORDERS_QUEUE = aws_sqs_queue.orders.url
       NODE_OPTIONS = "--enable-source-maps"

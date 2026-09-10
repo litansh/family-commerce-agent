@@ -1,0 +1,528 @@
+{
+  "rami-levy": {
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/challenge-platform/h/g/jsd/oneshot/330e41bb475c/0.8096255041450184:1789060006:6D2-WuadAsWxAbwa3e_FHzTkv5nwvUn1hptgW-7qVYQ/a39074e609081843",
+        "headers": {
+          "content-type": "text/plain;charset=UTF-8",
+          "accept": "*/*",
+          "origin": "null"
+        },
+        "body": "TuaTyCARIhl3ZkWeOTZkuSxBYwOcX9PFwAJtbuZ4wK03xVJ7GhITFN0P2NyK+tOGKV0h8VXDHeEe-nUyCuvrSFD-UU5duE-oFNkhHxisFBxeTJwMNq3M3mFzUE3Y+$O6xEiLf60Ry0g1IhYw+r$d8xeOuCNOLdsWsW4iJbODFf5zoDu4NU-Wo4N4IKwgPaiDUPYAs9WIkmB8z5uN8H3B4S+CYi4KB7D5kxMCFxdm06cuYcq5IC1SJC$DMmq2k5arvre8HhTxt7VLKY2pyFh0dIQDhcDKE+xspCuXuNvWCEXKfmnP-qIGCs3YI7B41ugCgs22scwspfN9ML8kecogG$8DH5i9GArUwkWwUXmqXEx8Qo1CyWp8w$1mbXkryROJh7YLup-3BQJu2zgttMgP3+UPfhQn+AoORB4AClvyp6U2aYEEFR2KmnSGF0OV1$08XaSWp7a1iRYDTgHyNkp0w-WO-ZPNAAzArfJhbo7zC6CKFSoih7KKlYQ-2yNiSpCOi5kWpIvYcO4q$AalNOpU5zaxtpFFZrusWC126tCfR1RYO5SwTBHv5xWxYsi+7Jy7xaCdlbOAty0T6uq0VG5pUC9o8SKD6eTQ6GQ7oICSsxGL4-aPT9L2r5eXxxazzynz2+cmhBADWoaCAtKrlNLaSiagL8x33RLVsTGdL-mfIX3-BvZTBUBNwklRdGfEGQHEZfAG3i5xzd77Sf2kgA1xG0wUgaKXYkGH+ow+BqTNIoS$8+rm7xFGf-8Znx0BIUrmGyGABIsyhW9KPivTu9MYsxfnMgkXSfaH0ovT4uO5zzq+9OTCdhNgl6p93AvCpVSyZXI7wdgG8H6pUBo6E8JRnFeF3O3Y4ty7CFt$4smVfbGr3f7YTm2NmJwEmrTzmR$eQz+fBL9Hf8doh3x0dbrQCMx2Ak7$ms+tzc3cMhlgH8dhps6P7uz7JWfLeizXPHgZqJDZDIluKVhOE76oJXEZon1mYQ34OvEQz05AkqvSuy4Ud0xwVL1hfdbaM2wmQGkVlADSi5NUpWVqnlGbhE6avmMf83MLBkpr3XySXHLpOrkuzcQin+MTDngowpQVsd6ukK9EEehFw0yx4EXnHV4HFTmhyX5amQR8WtuI$2Q1iPWbJIr6ZUq$61zEv3SFdBN2cNFevsAlQWJxCgmS2ua6l6MthtNJSkt$2xTfGwE1lMx9u4+R"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/rum?",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"startTime\":1789064530821,\"pageloadId\":\"49ad5b2b-7a1d-400e-b8cf-422518f1fb25\",\"eventType\":1,\"nt\":\"navigate\",\"location\":\"https://www.rami-levy.co.il/he\",\"versions\":{\"fl\":\"2024.11.0\",\"js\":\"2026.9.1\",\"timings\":2},\"bi\":{\"be\":\"WebKit\",\"bev\":\"605.1.15\",\"bv\":\"26.6\"},\"firstPaint\":0,\"firstContentfulPaint\":0,\"timingsV2\":{\"nextHopProtocol\":\"h2\",\"domainLookupStart\":5,\"domainLookupEnd\":5,\"connectStart\":5,\"connectEnd\":5,\"secureConnectionStart\":5,\"requestStart\":23,\"responseStart\":56,\"responseEnd\":65,\"domInteractive\":179,\"domComplete\":821,\"loadEventStart\":821,\"loadEventEnd\":822,\"finalResponseHeadersStart\":56,\"firstInterimResponseStart\":0,\"transferSize\":115199,\"decodedBodySize\":642168},\"siteToken\":\"b946ebad373a4c728f19cc953cc14988\",\"st\":2}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/rum?",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/rum?",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"startTime\":1789064531657,\"pageloadId\":\"939c300c-2317-4b04-b9a2-b1de8ff11802\",\"n\":2,\"eventType\":1,\"nt\":\"routing-apis\",\"location\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"https://www.rami-levy.co.il/he\",\"versions\":{\"fl\":\"2024.11.0\",\"js\":\"2026.9.1\",\"timings\":1},\"bi\":{\"be\":\"WebKit\",\"bev\":\"605.1.15\",\"bv\":\"26.6\"},\"ntapi\":1,\"siteToken\":\"b946ebad373a4c728f19cc953cc14988\",\"st\":2}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/rum?",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/cdn-cgi/rum?",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"startTime\":1789064531661,\"pageloadId\":\"814868a6-d1a5-439d-a72e-ab353d6ebf5b\",\"n\":3,\"eventType\":1,\"nt\":\"routing-apis\",\"location\":\"https://www.rami-levy.co.il/he\",\"referrer\":\"https://www.rami-levy.co.il/he\",\"versions\":{\"fl\":\"2024.11.0\",\"js\":\"2026.9.1\",\"timings\":1},\"bi\":{\"be\":\"WebKit\",\"bev\":\"605.1.15\",\"bv\":\"26.6\"},\"ntapi\":1,\"siteToken\":\"b946ebad373a4c728f19cc953cc14988\",\"st\":2}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"items\":\"7290120872622,7290112002099,8700216527729,2341116,8901537024014,8504898,7290000104706,7290119672066,7290020661692\",\"itemsBy\":\"barcode\",\"size\":30,\"sort\":\"price.asc\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"items\":\"7290018566916,7290022005357,7290120125537,7290119672936,7290015899277,7290015994811,7290013358011,7290112195111,7291044070996\",\"itemsBy\":\"barcode\",\"size\":60,\"sort\":\"price.asc\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"items\":\"2680406,2680413,2680338,1750018,3361656,2680314\",\"itemsBy\":\"barcode\",\"size\":50,\"sort\":\"relevant\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"items\":\"7290017088068,7298171230729,8712400802512,7290011618131,7290017088327,7290013083678\",\"itemsBy\":\"barcode\",\"size\":30,\"sort\":\"price.asc\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"items\":\"7290014079847,7290003144419,7290110116149,8718951159808,7290112006493,7290008803090,7290014218321\",\"itemsBy\":\"barcode\",\"size\":15,\"sort\":\"price.asc\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www-api.rami-levy.co.il/api/v2/site/static/menu",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"store\":331,\"items\":\"45399,18,9829,7547,48,305029,305896,328794,405096,340554,352178,197304,328113,27068,92512,138758,323425,11705,369266,317970\",\"size\":20}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"store\":331,\"items\":\"7290003144419\",\"size\":1,\"itemsBy\":\"barcode\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"store\":331,\"items\":\"8857101301008\",\"size\":1,\"itemsBy\":\"barcode\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://www.rami-levy.co.il/api/catalog?",
+        "headers": {
+          "content-type": "application/json;charset=utf-8",
+          "accept": "application/json, text/plain, */*",
+          "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjIxNzE5ZDM2NzI0OGYyZDAwY2RkMThmM2U5ZmJhNGYxYTU1OTRkYjZlYjI3ODY4ZTlmZmJhNWI0YTdmNTc2Y2IwNDg3N2FiNjY1ODMwYWNjI",
+          "origin": "https://www.rami-levy.co.il",
+          "referer": "https://www.rami-levy.co.il/he"
+        },
+        "body": "{\"store\":331,\"items\":\"7290008804189,7290008803090,7290008805964,7290008804745,7290008804455\",\"size\":5,\"itemsBy\":\"barcode\"}"
+      }
+    ],
+    "open": "התחברות",
+    "fields1": [
+      "email:email\"דואר אלקטרוני*\"",
+      "radio:delivery_method_login\"\"",
+      "radio:delivery_method_login\"\""
+    ],
+    "emailSet": true,
+    "smsPicked": "הודעת SMS",
+    "submit": "התחברות",
+    "fields2": [
+      "email:email\"דואר אלקטרוני*\"",
+      "radio:delivery_method_login\"\"",
+      "radio:delivery_method_login\"\""
+    ],
+    "text2": "דלג לתוכן מרכזידלג לצור קשרדלג לסל הקניות שלךדלג לתפריט ראשי הצהרת נגישות תפריט קניה מהירה כניסה 0 הסל שלי מבצעים במחירי רמי לוי סל הקניות הזול במדינה עם המותג הפרטי מבצעי דגים ועופות פארם ותינוקות מחזיקי אשראי רמי לוי נהנים ממבצעים בלעדיים לכל ההטבות לכל ההטבות הכרטיס היחיד שצובר דולרים לחופשה הבאה שלך להצטרפות סילאן טבעי, קליית גת לרכישה רוטב צ'ילי מתוק, מנת השף לרכישה יינות הסדרה האיזורית, יקבי",
+    "telSet": false
+  },
+  "wolt": {
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://wolt.com/regatta/v1/consumer_client/assignments",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/he/isr?no_universal_links=true"
+        },
+        "body": "{\"experiment_names\":[\"converse-dwr-rating\"]}"
+      },
+      {
+        "method": "POST",
+        "url": "https://unified-gateway.dashapi.com/decision-systems/v1/dvedge/evaluation/evaluate-struct",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he"
+        },
+        "body": "{\"names\":[\"cx_pco_pedregal_use_mock_data\",\"cx_wolt_pedregal_loyalty_modal_v2\",\"wolt_com_dv_demo\",\"cx_pco_pedregal_web\",\"pedregal_cart_page\",\"web_wolt_unified_nv_item_pdp\",\"wolt_cx_web_homepage_postlogin_pedregal_aa\",\"wolt_cx_web_homepage_prelogin_pedregal_aa\"],\"exposure_enabled\":true,\"context\":{\"brand\":\"wolt\",\"platform\":\"web\",\"language\":\"he\",\"environment\":\"production\",\"country_code\":\"ISR\",\"visitor_id\":\"7e075a36-2ece-4fd4-a99f-fb5a483ccc17\",\"session_id\":\"no-analytics-consent\",\"is_guest\":true},\"client_context\":{\"platform\":\"web\",\"brand\":\"wolt\",\"app_version\":\"1.75.0\",\"app_name\":\"wolt-com\"}}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/consumer-api/consents-router/v1/consent-enrollments-config",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"enrollments\":[],\"type\":\"tracking\",\"platform\":\"web\",\"is_bundle\":true,\"country\":\"isr\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/regatta/consumer_client/exposures",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"variants\":{\"wolt-plus-rebranding-enabled\":\"treatment\"}}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/regatta/consumer_client/exposures",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"variants\":{\"woltcom-always-store-experiment-assignments-rollout-ab-v1\":\"control\"}}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/consumer-api/consents-router/v1/consent-enrollments-config",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"enrollments\":[],\"type\":\"tracking\",\"platform\":\"web\",\"is_bundle\":true,\"country\":\"isr\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/regatta/consumer_client/exposures",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"variants\":{\"wolt-com-full-screen-login\":\"treatment\"}}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/consumer-api/consents-router/v1/consent-enrollments-config",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"enrollments\":[],\"type\":\"tracking\",\"platform\":\"web\",\"is_bundle\":true,\"country\":\"isr\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/checksiteconfig?v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&host=wolt.com&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&sc=1&swa=1&spst=0",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://api2.hcaptcha.com/checksiteconfig?v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&host=wolt.com&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&sc=1&swa=1&spst=0&r=1",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/checksiteconfig?v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&host=wolt.com&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&sc=1&swa=1&spst=0&r=2",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://api2.hcaptcha.com/checksiteconfig?v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&host=wolt.com&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&sc=1&swa=1&spst=0&r=3",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://hcaptcha.com/checksiteconfig?v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&host=wolt.com&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&sc=1&swa=1&spst=0&r=4",
+        "headers": {
+          "content-type": "text/plain",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": ""
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/authenticate",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "{\"v\":\"d865efcccaf8dbce47e885e881e3eedb2d4adfef\",\"sitekey\":\"85fed6af-162f-4a66-a7ab-8822a7d81f72\",\"host\":\"wolt.com\",\"n\":null,\"e\":null,\"c\":null,\"clientOptions\":\"{\\\"sentry\\\":true,\\\"reportapi\\\":\\\"https://accounts.hcaptcha.com\\\",\\\"recaptchacompat\\\":\\\"true\\\",\\\"custom\\\":false,\\\"hl\\\":\\\"he-IL\\\",\\\"tplinks\\\":\\\"on\\\",\\\"andint\\\":\\\"off\\\",\\\"pat\\\":\\\"on\\\",\\\"pstissuer\\\":\\\"https://pst-issuer.hcaptcha.com\\\",\\\"endpoint\\\":\\\"https://api.hcaptcha.com\\\",\\\"theme\\\":\\\"light\\\",\\\"size\\\":\\\"normal\\\",\\\"confirm-nav\\\":false}\"}"
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/getcaptcha/85fed6af-162f-4a66-a7ab-8822a7d81f72",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json, application/octet-stream",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&host=wolt.com&hl=he&action=authentication-error&motionData=%7B%22st%22%3A1789064546198%2C%22v%22%3A1%2C%22session%22%3A%5B%5D%2C%22widgetList%22%3A%5B%220zfgorhnqme%22%5D%2C%22widgetId%22%3A%220zfgorhnqme%22%2C%22imd%22%3A%22iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAJ6ElEQVR4AQHdCSL2AAIAAAAAAAIAAAAAAAEBAAACAAEAAAAAAAHQvF0A0b2HAc29ewDSv5oB0763ANO8sgLTvrMB0b%2ByAdC%2FtwLRv5oBzr17AdC%2BhwHQvV0CAQEAAQEAAAECAQABAAIAAgABAAIBAAAAAQEBAAAAAQABAgEAAQEAAAEAAQABAgEAAdK9XQDTvocAzrx7AtO%2BmgHRvLcA0b2yAdO8swDRvLIB0r63AtG%2BmgHNvXsC0L6HAdG8XQAAAgACAQIAAAABAAECAQACAQEAAgICAAAAAQAAAAACAAAAAQAAvb0EAb6%2BBAD%2B%2FwIB0L1eAdK8hwDSvHsC0L%2BaAdG9tgHTvbEC0L%2ByAdO8sQLQvbYA0LyaAdC%2BewHQvYcB0b1eAP%2F%2BAgG9vgQCv78EAAEBAAEAAQABAQEAAAABAgABAQEAAaipAwLBvn0Bw76bAcS%2FlAHEvrABxby9AMa9tQHGvM4Bxb7tAsW%2B6ADGvukBxL%2FoBMm%2B7QHGvs4Axr%2B1AcW8vQDEv7ABxr%2BUAMG%2FmwHCvn0BqKsDAAABAAEBAQAAAQECAQEBAQACv70EAcG8mwLGv78Bxb63AcW%2ByQLEvNEBxb%2FJAcXB4QHMxf8ByML%2BAsjB%2FwDJwP4BycP%2FAcG64AHFvskDxbzSAMa9yQLGvrcBxb2%2FAsK9mwK9vQQBAQAAAgEBAQAAAQAAAQABAAG%2BvgQBxr2UAca%2FtwHHwa8Bxb%2FEAMW%2FzgPEvMUBxL3fAsjA%2FwDEvf0Cxr7%2BAMG8%2FU7b1%2F9"
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/getcaptcha/85fed6af-162f-4a66-a7ab-8822a7d81f72",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&host=wolt.com&hl=he&r=1&action=network-error&motionData=%7B%22st%22%3A1789064546217%2C%22v%22%3A1%2C%22session%22%3A%5B%5D%2C%22widgetList%22%3A%5B%220zfgorhnqme%22%5D%2C%22widgetId%22%3A%220zfgorhnqme%22%2C%22imd%22%3A%22iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAJ6ElEQVR4AQHdCSL2AAIAAAAAAAIAAAAAAAEBAAACAAEAAAAAAAHQvF0A0b2HAc29ewDSv5oB0763ANO8sgLTvrMB0b%2ByAdC%2FtwLRv5oBzr17AdC%2BhwHQvV0CAQEAAQEAAAECAQABAAIAAgABAAIBAAAAAQEBAAAAAQABAgEAAQEAAAEAAQABAgEAAdK9XQDTvocAzrx7AtO%2BmgHRvLcA0b2yAdO8swDRvLIB0r63AtG%2BmgHNvXsC0L6HAdG8XQAAAgACAQIAAAABAAECAQACAQEAAgICAAAAAQAAAAACAAAAAQAAvb0EAb6%2BBAD%2B%2FwIB0L1eAdK8hwDSvHsC0L%2BaAdG9tgHTvbEC0L%2ByAdO8sQLQvbYA0LyaAdC%2BewHQvYcB0b1eAP%2F%2BAgG9vgQCv78EAAEBAAEAAQABAQEAAAABAgABAQEAAaipAwLBvn0Bw76bAcS%2FlAHEvrABxby9AMa9tQHGvM4Bxb7tAsW%2B6ADGvukBxL%2FoBMm%2B7QHGvs4Axr%2B1AcW8vQDEv7ABxr%2BUAMG%2FmwHCvn0BqKsDAAABAAEBAQAAAQECAQEBAQACv70EAcG8mwLGv78Bxb63AcW%2ByQLEvNEBxb%2FJAcXB4QHMxf8ByML%2BAsjB%2FwDJwP4BycP%2FAcG64AHFvskDxbzSAMa9yQLGvrcBxb2%2FAsK9mwK9vQQBAQAAAgEBAQAAAQAAAQABAAG%2BvgQBxr2UAca%2FtwHHwa8Bxb%2FEAMW%2FzgPEvMUBxL3fAsjA%2FwDEvf0Cxr7%2BAMG8%2FU7b1%2F9r39"
+      },
+      {
+        "method": "POST",
+        "url": "https://api.hcaptcha.com/getcaptcha/85fed6af-162f-4a66-a7ab-8822a7d81f72",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&host=wolt.com&hl=he&r=2&action=network-error&motionData=%7B%22st%22%3A1789064546229%2C%22v%22%3A1%2C%22session%22%3A%5B%5D%2C%22widgetList%22%3A%5B%220zfgorhnqme%22%5D%2C%22widgetId%22%3A%220zfgorhnqme%22%2C%22imd%22%3A%22iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAJ6ElEQVR4AQHdCSL2AAIAAAAAAAIAAAAAAAEBAAACAAEAAAAAAAHQvF0A0b2HAc29ewDSv5oB0763ANO8sgLTvrMB0b%2ByAdC%2FtwLRv5oBzr17AdC%2BhwHQvV0CAQEAAQEAAAECAQABAAIAAgABAAIBAAAAAQEBAAAAAQABAgEAAQEAAAEAAQABAgEAAdK9XQDTvocAzrx7AtO%2BmgHRvLcA0b2yAdO8swDRvLIB0r63AtG%2BmgHNvXsC0L6HAdG8XQAAAgACAQIAAAABAAECAQACAQEAAgICAAAAAQAAAAACAAAAAQAAvb0EAb6%2BBAD%2B%2FwIB0L1eAdK8hwDSvHsC0L%2BaAdG9tgHTvbEC0L%2ByAdO8sQLQvbYA0LyaAdC%2BewHQvYcB0b1eAP%2F%2BAgG9vgQCv78EAAEBAAEAAQABAQEAAAABAgABAQEAAaipAwLBvn0Bw76bAcS%2FlAHEvrABxby9AMa9tQHGvM4Bxb7tAsW%2B6ADGvukBxL%2FoBMm%2B7QHGvs4Axr%2B1AcW8vQDEv7ABxr%2BUAMG%2FmwHCvn0BqKsDAAABAAEBAQAAAQECAQEBAQACv70EAcG8mwLGv78Bxb63AcW%2ByQLEvNEBxb%2FJAcXB4QHMxf8ByML%2BAsjB%2FwDJwP4BycP%2FAcG64AHFvskDxbzSAMa9yQLGvrcBxb2%2FAsK9mwK9vQQBAQAAAgEBAQAAAQAAAQABAAG%2BvgQBxr2UAca%2FtwHHwa8Bxb%2FEAMW%2FzgPEvMUBxL3fAsjA%2FwDEvf0Cxr7%2BAMG8%2FU7b1%2F9r39"
+      },
+      {
+        "method": "POST",
+        "url": "https://api2.hcaptcha.com/getcaptcha/85fed6af-162f-4a66-a7ab-8822a7d81f72",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&host=wolt.com&hl=he&r=3&action=network-error&motionData=%7B%22st%22%3A1789064546242%2C%22v%22%3A1%2C%22session%22%3A%5B%5D%2C%22widgetList%22%3A%5B%220zfgorhnqme%22%5D%2C%22widgetId%22%3A%220zfgorhnqme%22%2C%22imd%22%3A%22iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAJ6ElEQVR4AQHdCSL2AAIAAAAAAAIAAAAAAAEBAAACAAEAAAAAAAHQvF0A0b2HAc29ewDSv5oB0763ANO8sgLTvrMB0b%2ByAdC%2FtwLRv5oBzr17AdC%2BhwHQvV0CAQEAAQEAAAECAQABAAIAAgABAAIBAAAAAQEBAAAAAQABAgEAAQEAAAEAAQABAgEAAdK9XQDTvocAzrx7AtO%2BmgHRvLcA0b2yAdO8swDRvLIB0r63AtG%2BmgHNvXsC0L6HAdG8XQAAAgACAQIAAAABAAECAQACAQEAAgICAAAAAQAAAAACAAAAAQAAvb0EAb6%2BBAD%2B%2FwIB0L1eAdK8hwDSvHsC0L%2BaAdG9tgHTvbEC0L%2ByAdO8sQLQvbYA0LyaAdC%2BewHQvYcB0b1eAP%2F%2BAgG9vgQCv78EAAEBAAEAAQABAQEAAAABAgABAQEAAaipAwLBvn0Bw76bAcS%2FlAHEvrABxby9AMa9tQHGvM4Bxb7tAsW%2B6ADGvukBxL%2FoBMm%2B7QHGvs4Axr%2B1AcW8vQDEv7ABxr%2BUAMG%2FmwHCvn0BqKsDAAABAAEBAQAAAQECAQEBAQACv70EAcG8mwLGv78Bxb63AcW%2ByQLEvNEBxb%2FJAcXB4QHMxf8ByML%2BAsjB%2FwDJwP4BycP%2FAcG64AHFvskDxbzSAMa9yQLGvrcBxb2%2FAsK9mwK9vQQBAQAAAgEBAQAAAQAAAQABAAG%2BvgQBxr2UAca%2FtwHHwa8Bxb%2FEAMW%2FzgPEvMUBxL3fAsjA%2FwDEvf0Cxr7%2BAMG8%2FU7b1%2F9r39"
+      },
+      {
+        "method": "POST",
+        "url": "https://hcaptcha.com/getcaptcha/85fed6af-162f-4a66-a7ab-8822a7d81f72",
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json",
+          "origin": "https://newassets.hcaptcha.com",
+          "referer": "https://newassets.hcaptcha.com/"
+        },
+        "body": "v=d865efcccaf8dbce47e885e881e3eedb2d4adfef&sitekey=85fed6af-162f-4a66-a7ab-8822a7d81f72&host=wolt.com&hl=he&r=4&action=network-error&motionData=%7B%22st%22%3A1789064546253%2C%22v%22%3A1%2C%22session%22%3A%5B%5D%2C%22widgetList%22%3A%5B%220zfgorhnqme%22%5D%2C%22widgetId%22%3A%220zfgorhnqme%22%2C%22imd%22%3A%22iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAJ6ElEQVR4AQHdCSL2AAIAAAAAAAIAAAAAAAEBAAACAAEAAAAAAAHQvF0A0b2HAc29ewDSv5oB0763ANO8sgLTvrMB0b%2ByAdC%2FtwLRv5oBzr17AdC%2BhwHQvV0CAQEAAQEAAAECAQABAAIAAgABAAIBAAAAAQEBAAAAAQABAgEAAQEAAAEAAQABAgEAAdK9XQDTvocAzrx7AtO%2BmgHRvLcA0b2yAdO8swDRvLIB0r63AtG%2BmgHNvXsC0L6HAdG8XQAAAgACAQIAAAABAAECAQACAQEAAgICAAAAAQAAAAACAAAAAQAAvb0EAb6%2BBAD%2B%2FwIB0L1eAdK8hwDSvHsC0L%2BaAdG9tgHTvbEC0L%2ByAdO8sQLQvbYA0LyaAdC%2BewHQvYcB0b1eAP%2F%2BAgG9vgQCv78EAAEBAAEAAQABAQEAAAABAgABAQEAAaipAwLBvn0Bw76bAcS%2FlAHEvrABxby9AMa9tQHGvM4Bxb7tAsW%2B6ADGvukBxL%2FoBMm%2B7QHGvs4Axr%2B1AcW8vQDEv7ABxr%2BUAMG%2FmwHCvn0BqKsDAAABAAEBAQAAAQECAQEBAQACv70EAcG8mwLGv78Bxb63AcW%2ByQLEvNEBxb%2FJAcXB4QHMxf8ByML%2BAsjB%2FwDJwP4BycP%2FAcG64AHFvskDxbzSAMa9yQLGvrcBxb2%2FAsK9mwK9vQQBAQAAAgEBAQAAAQAAAQABAAG%2BvgQBxr2UAca%2FtwHHwa8Bxb%2FEAMW%2FzgPEvMUBxL3fAsjA%2FwDEvf0Cxr7%2BAMG8%2FU7b1%2F9r39"
+      },
+      {
+        "method": "POST",
+        "url": "https://authentication.wolt.com/v3/users/email_login",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"attribution\":\"::7e075a36-2ece-4fd4-a99f-fb5a483ccc17:7e075a36-2ece-4fd4-a99f-fb5a483ccc17\",\"email\":\"lab@example.com\",\"audience\":\"wolt-com\",\"ref\":null}"
+      },
+      {
+        "method": "POST",
+        "url": "https://consumer-api.wolt.com/consumer-api/consents-router/v1/consent-enrollments-config",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/plain, */*",
+          "origin": "https://wolt.com",
+          "referer": "https://wolt.com/",
+          "app-language": "he",
+          "platform": "Web",
+          "client-version": "1.16.138",
+          "x-wolt-web-clientid": "7e075a36-2ece-4fd4-a99f-fb5a483ccc17",
+          "w-wolt-session-id": "no-analytics-consent",
+          "clientversionnumber": "1.16.138"
+        },
+        "body": "{\"enrollments\":[],\"type\":\"tracking\",\"platform\":\"web\",\"is_bundle\":true,\"country\":\"isr\"}"
+      }
+    ],
+    "open": "אפשר להתחבר כדי לראות את הכתובות שלך",
+    "fields1": [
+      "text:_R_3pampj_\"לאן לשלוח לך את ההזמנה?\"",
+      "select-one:country\"\"",
+      "email:email\"\""
+    ],
+    "text1": "שותפים משרות ס ט ר י ט פ ו ד ? ב ד ר ך א ל י ך . נמסר אפשר להתחבר כדי לראות את הכתובות שלך הכי פופולרי משלוחים בקצב שלכם הצטרפו לצוות השליחים שלנו ותעבדו מתי ואיפה שמתאים לכם. לשליחים לקוחות חדשים מחכים לכם אנחנו כאן כדי לעזור לעסק שלכם לגדול! בואו נוודא שהלקוחות הנכונים ימצאו אתכם בקלות ובמהירות. לעסקים החיים קלים (וטעימים) יותר עם וולט כל מה שמתחשק עד אליכם כאן בשבילכם צריכים עזרה? סתם בא לכם לו",
+    "emailSet": true,
+    "submit": "button:להמשיך",
+    "fields2": [
+      "text:_R_3pampj_\"לאן לשלוח לך את ההזמנה?\"",
+      "select-one:country\"\"",
+      "email:email\"\""
+    ],
+    "text2": "שותפים משרות פ ר ח י ם ? ב ד ר ך א ל י ך . נמסר אפשר להתחבר כדי לראות את הכתובות שלך הכי פופולרי משלוחים בקצב שלכם הצטרפו לצוות השליחים שלנו ותעבדו מתי ואיפה שמתאים לכם. לשליחים לקוחות חדשים מחכים לכם אנחנו כאן כדי לעזור לעסק שלכם לגדול! בואו נוודא שהלקוחות הנכונים ימצאו אתכם בקלות ובמהירות. לעסקים החיים קלים (וטעימים) יותר עם וולט כל מה שמתחשק עד אליכם כאן בשבילכם צריכים עזרה? סתם בא לכם לומר שלו",
+    "url2": "https://wolt.com/he/isr?no_universal_links=true"
+  },
+  "hazi-hinam": {
+    "requests": [
+      {
+        "method": "POST",
+        "url": "https://westeurope-5.in.applicationinsights.azure.com//v2/track",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "*/*",
+          "origin": "https://shop.hazi-hinam.co.il"
+        },
+        "body": "[{\"time\":\"2026-09-10T18:22:30.958Z\",\"iKey\":\"4629abd2-5996-438b-815a-12122fdf1244\",\"name\":\"Microsoft.ApplicationInsights.4629abd25996438b815a12122fdf1244.RemoteDependency\",\"tags\":{\"ai.user.id\":\"HiUPl2rI8VPb0+n/iudzAz\",\"ai.session.id\":\"IoSI7mWKruOI5Dn/YLzUqV\",\"ai.device.id\":\"browser\",\"ai.device.type\":\"Browser\",\"ai.operation.name\":\"/authentication/login\",\"ai.operation.id\":\"9d23e6b11b124187b4dc7c5b3c41f45a\",\"ai.internal.sdkVersion\":\"javascript:2.8.18\"},\"data\":{\"baseType\":\"RemoteDependencyData\",\"baseData\":{\"id\":\"|9d23e6b11b124187b4dc7c5b3c41f45a.77d5c5f9745b4459.\",\"ver\":2,\"name\":\"GET https://shop.hazi-hinam.co.il/proxy/api/CMS/GetOperationalMessages\",\"resultCode\":\"200\",\"duration\":\"00:00:00.116\",\"success\":true,\"data\":\"GET https://shop.hazi-hinam.co.il/proxy/api/CMS/GetOperationalMessages\",\"target\":\"shop.hazi-hinam.co.il | cid-v1:4c3c7c08-d162-44d7-bac6-468cf863f65b\",\"type\":\"Ajax\",\"properties\":{\"HttpMethod\":\"GET\"},\"measurements\":{}}}},{\"time\":\"2026-09-10T18:22:30.957Z\",\"iKey\":\"4629abd2-5996-438b-815a-12122fdf1244\",\"name\":\"Microsoft.ApplicationInsights.4629abd25996438b815a12122fdf1244.RemoteDependency\",\"tags\":{\"ai.user.id\":\"HiUPl2rI8VPb0+n/iudzAz\",\"ai.session.id\":\"IoSI7mWKruOI5Dn/YLzUqV\",\""
+      }
+    ],
+    "fields1": [
+      "text:name_userName\"*דוא\"ל/ת.ז/ח.פ (9 ספרות)\"",
+      "password:name_password\"*סיסמה\""
+    ],
+    "userSet": true,
+    "pwSet": true,
+    "submit": "button:",
+    "text2": "כניסה לחשבון שלי *השדות בכוכבית הם שדות חובה. אל תשכחו אותם *דוא\"ל/ת.ז/ח.פ (9 ספרות) *סיסמה כניסה לחשבון שלי שכחתי את הסיסמה שלי אין לי עדיין חשבוןהרשמה × אנחנו שומרים על פרטיותך באתר זה אנו משתמשים בעוגיות (Cookies) לשיפור חוויית הגלישה, התאמה אישית של תכנים ושירותים, וניתוח תנועת גולשים. מידע נוסף ניתן למצוא ב מדיניות הפרטיות. סגור הגעת למסך לוגין דף סיים טעינה",
+    "url2": "https://shop.hazi-hinam.co.il/authentication/login"
+  }
+}

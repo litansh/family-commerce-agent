@@ -39,13 +39,15 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback } from '@fca/shopping-agent';
-import type { Promotion } from '@fca/retailer-connectors';
+import type { CatalogProvider, Promotion } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
 import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
+import { StoreSessionStore } from './store-sessions.ts';
+import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 
@@ -124,6 +126,7 @@ const households = new HouseholdStore(TABLE);
 const images = new ImageResolver(TABLE);
 const orders = new OrderStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
 const imports = new ImportStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
+const sessions = new StoreSessionStore(TABLE);
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -163,7 +166,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const q = (event.queryStringParameters?.['q'] ?? '').trim();
       if (q.length < 3) return ok({ suggestions: [] });
       const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=il&accept-language=he&limit=6&q=${encodeURIComponent(q)}`;
-      const res = await fetch(url, { headers: { 'user-agent': 'kanili/0.1 (contact: litansh@gmail.com)' } }).catch(() => null);
+      const res = await fetch(url, { headers: { 'user-agent': 'kaniti/0.1 (contact: litansh@gmail.com)' } }).catch(() => null);
       if (!res?.ok) return ok({ suggestions: [] });
       const rows = (await res.json()) as { display_name: string; lat: string; lon: string; address?: Record<string, string> }[];
       const suggestions = rows.map((r) => {
@@ -193,7 +196,79 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
 
-    // --- ordering through Kanili -----------------------------------------
+    // --- connecting stores (ADR 0008) ------------------------------------
+    // One ladder: a session captured on the phone, a one-time code, or a
+    // password used once. Every rung ends in the store's own signed-in check
+    // and a sealed session row. Bodies here are never logged.
+    if (method === 'GET' && rest === 'stores/connections') return ok({ connections: await sessions.list(hid) });
+    if (seg[2] === 'stores' && seg[3] && seg[4]) {
+      const store = seg[3];
+      const action = seg.slice(4).join('/');
+      const driver = driverFor(store);
+      const connected = (method: 'device' | 'otp' | 'password', session: StoreSession) => sessions.put(hid, store, session, method).then(() => ok({ connected: true, method }));
+      const fail = (e: unknown): never => {
+        if (e instanceof ConnectFailed) throw new HttpError(e.reason === 'unavailable' || e.reason === 'blocked' ? 502 : 401, e.reason);
+        throw e;
+      };
+      if (method === 'POST' && action === 'connect') {
+        const how = str(body['method'], 'method');
+        if (how === 'otp') {
+          if (!driver?.startOtp || !driver.verifyOtp || !driver.otp) throw new HttpError(422, 'no_otp');
+          const target = driver.otp === 'phone' ? localPhone(str(body['phone'], 'phone')) : str(body['email'], 'email').trim().toLowerCase();
+          if (!target) throw new HttpError(400, 'bad_phone');
+          const challenge = await driver.startOtp(target).catch(fail);
+          return ok({ challengeId: await sessions.putChallenge(hid, store, challenge), sentTo: challenge.sentTo });
+        }
+        if (how === 'password') {
+          if (!driver?.passwordLogin) throw new HttpError(422, 'no_password');
+          const session = await driver.passwordLogin(str(body['email'], 'email').trim(), str(body['password'], 'password')).catch(fail);
+          return connected('password', session);
+        }
+        throw new HttpError(400, 'method must be otp or password');
+      }
+      if (method === 'POST' && action === 'connect/verify') {
+        if (!driver?.verifyOtp) throw new HttpError(422, 'no_otp');
+        const id = str(body['challengeId'], 'challengeId');
+        const challenge = await sessions.takeChallenge(hid, store, id);
+        const session = await driver.verifyOtp(challenge, str(body['code'], 'code').replace(/\D/g, '')).catch(fail);
+        await sessions.dropChallenge(hid, id);
+        return connected('otp', session);
+      }
+      if (method === 'POST' && action === 'session') {
+        // The phone captured the store's cookie jar after a sign-in in its WebView.
+        const cookies = arr<{ name?: string; value?: string; domain?: string; path?: string }>(body['cookies'], 'cookies')
+          .filter((c) => typeof c.name === 'string' && typeof c.value === 'string')
+          .map((c) => ({ name: c.name!, value: c.value!, ...(c.domain ? { domain: c.domain } : {}), ...(c.path ? { path: c.path } : {}) }));
+        const tokens = body['tokens'] && typeof body['tokens'] === 'object' ? Object.fromEntries(Object.entries(body['tokens'] as Record<string, unknown>).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, String(v)])) : undefined;
+        if (cookies.length === 0 && !tokens) throw new HttpError(400, 'no session in body');
+        const session: StoreSession = { retailer: store, cookies, capturedAt: new Date().toISOString(), ...(typeof body['userAgent'] === 'string' ? { userAgent: body['userAgent'] } : {}), ...(tokens ? { tokens } : {}) };
+        // With a driver the store itself confirms the session; without one the
+        // phone already ran the store's signed-in check and we keep the jar for
+        // the phone's own later use.
+        if (driver && !(await driver.signedIn(session).catch(() => false))) throw new HttpError(401, 'not_signed_in');
+        return connected('device', session);
+      }
+      if (method === 'DELETE' && action === 'connection') { await sessions.remove(hid, store); return ok({ connected: false }); }
+      if (method === 'GET' && action === 'connection') {
+        const session = await sessions.get(hid, store);
+        if (!session) return ok({ connected: false });
+        const live = driver ? await driver.signedIn(session).catch(() => false) : true;
+        if (live) await sessions.touch(hid, store);
+        return ok({ connected: live, method: 'unknown', stale: !live });
+      }
+      if (method === 'POST' && action === 'import') {
+        const { catalog } = requirePricing();
+        if (!driver?.orderHistory) throw new HttpError(422, 'no_cloud_history');
+        const session = await sessions.get(hid, store);
+        if (!session) throw new HttpError(404, 'not_connected');
+        let raw: PastOrderRaw[];
+        try { raw = await driver.orderHistory(session, 20); } catch (e) { if (e instanceof Error && e.name === 'SessionExpired') throw new HttpError(401, 'session_expired'); throw e; }
+        console.log('cloud-import', JSON.stringify({ hid, store, orders: raw.length }));
+        return ok(await importRawOrders(hid, catalog, raw));
+      }
+    }
+
+    // --- ordering through Kaniti -----------------------------------------
     // The API only records intent and forwards a job; the worker at home does
     // the retailer work and writes progress here. Approval is a row update
     // with a fresh token the worker must present before placing the order.
@@ -316,28 +391,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // The phone's diagnostic of what the store returned - the only window we
       // have into a session that lives on the device.
       console.log('import-history', JSON.stringify({ hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
-      const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
-      const orders: { at: string; lines: { phrase: string; gtin: string; productName: string; brand?: string; packQty?: number }[] }[] = [];
-      for (const o of raw.slice(0, 40)) {
-        const lines = [];
-        for (const l of (o.lines ?? []).slice(0, 60)) {
-          const name = (l.name ?? '').trim();
-          if (!name) continue;
-          if (l.code && /^\d{8,14}$/.test(l.code)) { lines.push({ phrase: name, gtin: l.code, productName: name, packQty: l.qty ?? 1 }); continue; }
-          let hit = cache.get(name);
-          if (hit === undefined) {
-            const found = await catalog.searchProducts({ query: name, limit: 3 }).catch(() => []);
-            const best = found.find((f) => f.gtin && f.pricedAtChains > 0);
-            hit = best?.gtin ? { gtin: best.gtin, productName: best.name, ...(best.brand ? { brand: best.brand } : {}) } : null;
-            cache.set(name, hit);
-          }
-          lines.push({ phrase: name, gtin: hit?.gtin ?? `name:${name}`, productName: hit?.productName ?? name, ...(hit?.brand ? { brand: hit.brand } : {}), packQty: l.qty ?? 1 });
-        }
-        if (lines.length) orders.push({ at: o.at ?? new Date().toISOString(), lines });
-      }
-      const repo = new DynamoMemoryRepository(hid, TABLE);
-      const saved = await repo.save(importHistory(await repo.load(), orders));
-      return ok({ orders: orders.length, products: Object.keys(saved.products).length });
+      return ok(await importRawOrders(hid, catalog, raw));
     }
 
     // Pictures for a set of barcodes, resolved within a time budget so the
@@ -349,7 +403,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     }
 
     // One product, every chain that carries it. The catalogue's canonical
-    // record keyed by barcode; the "why Kanili" moment on a product sheet.
+    // record keyed by barcode; the "why Kaniti" moment on a product sheet.
     if (method === 'GET' && rest === 'product') {
       requirePricing();
       const gtin = (event.queryStringParameters?.['gtin'] ?? '').trim();
@@ -486,6 +540,36 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     console.error(e);
     return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
   }
+}
+
+/**
+ * Past orders, as a store reports them (names, maybe barcodes, quantities),
+ * resolved to the catalogue and replayed into the household's memory, dated.
+ * Shared by the phone's on-device import and the cloud's session import.
+ */
+async function importRawOrders(hid: string, catalog: CatalogProvider, raw: { at?: string; lines?: { name?: string; code?: string; qty?: number }[] }[]): Promise<{ orders: number; products: number }> {
+  const cache = new Map<string, { gtin: string; productName: string; brand?: string } | null>();
+  const orders: { at: string; lines: { phrase: string; gtin: string; productName: string; brand?: string; packQty?: number }[] }[] = [];
+  for (const o of raw.slice(0, 40)) {
+    const lines = [];
+    for (const l of (o.lines ?? []).slice(0, 60)) {
+      const name = (l.name ?? '').trim();
+      if (!name) continue;
+      if (l.code && /^\d{8,14}$/.test(l.code)) { lines.push({ phrase: name, gtin: l.code, productName: name, packQty: l.qty ?? 1 }); continue; }
+      let hit = cache.get(name);
+      if (hit === undefined) {
+        const found = await catalog.searchProducts({ query: name, limit: 3 }).catch(() => []);
+        const best = found.find((f) => f.gtin && f.pricedAtChains > 0);
+        hit = best?.gtin ? { gtin: best.gtin, productName: best.name, ...(best.brand ? { brand: best.brand } : {}) } : null;
+        cache.set(name, hit);
+      }
+      lines.push({ phrase: name, gtin: hit?.gtin ?? `name:${name}`, productName: hit?.productName ?? name, ...(hit?.brand ? { brand: hit.brand } : {}), packQty: l.qty ?? 1 });
+    }
+    if (lines.length) orders.push({ at: o.at ?? new Date().toISOString(), lines });
+  }
+  const repo = new DynamoMemoryRepository(hid, TABLE);
+  const saved = await repo.save(importHistory(await repo.load(), orders));
+  return { orders: orders.length, products: Object.keys(saved.products).length };
 }
 
 /**

@@ -1,0 +1,87 @@
+{
+  "address": "kaniti-lab-mtvux3qw@uberip.com",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://wolt.com/svgAssets/userIcon-7eadb6d604232ea2.svg",
+      "headers": {},
+      "body": "",
+      "status": 200,
+      "response": "<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" id=\"use-href-target\"><path fill=\"var(--svg-use-color-primary, currentColor)\" fill-rule=\"evenodd\" d=\"M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12M5 18q-.125.465-.202.938A9.97 9.97 0 0 0 12 22a9.97 9.97 0 0 0 7.202-3.062A9 9 0 0 0 19 18c-.229-.85-.497-.986-1.75-1.5q-1.233-.505-4.25-.984v-1.142A4.002 4.002 0 0 0 12 6.5a4 4 0 0 0-1 7.874v1.138q-2.487.268-4.25.988c-1.254.513-1.522.655-1.75 1.5\" clip-rule=\"evenodd\"/></svg>",
+      "setCookie": [
+        ""
+      ]
+    },
+    {
+      "method": "GET",
+      "url": "https://wolt-com-static-assets.wolt.com/js-modules-v2-authModal-containers-AuthModalContainer-AuthModalContainer-daddaba94614f83d.chunk.js",
+      "headers": {},
+      "body": "",
+      "status": 200,
+      "response": "\"use strict\";(self.__LOADABLE_LOADED_CHUNKS__=self.__LOADABLE_LOADED_CHUNKS__||[]).push([[29221],{581093(r,s,e){e.r(r.exports={})},830997(r,s,e){e.r(r.exports={})},91989(r,s,e){e.r(r.exports={})},593145(r,s,e){e.r(r.exports={})},754458(r,s,e){e.r(r.exports={})},587923(r,s,e){e.r(r.exports={})},108141(r,s,e){e.r(r.exports={})},802921(r,s,e){e.r(r.exports={})},550933(r,s,e){e.r(r.exports={})},72199(r,s,e){e.r(r.exports={})},552991(r,s,e){e.r(r.exports={})},861731(r,s,e){e.r(r.exports={})},458620(r,s,e){e.r(r.exports={})},519480(r,s,e){e.r(r.exports={})},763132(r,s,e){e.r(r.exports={})},283448(r,",
+      "setCookie": [
+        ""
+      ]
+    },
+    {
+      "method": "GET",
+      "url": "https://wolt-com-static-assets.wolt.com/js-modules-v2-authModal-containers-AuthModalContainer-AuthModalContainer-043ba8254bd1041d2.chunk.css",
+      "headers": {},
+      "body": "",
+      "status": 200,
+      "response": ".s1j6anc6{padding:16px}.r1futc5u{flex-direction:column;gap:24px;display:flex}.tcsvelu{font:var(--cb-font-title);margin:0}.smatmck{font:var(--cb-font-body)}.h108vr7b{border-color:var(--cb-color-border);width:100%;margin:12px 0 16px}.dho5mee{align-items:center;gap:8px;width:100%;display:flex}.r1mom9r6{display:var(--r1mom9r6-0);border-radius:var(--cb-corner-radius-medium);background:0 0;min-width:120px;max-width:100%;position:relative}.l187hxp3{font:var(--cb-font-footnote);color:var(--cb-color-text-subdued);pointer-events:none;white-space:nowrap;text-overflow:ellipsis;text-align:start;-webkit-pad",
+      "setCookie": [
+        ""
+      ]
+    },
+    {
+      "method": "GET",
+      "url": "https://authentication.wolt.com/v1/wauth2/consumer-sms/verification-delivery-methods",
+      "headers": {
+        "app-language": "he",
+        "platform": "Web",
+        "client-version": "1.16.138",
+        "x-wolt-web-clientid": "84f77f0d-083b-409c-8628-f08a7ee118ed",
+        "w-wolt-session-id": "no-analytics-consent",
+        "clientversionnumber": "1.16.138"
+      },
+      "body": "",
+      "status": 200,
+      "response": "{\"country_codes\":{\"358\":[\"sms\",\"whatsapp\",\"whatsapp_zero_tap\",\"telegram\",\"viber\",\"call\"]},\"default\":[\"sms\",\"whatsapp\",\"whatsapp_zero_tap\",\"telegram\",\"viber\",\"call\"]}\n",
+      "setCookie": [
+        ""
+      ]
+    },
+    {
+      "method": "GET",
+      "url": "https://wolt-com-static-assets.wolt.com/telemetry-login-de54758a0b11d7ec.chunk.js",
+      "headers": {},
+      "body": "",
+      "status": 200,
+      "response": "\"use strict\";(self.__LOADABLE_LOADED_CHUNKS__=self.__LOADABLE_LOADED_CHUNKS__||[]).push([[22437],{581954(e,t,i){i(823599),i(584022),i(978964);var o=i(226558),n=i(73416);i.d(t,{},{default:function(){let{Kf:e,HE:t,kb:i,MV:a,eu:l,lZ:_,WI:p,as:s,Fi:d,xX:r,lo:c,Jb:u,RT:v,ZG:g,x6:m,qb:h,XH:f,K1:b}=o,{}=v(),E=[];E.push({id:\"pp5TYQIUMm\",name:\"log_type\",value:\"interaction\"}),E.push({id:\"dLEBXcR0Ty\",name:\"view\",value:\"code_not_received\"}),E.push({id:\"r5E-SMeZ21\",name:\"event_name\",value:\"contact_support\"});let y=u(E),I=[],T=u(I);if(t!==e.Prod||g){let e=[];i||r(t,\"VIkS1gMh48ljKi3O3pi1r\",n.gq,e.map(e=>Obje",
+      "setCookie": [
+        ""
+      ]
+    },
+    {
+      "method": "POST",
+      "url": "https://authentication.wolt.com/v3/users/email_login",
+      "headers": {
+        "content-type": "application/json",
+        "app-language": "he",
+        "platform": "Web",
+        "client-version": "1.16.138",
+        "x-wolt-web-clientid": "84f77f0d-083b-409c-8628-f08a7ee118ed",
+        "w-wolt-session-id": "no-analytics-consent",
+        "clientversionnumber": "1.16.138"
+      },
+      "body": "{\"attribution\":\"::84f77f0d-083b-409c-8628-f08a7ee118ed:\",\"email\":\"kaniti-lab-mtvux3qw@uberip.com\",\"audience\":\"wolt-com\",\"ref\":null}",
+      "status": 200,
+      "response": "{\"email_hash\":\"-yw1tqBP4rFpudNHMmZdtScaNqgEGL-6_NnEQTNFoEQ\",\"includes_code\":false}\n",
+      "setCookie": [
+        ""
+      ]
+    }
+  ],
+  "afterSend": "שותפים משרות פ ר ח י ם ? ב ד ר ך א ל י ך . נמסר אפשר להתחבר כדי לראות את הכתובות שלך הכי פופולרי משלוחים בקצב שלכם הצטרפו לצוות השליחים שלנו ותעבדו מתי ואיפה שמתאים לכם. לשליחים לקוחות חדשים מחכים לכם אנחנו כאן כדי לעזור לעסק שלכם לגדול! בואו נוודא שהלקוחות הנכונים ימצאו אתכם בקלות ובמהירות. לעסקים "
+}

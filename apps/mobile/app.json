@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Kanili",
-    "slug": "kanili",
+    "name": "Kaniti",
+    "slug": "kaniti",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.litansh.kanili"
+      "bundleIdentifier": "com.litansh.kaniti"
     },
     "android": {
-      "package": "com.litansh.kanili",
+      "package": "com.litansh.kaniti",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1F6B45"
@@ -21,7 +21,7 @@
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "kanili",
+    "scheme": "kaniti",
     "extra": {
       "apiUrl": "https://buc8pe49g0.execute-api.eu-central-1.amazonaws.com",
       "userPoolId": "eu-central-1_8yomKtNCE",

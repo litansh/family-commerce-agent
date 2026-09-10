@@ -65,8 +65,8 @@
   <!-- body -->
   <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#1F6B45" mask="url(#tick)"/>
 </g>
-<text x="1140" y="380" font-family="Arial Hebrew, Arial" font-size="110" font-weight="700" fill="#1B1B1A" text-anchor="end" direction="rtl">קנילי</text>
+<text x="1140" y="380" font-family="Arial Hebrew, Arial" font-size="110" font-weight="700" fill="#1B1B1A" text-anchor="end" direction="rtl">קניתי</text>
 <text x="1140" y="440" font-family="Arial Hebrew, Arial" font-size="30" fill="#6F6B63" text-anchor="end" direction="rtl">רשימה אחת. כל הרשתות. שום דבר לא נשכח.</text>
-<text x="1140" y="580" font-family="Helvetica Neue, Arial" font-size="78" font-weight="700" fill="#1B1B1A" text-anchor="end" letter-spacing="-3">Kanili</text>
+<text x="1140" y="580" font-family="Helvetica Neue, Arial" font-size="78" font-weight="700" fill="#1B1B1A" text-anchor="end" letter-spacing="-3">Kaniti</text>
 <text x="1140" y="630" font-family="Helvetica Neue, Arial" font-size="26" fill="#6F6B63" text-anchor="end">One list. Every chain. Nothing forgotten.</text>
 </svg>

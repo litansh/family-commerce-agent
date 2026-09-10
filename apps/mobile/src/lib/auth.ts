@@ -28,7 +28,7 @@ const discovery = {
   revocationEndpoint: `${config.cognitoDomain}/oauth2/revoke`,
 };
 
-export const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kanili', path: 'auth' });
+export const redirectUri = AuthSession.makeRedirectUri({ scheme: 'kaniti', path: 'auth' });
 
 export async function saveTokens(t: Tokens): Promise<void> { await store(t); }
 

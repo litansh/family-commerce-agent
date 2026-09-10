@@ -1,6 +1,6 @@
 # E2E review — three lenses on the live site
 
-**How it runs:** `KANILI_E2E_TOKEN=<id token> npx playwright test` in `apps/mobile`. Playwright drives the live site at phone width as a person would — sign-in, Home, aisle, sub-aisle, product sheet, search — asserting the mechanics (products render, sub-aisle switches keep the grid, ≥80% of pictures paint, the sheet opens) and applying three checks on every screen: no lingering skeletons, at least one tappable action, no stray English on a Hebrew screen. Each screen is captured to `e2e/shots/` for the judgement calls below.
+**How it runs:** `KANITI_E2E_TOKEN=<id token> npx playwright test` in `apps/mobile`. Playwright drives the live site at phone width as a person would — sign-in, Home, aisle, sub-aisle, product sheet, search — asserting the mechanics (products render, sub-aisle switches keep the grid, ≥80% of pictures paint, the sheet opens) and applying three checks on every screen: no lingering skeletons, at least one tappable action, no stray English on a Hebrew screen. Each screen is captured to `e2e/shots/` for the judgement calls below.
 
 **Latest run:** 3/3 passing. The first runs reproduced the owner's two reports exactly (blank grid after a sub-aisle tap; missing pictures) before any fix.
 

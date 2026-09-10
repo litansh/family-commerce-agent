@@ -46,7 +46,7 @@ export class ShufersalConnector implements RetailerConnector {
     // Headed on purpose: the WAF is far gentler with a real window, and the
     // person whose account this is can watch every step.
     if (!this.#browser) {
-      this.#browser = await chromium.launch({ headless: process.env['KANILI_HEADLESS'] === '1', slowMo: 50 });
+      this.#browser = await chromium.launch({ headless: process.env['KANITI_HEADLESS'] === '1', slowMo: 50 });
     }
     return this.#browser;
   }
@@ -100,7 +100,7 @@ export class ShufersalConnector implements RetailerConnector {
       document.querySelector<HTMLInputElement>('#loyaltyMemberDataForm_idNumber')?.focus();
     }).catch(() => undefined);
     console.log('\n  The window opened on the OTP (club) sign-in. Complete it; when the site shows you signed in, press Enter here.');
-    console.log('  When the site shows you signed in, press Enter here. Kanili then checks with Shufersal and saves only a session that really is signed in.\n');
+    console.log('  When the site shows you signed in, press Enter here. Kaniti then checks with Shufersal and saves only a session that really is signed in.\n');
     // Loop: wait for Enter (or automatic detection), verify against the
     // site, and either save or explain what Shufersal reported and wait again.
     const stdin = process.stdin;

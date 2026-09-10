@@ -44,7 +44,7 @@ export class RamiLevyConnector implements RetailerConnector {
   }
 
   async #launch(): Promise<Browser> {
-    if (!this.#browser) this.#browser = await chromium.launch({ headless: process.env['KANILI_HEADLESS'] === '1', slowMo: 50 });
+    if (!this.#browser) this.#browser = await chromium.launch({ headless: process.env['KANITI_HEADLESS'] === '1', slowMo: 50 });
     return this.#browser;
   }
 
@@ -84,7 +84,7 @@ export class RamiLevyConnector implements RetailerConnector {
   }
 
   async resume(): Promise<void> {
-    if (!hasSession(this.#householdId, this.id)) throw new Error('rami-levy: no saved session — run `KANILI_RETAILER=rami-levy npm run link -w @fca/order-worker`');
+    if (!hasSession(this.#householdId, this.id)) throw new Error('rami-levy: no saved session — run `KANITI_RETAILER=rami-levy npm run link -w @fca/order-worker`');
     const browser = await this.#launch();
     this.#ctx = await browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 }, storageState: loadSession(this.#householdId, this.id) });
     this.#page = await this.#ctx.newPage();
