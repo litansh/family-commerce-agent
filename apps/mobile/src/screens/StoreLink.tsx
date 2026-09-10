@@ -6,6 +6,7 @@ import { Button, S, t } from '../ui';
 import { Pressable } from 'react-native';
 import { isRTL } from '../lib/i18n';
 import { BUILD } from '../lib/config';
+import { CloudConnect, SignupGuide } from './CloudConnect';
 
 /**
  * Connect a store, entirely inside Kaniti.
@@ -17,8 +18,14 @@ import { BUILD } from '../lib/config';
  * whether it is signed in; when it says yes, the store is connected. The
  * session stays in the WebView, on the device — nothing is sent to a server.
  *
- * On the web there is no WebView (stores forbid being framed), so this asks
- * the person to use the app rather than half-working.
+ * On the web there is no WebView (stores forbid being framed), so the web
+ * takes the cloud rung instead (`CloudConnect`, ADR 0008): a password typed
+ * once where the store allows it, and an honest "from your phone" where the
+ * store gates sign-in behind a captcha.
+ *
+ * After a native sign-in the session is captured (the cookies the page can
+ * read, plus the store's token names) and sent to the cloud, so the family's
+ * other devices - and the web - see the store as connected too.
  */
 export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { storeId: string; api: import('../lib/api').Api; householdId: string; onClose: () => void; onLinked: (id: string) => void }) {
   const s = S();
@@ -70,6 +77,27 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 3000);
   };
   const createPassword = () => { inject(store?.forgotJs); setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 900); };
+  const [signup, setSignup] = useState(false);
+  const [saved, setSaved] = useState<boolean | null>(null);
+  // Device rung → cloud: everything the page itself can read (cookies without
+  // HttpOnly, localStorage tokens) goes up; the API keeps it sealed. A dev
+  // build with a native cookie manager adds the HttpOnly jar too.
+  const CAPTURE_JS = `(()=>{try{const keys=${JSON.stringify(store?.sessionKeys ?? [])};const cookies=document.cookie.split(';').map(c=>c.trim()).filter(Boolean).map(c=>{const i=c.indexOf('=');return {name:c.slice(0,i),value:decodeURIComponent(c.slice(i+1)),domain:location.hostname}});const tokens={};try{for(const k of Object.keys(localStorage)){if(keys.includes(k)||/token/i.test(k)){const v=localStorage.getItem(k);if(v&&v.length>8&&v.length<4000)tokens[k]=v;}}}catch(e){}window.ReactNativeWebView.postMessage('session:'+JSON.stringify({cookies,tokens,userAgent:navigator.userAgent}));}catch(e){window.ReactNativeWebView.postMessage('session:'+JSON.stringify({cookies:[],tokens:{},error:String(e)}));}})();true;`;
+  const postSession = async (json: string): Promise<void> => {
+    try {
+      const got = JSON.parse(json) as { cookies: { name: string; value: string; domain?: string }[]; tokens: Record<string, string>; userAgent?: string };
+      let cookies = got.cookies;
+      try {
+        // Native cookie manager (dev builds): the full jar, HttpOnly included.
+        const CM = require('@react-native-cookies/cookies').default as { get: (url: string, useWebKit?: boolean) => Promise<Record<string, { name: string; value: string; domain?: string; path?: string }>> };
+        const jar = await CM.get(store!.loginUrl, true);
+        const full = Object.values(jar).map((c) => ({ name: c.name, value: c.value, ...(c.domain ? { domain: c.domain } : {}), ...(c.path ? { path: c.path } : {}) }));
+        if (full.length) cookies = full;
+      } catch { /* Expo Go: no native module; the page-readable cookies go up */ }
+      const r = await api.postStoreSession(householdId, storeId, { cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) });
+      setSaved(r.connected);
+    } catch { setSaved(false); }
+  };
   const postHistory = async (json: string): Promise<void> => {
     try {
       const parsed = JSON.parse(json) as unknown;
@@ -84,7 +112,8 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   };
 
   if (!store) return null;
-  const hint = store.loginKind === 'otp' ? tr('linkHintOtp', { s: store.name }) : tr('linkHintPw', { s: store.name });
+  // The web's copy lives in CloudConnect; the header keeps only the store name there.
+  const hint = !WebView ? '' : store.loginKind === 'otp' ? tr('linkHintOtp', { s: store.name }) : tr('linkHintPw', { s: store.name });
 
   const rtl = isRTL();
   return (
@@ -94,22 +123,22 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
         <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]}>{tr('connectStore', { s: store.name })}</Text>
-            <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{hint}</Text>
+            {hint ? <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{hint}</Text> : null}
           </View>
           <Pressable onPress={onClose} hitSlop={16} style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }}>
             <Text style={{ fontSize: 20, color: t.ink, fontWeight: '700' }}>✕</Text>
           </Pressable>
         </View>
         {!WebView ? (
-          <View style={[s.pad, { flex: 1, justifyContent: 'center' }]}>
-            <Text style={[s.body, { textAlign: 'center', marginBottom: 16 }]}>{tr('linkNeedsApp')}</Text>
-            <Button title={tr('ok')} onPress={onClose} kind="secondary" />
-          </View>
+          <CloudConnect store={store} api={api} householdId={householdId} email={email} onLinked={() => onLinked(store.id)} onClose={onClose} />
+        ) : signup ? (
+          <SignupGuide store={store} api={api} householdId={householdId} email={email} onOpen={() => { setSignup(false); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(`location.href=${JSON.stringify(store.signup.url)};true;`); }} onBack={() => setSignup(false)} />
         ) : signedIn ? (
           <View style={[s.pad, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
             <Text style={{ fontSize: 48 }}>✓</Text>
             <Text style={[s.title, { marginTop: 12, textAlign: 'center' }]}>{tr('linked', {})}</Text>
             <Text style={[s.body, { color: t.muted, textAlign: 'center', marginTop: 6 }]}>{tr('linkedSub', { s: store.name })}</Text>
+            {saved != null ? <Text style={[s.small, { marginTop: 8, color: saved ? t.accent : t.muted }]}>{saved ? tr('sessionSaved') : tr('sessionNotSaved')}</Text> : null}
             {importing ? <Text style={[s.small, { marginTop: 10 }]}>{tr('importingHistory')}</Text>
               : imported != null && imported > 0 ? <Text style={[s.small, { color: t.accent, marginTop: 10 }]}>{tr('importedHistory', { n: imported })}</Text>
               : imported === 0 ? <Text style={[s.faint, { marginTop: 10, textAlign: 'center' }]} selectable>{tr('importedNone', { d: diag ?? '—' })}</Text> : null}
@@ -120,12 +149,10 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
           <>
             <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 10 }}>
               <Text style={[s.small, { color: t.accent, fontWeight: '600' }]}>{store.loginKind === 'password' ? tr('linkTipPw') : tr('linkTipOtp')}</Text>
-              {store.forgotJs ? (
-                <View style={[s.rowStart, { marginTop: 8, gap: 8 }]}>
-                  <Pressable onPress={createPassword} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('createPwOnce')}</Text></Pressable>
-                  <Text style={[s.faint, { flex: 1 }]}>{tr('createPwOnceSub')}</Text>
-                </View>
-              ) : null}
+              <View style={[s.rowStart, { marginTop: 8, gap: 8, flexWrap: 'wrap' }]}>
+                {store.forgotJs ? <Pressable onPress={createPassword} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('createPwOnce')}</Text></Pressable> : null}
+                <Pressable onPress={() => setSignup(true)} style={{ borderWidth: 1, borderColor: t.ink, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.ink, fontWeight: '700', fontSize: 13 }}>{tr('cloudNoAccount', { s: store.name })}</Text></Pressable>
+              </View>
             </View>
             <View style={{ flex: 1, overflow: 'hidden' }}>
               <WebView
@@ -147,8 +174,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:1') {
                     setSignedIn(true);
-                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
+                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
                   }
+                  else if (d.startsWith('session:')) { void postSession(d.slice(8)); }
                   else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
                   else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { build: BUILD, probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
                 }}
@@ -157,7 +185,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
             <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
               {/* The person is never stuck behind the detector: once they see
                   themselves signed in, one tap confirms it and starts the import. */}
-              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } } }} />
+              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } } }} />
               <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('linkPrivacy')}</Text>
             </View>
           </>

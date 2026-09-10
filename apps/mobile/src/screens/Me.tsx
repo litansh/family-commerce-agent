@@ -14,7 +14,13 @@ import { BUILD } from '../lib/config';
 export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api; household: Household; onSignOut: () => void; onShowIntro: () => void }) {
   const s = S();
   useLanguage();
-  const linked = useLinked();
+  const local = useLinked();
+  // The cloud's answer is the family's answer: a store connected on one phone
+  // is connected on every device. The device flag is a cache of it.
+  const [cloud, setCloud] = useState<Record<string, { connected: boolean; method?: string }>>({});
+  const refreshCloud = () => api.connections(household.id).then((r) => setCloud(r.connections)).catch(() => null);
+  useEffect(() => { void refreshCloud(); }, [api, household.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const linked = [...new Set([...local, ...Object.entries(cloud).filter(([, c]) => c.connected).map(([id]) => id)])];
   const [linking, setLinking] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [worker, setWorker] = useState<{ online: boolean; linked: Record<string, boolean> } | null>(null);
@@ -53,16 +59,18 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
           {storeIds.map((r) => {
             const on = linked.includes(r);
             const otp = STORES[r]?.loginKind === 'otp';
+            // On the web, a store with no cloud rung connects on the phone; say so up front.
+            const badge = on ? tr('linked', {}) : Platform.OS === 'web' ? (STORES[r]?.cloud ? tr('cloudBadge') : tr('phoneBadge')) : otp ? tr('otpBadge') : tr('pwBadge');
             return (
               <View key={r} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={[s.rowStart, { flexShrink: 1, flexWrap: 'wrap' }]}>
                   <Text style={s.body} numberOfLines={1}>{STORES[r]?.name ?? r}</Text>
-                  <Chip text={on ? tr('linked', {}) : otp ? tr('otpBadge') : tr('pwBadge')} tone={on ? 'good' : otp ? 'good' : 'neutral'} />
+                  <Chip text={badge} tone={on ? 'good' : otp || STORES[r]?.cloud ? 'good' : 'neutral'} />
                 </View>
                 {on
                   ? <View style={[s.rowStart, { gap: 14 }]}>
                       <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('sync')}</Text></Pressable>
-                      <Pressable onPress={() => markUnlinked(r)} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>
+                      <Pressable onPress={() => { markUnlinked(r); void api.disconnectStore(household.id, r).then(refreshCloud).catch(() => null); }} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>
                     </View>
                   : <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('connect')}</Text></Pressable>}
               </View>
@@ -76,7 +84,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         </View>
         <Button title={tr('showIntro')} kind="quiet" onPress={onShowIntro} />
         <Button title={tr('signOut')} kind="quiet" onPress={onSignOut} />
-        {linking ? <StoreLink storeId={linking} api={api} householdId={household.id} onClose={() => setLinking(null)} onLinked={(id) => { markLinked(id); setLinking(null); }} /> : null}
+        {linking ? <StoreLink storeId={linking} api={api} householdId={household.id} onClose={() => { setLinking(null); void refreshCloud(); }} onLinked={(id) => { markLinked(id); setLinking(null); void refreshCloud(); }} /> : null}
         <View style={{ alignItems: 'center', marginTop: 24, opacity: 0.5 }}><Mark size={28} /><Text style={[s.faint, { marginTop: 6 }]}>{tr('taglineShort')}</Text><Text style={[s.faint, { marginTop: 4, fontSize: 10 }]}>build {BUILD}</Text></View>
       </ScrollView>
     </View>
