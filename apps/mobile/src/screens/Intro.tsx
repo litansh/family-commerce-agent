@@ -17,7 +17,8 @@ import { S, t } from '../ui';
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 const native = Platform.OS !== 'web';
 const KEY = 'fca.intro.seen';
-export const introSeen = async (): Promise<boolean> => { try { return (await AsyncStorage.getItem(KEY)) === '1'; } catch { return false; } };
+// EXPO_PUBLIC_SKIP_INTRO=1 (simulator runs driven by Maestro) treats the intro as seen.
+export const introSeen = async (): Promise<boolean> => { if (process.env['EXPO_PUBLIC_SKIP_INTRO'] === '1') return true; try { return (await AsyncStorage.getItem(KEY)) === '1'; } catch { return false; } };
 const markSeen = async (): Promise<void> => { try { await AsyncStorage.setItem(KEY, '1'); } catch { /* fine */ } };
 
 const CHAINS: { name: string; letter: string; color: string }[] = [

@@ -1,0 +1,10 @@
+appId: com.litansh.kaniti
+---
+- runFlow: household.yaml
+- tapOn: "רשימה"
+- takeScreenshot: maestro/shots/04-list
+- tapOn: "הזמנות"
+- takeScreenshot: maestro/shots/05-orders
+- tapOn: "אני"
+- assertVisible: "החנויות המחוברות"
+- takeScreenshot: maestro/shots/06-me

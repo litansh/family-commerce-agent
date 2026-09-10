@@ -1,0 +1,25 @@
+appId: com.litansh.kaniti
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+---
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "התחברות"
+    commands:
+      - tapOn: "כניסה"
+      - tapOn: "אימייל"
+      - inputText: ${EMAIL}
+      - tapOn: "סיסמה"
+      - inputText: ${PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          text: "כניסה"
+          index: 0
+- extendedWaitUntil:
+    visible:
+      text: "משפחה חדשה|המחלקות|בית"
+    timeout: 30000
+- takeScreenshot: maestro/shots/01-after-signin
