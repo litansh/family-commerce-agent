@@ -9,7 +9,7 @@ DEV=$(xcrun simctl list devices -j | python3 -c 'import json,sys; d=json.load(sy
 mkdir -p maestro/shots/connect
 # The simulator's own Metro (port 8082, test sign-in baked in); the phone tunnel keeps 8081.
 set -a; source "$HOME/.kaniti/e2e.env"; set +a
-if ! curl -s -o /dev/null http://localhost:8082/status; then (EXPO_PUBLIC_SKIP_INTRO=1 EXPO_PUBLIC_E2E_EMAIL="$KANITI_E2E_EMAIL" EXPO_PUBLIC_E2E_PASSWORD="$KANITI_E2E_PASSWORD" EXPO_PUBLIC_E2E_RESET_LIST=1 EXPO_PUBLIC_E2E_ORDER_STORE=rami-levy CI=1 npx expo start --port 8082 > /tmp/metro-sim.log 2>&1 &); until curl -s -o /dev/null http://localhost:8082/status; do sleep 2; done; fi
+if ! curl -s -o /dev/null http://localhost:8082/status; then (EXPO_PUBLIC_SKIP_INTRO=1 EXPO_PUBLIC_E2E_EMAIL="$KANITI_E2E_EMAIL" EXPO_PUBLIC_E2E_PASSWORD="$KANITI_E2E_PASSWORD" EXPO_PUBLIC_E2E_RESET_LIST=1 EXPO_PUBLIC_E2E_ORDER_STORE=rami-levy npx expo start --port 8082 < /dev/null > /tmp/metro-sim.log 2>&1 &); until curl -s -o /dev/null http://localhost:8082/status; do sleep 2; done; fi
 # store id | words the store's sign-in shows (whole-string regex, Maestro style)
 STORES=(
   "rami-levy|.*(בחר שיטת קבלת קוד|שלח קוד אימות|קריאה קולית).*"

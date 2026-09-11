@@ -169,8 +169,8 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const insets = useSafeAreaInsets();
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
-      {/* A full-screen modal starts under the clock: keep the close bar below the status bar. */}
-      <View style={[s.screen, { paddingTop: insets.top + 4 }]}>
+      {/* A full-screen modal starts under the clock; the app provider's top inset keeps the close bar below it. */}
+      <View style={[s.screen, { paddingTop: Math.max(insets.top, 20) + 4 }]}>
         {/* Solid close bar, always on top of the WebView. */}
         <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
           <View style={{ flex: 1 }}>
