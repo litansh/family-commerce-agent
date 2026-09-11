@@ -46,10 +46,28 @@ jobs:
         with: { node-version: '22', cache: npm }
       - if: steps.key.outputs.has == 'true'
         run: npm ci || npm install
+      # The key may be an API key (sk-ant-api…) or a Claude subscription token from `claude setup-token` (sk-ant-oat…).
       - uses: anthropics/claude-code-action@v1
-        if: steps.key.outputs.has == 'true'
+        if: steps.key.outputs.has == 'true' && !startsWith(steps.key.outputs.value, 'sk-ant-oat')
         with:
           anthropic_api_key: ${{ steps.key.outputs.value }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are Kaniti's product-qa agent reviewing pull request #${{ github.event.pull_request.number }}.
+            Read CLAUDE.md, docs/WHAT-WE-PROMISE.md and .claude/agents/product-qa.md first.
+            Then read the diff (git diff origin/main...HEAD) and judge it against the promises:
+            which promise does it keep or touch, what could it break for a family, is every number
+            still honest, does anything internal reach the screen, are there tests for the new rule.
+            Run what you can here: `npm run typecheck`, `npm test`, `npm run check:recipes -w apps/mobile`,
+            `npx tsc --noEmit -p apps/mobile/tsconfig.json`. Do not deploy and do not push.
+            Post ONE review comment on the PR: a verdict line (approve / needs changes), the promises
+            touched, findings with file and line, and what the simulator run on the Mac should look at.
+            Keep it under 40 lines. Hebrew product words may stay in Hebrew.
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(git *),Bash(npm *),Bash(npx *),Bash(node *)" --max-turns 40'
+      - uses: anthropics/claude-code-action@v1
+        if: steps.key.outputs.has == 'true' && startsWith(steps.key.outputs.value, 'sk-ant-oat')
+        with:
+          claude_code_oauth_token: ${{ steps.key.outputs.value }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are Kaniti's product-qa agent reviewing pull request #${{ github.event.pull_request.number }}.

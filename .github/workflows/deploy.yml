@@ -29,7 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: npm }
       - uses: actions/download-artifact@v4
-        with: { name: api-dist, path: apps/api/dist, run-id: ${{ github.event.workflow_run.id }}, github-token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          name: api-dist
+          path: apps/api/dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::437075214009:role/fca-github-deploy
