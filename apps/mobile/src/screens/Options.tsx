@@ -167,7 +167,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                 </View>
               ))}
               {/* A line this store lacks, priced with its closest product: named, so the family decides. */}
-              {(() => { const subs = o.legs.flatMap((leg) => Object.values(q.storefrontLines?.[leg.storefrontId] ?? {}).filter((l) => l.substituted && l.reason).map((l) => l.reason!)); return subs.length ? <Text style={[s.small, { color: t.amber, marginTop: 6 }]}>{tr('subsNamed', { x: subs.join(' · ') })}</Text> : null; })()}
+              {(() => { const subs = o.legs.flatMap((leg) => Object.values(q.storefrontLines?.[leg.storefrontId] ?? {}).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName))); return subs.length ? <Text style={[s.small, { color: t.amber, marginTop: 6 }]}>{tr('subsNamed', { x: subs.join(' · ') })}</Text> : null; })()}
               {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(o.timeCost)}</Text></View>}
               {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}{o.missingEstimate ? ` · ${tr('toComplete', { x: money(o.missingEstimate) })}` : ''}</Text>}
               <View style={[s.rowStart, { marginTop: 10 }]}>
