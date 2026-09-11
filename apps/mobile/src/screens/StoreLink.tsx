@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Text, View } from 'react-native';
-import { STORES } from '../lib/stores';
+import { STORES, signupFillJs, type SignupKnown } from '../lib/stores';
 import { markUnlinked } from '../lib/linked';
 import { t as tr } from '../lib/i18n';
 import { Button, S, t } from '../ui';
@@ -74,6 +74,16 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   // so the only thing left to type is the code (or, once, a password).
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => { api.me().then((m) => setEmail(m.email ?? null)).catch(() => null); }, [api]);
+  // What Kaniti knows for a store's sign-up form: e-mail, the family name, the delivery address.
+  const [known, setKnown] = useState<SignupKnown>({});
+  useEffect(() => {
+    api.household(householdId).then((h) => {
+      const ad = (h as unknown as { addressDetails?: Record<string, unknown> }).addressDetails ?? {};
+      const str = (k: string) => (typeof ad[k] === 'string' && ad[k] ? String(ad[k]) : typeof ad[k] === 'number' ? String(ad[k]) : undefined);
+      const fam = /^משפחת\s+(.+)$/.exec(h.name)?.[1];
+      setKnown({ ...(fam ? { lastName: fam } : {}), ...(str('street') ? { street: str('street') } : {}), ...(str('number') ? { number: str('number') } : {}), ...(str('city') ? { city: str('city') } : {}), ...(str('apt') ? { apt: str('apt') } : {}), ...(str('floor') ? { floor: str('floor') } : {}), ...(str('entrance') ? { entrance: str('entrance') } : {}) });
+    }).catch(() => null);
+  }, [api, householdId]);
   const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js); };
   // The moment a store shows a "code" box, mark it as a one-time-code field
   // and focus it. iOS then offers the SMS code on the keyboard as it lands —
@@ -110,6 +120,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     inject(store?.openLoginJs);
     setTimeout(() => { inject(store?.openLoginJs); if (email) inject(store?.prefillEmailJs?.(email)); }, 1200);
     setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 3000);
+    // A sign-up form on screen gets everything Kaniti knows; SPAs render late, so twice.
+    setTimeout(() => inject(signupFillJs({ ...known, ...(email ? { email } : {}) })), 2000);
+    setTimeout(() => inject(signupFillJs({ ...known, ...(email ? { email } : {}) })), 5000);
   };
   const createPassword = () => { inject(store?.forgotJs); setTimeout(() => { if (email) inject(store?.prefillEmailJs?.(email)); }, 900); };
   const [signup, setSignup] = useState(false);

@@ -67,6 +67,40 @@ export type SignupField = 'name' | 'id' | 'phone' | 'email' | 'birthdate' | 'pas
 const setInput = (selector: string, value: string) =>
   `(()=>{const i=document.querySelector(${JSON.stringify(selector)});if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`;
 
+/**
+ * Fill a store's sign-up form with what Kaniti already knows about the family,
+ * matching fields by their own labels / names / placeholders. Only empty fields
+ * are touched, and only with values the family gave Kaniti (e-mail, family name,
+ * delivery address). ID number, birth date, phone and password stay theirs to type.
+ * Runs on any page that looks like a registration form; posts what it filled.
+ */
+export interface SignupKnown { readonly email?: string; readonly firstName?: string; readonly lastName?: string; readonly street?: string; readonly number?: string; readonly city?: string; readonly apt?: string; readonly floor?: string; readonly entrance?: string; readonly phone?: string }
+export const signupFillJs = (known: SignupKnown): string => `(()=>{try{const K=${JSON.stringify(known)};
+  const vis=(e)=>e.getBoundingClientRect().width>0;
+  const inputs=[...document.querySelectorAll('input,select')].filter(vis).filter(i=>!['hidden','submit','button','checkbox','radio','search','password'].includes(i.type));
+  if(inputs.length<3)return;
+  const labelOf=(i)=>{let l='';try{if(i.id){const el=document.querySelector('label[for="'+CSS.escape(i.id)+'"]');if(el)l+=' '+el.textContent;}const p=i.closest('label');if(p)l+=' '+p.textContent;}catch(e){}return (l+' '+(i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')+' '+(i.getAttribute('aria-label')||'')+' '+(i.getAttribute('formcontrolname')||'')).toLowerCase();};
+  const rules=[
+    ['email',/mail|מייל|דוא/],
+    ['firstName',/first|שם פרטי|firstname/],
+    ['lastName',/last|שם משפחה|lastname|family/],
+    ['street',/street|רחוב/],
+    ['number',/house|home_?num|מספר בית|מס' בית|building|streetnumber|street_number/],
+    ['city',/city|עיר|יישוב|ישוב/],
+    ['apt',/apartment|apt|דירה/],
+    ['floor',/floor|קומה/],
+    ['entrance',/entrance|כניסה(?! ל)/],
+    ['phone',/phone|tel|טלפון|נייד|mobile/],
+  ];
+  const set=(i,v)=>{const d=Object.getOwnPropertyDescriptor(i.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype,'value');if(d&&d.set)d.set.call(i,v);else i.value=v;for(const t of ['input','change','keyup','blur'])i.dispatchEvent(new Event(t,{bubbles:true}));};
+  const filled=[];
+  for(const i of inputs){if(i.value)continue;const l=labelOf(i);
+    // never touch identity or birth fields, and never a code box
+    if(/ת\\.?ז|תעודת זהות|idnumber|id_number|passport|birth|לידה|code|קוד|otp/.test(l))continue;
+    for(const [k,re] of rules){if(re.test(l)&&K[k]){if(k==='lastName'&&/first|פרטי/.test(l))continue;if(k==='number'&&/phone|tel|טלפון|נייד/.test(l))continue;set(i,String(K[k]));filled.push(k);break;}}}
+  window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'signup filled',href:location.href,filled,inputs:inputs.length}));
+}catch(e){}})();true;`;
+
 /** Generic "am I in": a logout control or the person's account area, and no login prompt in the header. */
 const genericSignedIn = `(()=>{const t=(document.body.innerText||'').slice(0,4000);
   // A login prompt anywhere on screen means not signed in - including the platform's "כניסת משתמש" and "הרשמה".
