@@ -28,12 +28,24 @@ export function travelTo(distanceKm: number, constants: { costPerKm: Agorot; par
 }
 
 /** Street-level geocoding through OpenStreetMap's Nominatim, as the address screen already does. One request a second is their rule. */
-export async function geocode(query: string, fetchImpl: typeof fetch = fetch): Promise<LatLng | undefined> {
-  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=il&accept-language=he&limit=1&q=${encodeURIComponent(query)}`;
+export async function geocode(query: string, fetchImpl: typeof fetch = fetch): Promise<(LatLng & { city?: string }) | undefined> {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=il&accept-language=he&limit=1&q=${encodeURIComponent(query)}`;
   const res = await fetchImpl(url, { headers: { 'user-agent': 'kaniti/0.1 (contact: litansh@gmail.com)' } }).catch(() => null);
   if (!res?.ok) return undefined;
-  const rows = (await res.json().catch(() => [])) as { lat?: string; lon?: string }[];
+  const rows = (await res.json().catch(() => [])) as { lat?: string; lon?: string; address?: Record<string, string> }[];
   const r = rows[0];
   if (!r?.lat || !r.lon) return undefined;
-  return { lat: Number(r.lat), lng: Number(r.lon) };
+  const city = cityOf(r.address);
+  return { lat: Number(r.lat), lng: Number(r.lon), ...(city ? { city } : {}) };
+}
+
+const cityOf = (a?: Record<string, string>): string | undefined => a?.['city'] ?? a?.['town'] ?? a?.['village'] ?? a?.['municipality'] ?? a?.['county'];
+
+/** The Hebrew name of the settlement at a point - what the chains' Stores files use. */
+export async function reverseCity(p: LatLng, fetchImpl: typeof fetch = fetch): Promise<string | undefined> {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&accept-language=he&zoom=10&lat=${p.lat}&lon=${p.lng}`;
+  const res = await fetchImpl(url, { headers: { 'user-agent': 'kaniti/0.1 (contact: litansh@gmail.com)' } }).catch(() => null);
+  if (!res?.ok) return undefined;
+  const r = (await res.json().catch(() => ({}))) as { address?: Record<string, string> };
+  return cityOf(r.address);
 }

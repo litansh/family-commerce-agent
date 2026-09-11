@@ -10,7 +10,14 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/opt/openjdk/bin:$H
 export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 LOGDIR="$HOME/.kaniti/health"; mkdir -p "$LOGDIR"
 STAMP=$(date +%Y-%m-%d_%H%M); LOG="$LOGDIR/run-$STAMP.log"
-notify() { osascript -e "display notification \"$2\" with title \"Kaniti ops\" subtitle \"$1\"" >/dev/null 2>&1 || true; }
+# A macOS notification, and Telegram when ~/.kaniti/telegram.env has TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.
+[ -f "$HOME/.kaniti/telegram.env" ] && { set -a; source "$HOME/.kaniti/telegram.env"; set +a; }
+notify() {
+  osascript -e "display notification \"$2\" with title \"Kaniti ops\" subtitle \"$1\"" >/dev/null 2>&1 || true
+  if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+    curl -s -m 15 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=🛒 Kaniti ops · $1: $2" >/dev/null || true
+  fi
+}
 
 echo "== check $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
