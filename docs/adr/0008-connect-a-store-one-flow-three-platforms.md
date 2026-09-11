@@ -115,10 +115,14 @@ inside Kaniti's WebView (`apps/mobile/src/screens/OrderOnDevice.tsx`). Each stor
 `cartJs` recipe (`apps/mobile/src/lib/stores.ts`) that, inside the store's page, looks products
 up by barcode through the store's own catalogue and adds them through the store's own cart API:
 
-- **Rami Levy** — `POST www.rami-levy.co.il/api/v2/cart` with `items:[{C,Quantity}]`, posted
-  through the page's own axios so its bearer rides along. Barcode match verified live
-  (`e2e/cart-recipe-lab.mjs`); the cart itself returns 504 for a guest with no branch/slot and
-  succeeds once the session carries an address, which a connected account has.
+- **Rami Levy** — `POST www.rami-levy.co.il/api/v2/cart` with `{store, isClub, supplyAt:<ISO now>,
+  items:{"<itemId>":"1.00"}, meta:null}`, posted through the page's own axios so its bearer rides
+  along; **no EcomToken header for a guest** (a literal `EcomToken: 0` hangs the backend), the
+  user's token when signed in. Branch = the selected address's `store_id`, else the user's own
+  `store_id` (home branch); the default 331 stocks a different range. Captured from the site with
+  `e2e/rl-cart-capture.mjs`. **Verified live 2026-09-11 with a real account:** signed in by SMS
+  on the person's phone, order → cart status 200, the item in Rami Levy's cart (the store then
+  showed it out of stock at that branch - its own truth; the cart answer carries no stock flag).
 - **Shufersal** — `POST /online/he/cart/add` (`productCodePost`, `qty`, CSRF), Hybris. Needs a
   signed-in session; anonymous, its own login appears in the same WebView.
 - **Hatzi Hinam** — `GET /proxy/item/getItemByBarkod/{barcode}` → `POST /proxy/item/addItemToCart`
