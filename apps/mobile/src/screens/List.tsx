@@ -1,3 +1,4 @@
+import { formatSize, sizeFromName } from '@fca/domain';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -63,7 +64,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const dealsRef = useRef<ScrollView | null>(null);
   useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
   useEffect(() => {
-    api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([]));
+    api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([]));
   }, [lines, api, household.id]);
 
   // Debounced search while typing. Only where a catalogue exists.
@@ -109,7 +110,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     say(tr('addedN', { n: picks.length }));
   };
   const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
-  const addHit = (h: SearchHit) => addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), imageUrl: h.imageUrl });
+  const addHit = (h: SearchHit) => { const size = formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name); addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), ...(size ? { size } : {}), imageUrl: h.imageUrl }); };
   const addUsual = (p: ProductPreference) => addLine(lineFromPref(p));
   const remove = (id: string) => { tap(); setLines((xs) => xs.filter((x) => x.id !== id)); };
   const bump = (id: string, d: number) => { tap(); setLines((xs) => xs.map((x) => x.id !== id ? x : (x.amount !== undefined && x.unit) ? { ...x, amount: Math.max(0.5, x.amount + d) } : { ...x, packQty: Math.max(1, (x.packQty ?? 1) + d) })); };
@@ -152,7 +153,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                     <Text style={[s.body, { fontSize: 15 }]} numberOfLines={2}>{h.name}</Text>
                     <View style={[s.rowStart, { marginTop: 3 }]}>
                       {h.brand ? <Chip text={h.brand} tone="good" /> : null}
-                      {h.sizeQty ? <Text style={s.faint}>{h.sizeQty}{h.sizeUnit}</Text> : null}
+                      {(() => { const sz = formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name); return sz ? <Chip text={sz} tone="neutral" /> : null; })()}
                     </View>
                   </View>
                 </View>
@@ -248,7 +249,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                   <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
                   <View style={{ flex: 1 }}>
                     <Text style={[s.body, { fontSize: 16 }]} numberOfLines={1}>{item.query}</Text>
-                    {item.brand ? <Text style={s.faint}>{item.brand}</Text> : null}
+                    {/* Brand and pack size under the name: "תנובה · 1 ליטר", so two milks are never the same line. */}
+                    {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); const bits = [item.brand, sz].filter(Boolean); return bits.length ? <Text style={s.faint}>{bits.join(' · ')}</Text> : null; })()}
                   </View>
                 </View>
                 <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
