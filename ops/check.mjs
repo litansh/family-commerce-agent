@@ -22,7 +22,8 @@ const run = (name, cmd, cwd, timeoutMs, judge) => new Promise((done) => {
   let out = '';
   p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
   const timer = setTimeout(() => { p.kill('SIGKILL'); out += '\n[timeout]'; }, timeoutMs);
-  p.on('close', (code) => { clearTimeout(timer); const j = judge(out, code); done({ name, ok: j.ok, summary: j.summary, code, seconds: Math.round((Date.now() - t0) / 1000), tail: out.split('\n').filter(Boolean).slice(-25).join('\n') }); });
+  // A check that could not run to a verdict (timeout, no network) is 'unknown', not a failure: the two are opposite instructions.
+  p.on('close', (code) => { clearTimeout(timer); const j = judge(out, code); const unknown = /\[timeout\]/.test(out) || /ENOTFOUND|ECONNREFUSED|fetch failed/.test(out) && !j.ok; done({ name, ok: j.ok, unknown, summary: unknown ? `unknown — ${j.summary}` : j.summary, code, seconds: Math.round((Date.now() - t0) / 1000), tail: out.split('\n').filter(Boolean).slice(-25).join('\n') }); });
 });
 const strip = (s) => s.replace(/\(node:\d+\) .*\n|\(Use `node --trace-warnings.*\n|Reparsing as ES module.*\n|To eliminate this warning.*\n/g, '');
 
@@ -47,7 +48,7 @@ if (names.includes('sim')) results.push(await CHECKS.sim());
 const at = new Date().toISOString();
 console.log(`\nKaniti health · ${at}`);
 console.log('check     ok   time   summary');
-for (const r of results) console.log(`${r.name.padEnd(9)} ${(r.ok ? 'ok' : 'BAD').padEnd(4)} ${String(r.seconds + 's').padEnd(6)} ${r.summary}`);
+for (const r of results) console.log(`${r.name.padEnd(9)} ${(r.ok ? 'ok' : r.unknown ? '?' : 'BAD').padEnd(4)} ${String(r.seconds + 's').padEnd(6)} ${r.summary}`);
 const report = { at, ok: results.every((r) => r.ok), results };
 const stamp = at.replace(/[:.]/g, '-');
 writeFileSync(`${homedir()}/.kaniti/health/${stamp}.json`, JSON.stringify(report, null, 1));

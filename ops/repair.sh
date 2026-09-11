@@ -21,7 +21,10 @@ notify() {
 
 echo "== check $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
-  notify "healthy" "every check passed"; exit 0
+  notify "healthy" "every check passed"
+  # The briefing goes out every day, healthy or not: its absence is what a dead bot looks like.
+  node ops/briefing.mjs 2>&1 | tee -a "$LOG"
+  exit 0
 fi
 
 echo "== repair $(date)" | tee -a "$LOG"
@@ -33,7 +36,8 @@ claude -p "$PROMPT" --permission-mode acceptEdits --max-turns 120 \
 
 echo "== recheck $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
-  notify "repaired" "checks pass after the repair run"; exit 0
+  notify "repaired" "checks pass after the repair run"; node ops/briefing.mjs 2>&1 | tee -a "$LOG"; exit 0
 fi
 notify "still unhealthy" "see $LOG"
+node ops/briefing.mjs 2>&1 | tee -a "$LOG"
 exit 1
