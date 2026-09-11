@@ -137,7 +137,7 @@ export const STORES: Record<string, StoreDef> = {
     // Not in this branch? try without a branch, then one by one.
     const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
   // Still missing: the store's own text search by the product name, first hit that carries a barcode.
-  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const hit=arr.find(it=>it&&(it.id||it.C));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
+  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const toks=String(l.name).split(/\\s+/).filter(t=>t.length>=3);const hit=arr.find(it=>it&&(it.id||it.C)&&toks.some(t=>String(it.name||it.Name||'').includes(t)));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
   try{const S=st&&st.state||{};const keys=(o)=>o&&typeof o==='object'?Object.keys(o).slice(0,25):typeof o;const au=S.authuser||{};const u=(st&&st.getters&&st.getters['authuser/loggedInUser'])||au.user||null;const addrCands={};for(const k of Object.keys(au)){const v=au[k];if(Array.isArray(v)&&v.length&&v[0]&&typeof v[0]==='object')addrCands[k]=keys(v[0]);}
     window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'cart progress',store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,state:{authuser:keys(au),user:keys(u),userArrays:addrCands,cart:keys(S.cart),checkout:keys(S.checkout),getters:Object.keys((st&&st.getters)||{}).filter(g=>/address|store|branch|supply/i.test(g)).slice(0,20)}}));}catch(e){}
   if(branchFrom==='default'&&ecom){
@@ -146,14 +146,19 @@ export const STORES: Record<string, StoreDef> = {
     for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
     window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
   const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
-  const items=Object.keys(qty).map(id=>({C:isNaN(+id)?id:+id,Quantity:qty[id]}));
+  // The site's own helper (collect.js pluck('Quantity','C')) builds items as a MAP {itemId: quantity}.
+  // Captured from the site itself (e2e/rl-cart-capture.mjs): quantities are strings with two
+  // decimals and supplyAt is the current time as an ISO timestamp - null makes the backend hang.
+  const items={};for(const id of Object.keys(qty))items[id]=Number(qty[id]).toFixed(2);
+  let supplyAt=new Date().toISOString();try{const sd=st&&st.getters&&st.getters['checkout/getSupplyDay'];if(sd&&typeof sd.supplyAt==='string')supplyAt=sd.supplyAt;}catch(e){}
   let cartStatus=0,via='';
-  if(items.length){
-    const body={store,isClub,supplyAt:null,items,meta:null};
+  if(Object.keys(items).length){
+    const body={store:isNaN(+store)?store:+store,isClub,supplyAt,items,meta:null};
     // Prefer the site's own axios: its request interceptor carries the (anonymous or signed-in) bearer.
-    try{if(n&&n.$axios&&n.$axios.post){const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,{headers:{EcomToken:String(ecom)}}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
+    // Guests: the site's interceptor sends NO EcomToken header (config flag EcomToken:0 tells it to skip); a literal 'EcomToken: 0' header makes the backend hang. Signed in: the user's token.
+    try{if(n&&n.$axios&&n.$axios.post){const cfg=ecom?{headers:{EcomToken:String(ecom)}}:{EcomToken:0};const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,cfg),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
     if(cartStatus!==200){
-      const h={'content-type':'application/json',accept:'application/json'};if(auth)h.Authorization=auth;h.EcomToken=String(ecom);
+      const h={'content-type':'application/json;charset=utf-8',accept:'application/json, text/plain, */*'};if(auth)h.Authorization=auth;if(ecom)h.EcomToken=String(ecom);
       const r=await tfetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)},15000);cartStatus=r.status;via=via+'+fetch';
     }
     if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
