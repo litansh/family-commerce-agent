@@ -57,7 +57,11 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     if (cur.rest.length) setOnDevice({ ...cur.rest[0]!, rest: cur.rest.slice(1), best: cur.best, q: cur.q });
     else { setOnDevice(null); onChoose(cur.best, cur.q); }
   };
-  const orderBest = async (best: PurchaseOption, q: QuoteResult) => {
+  const orderBest = async (bestIn: PurchaseOption, q: QuoteResult) => {
+    let best = bestIn;
+    // Driven simulator runs may pin the store to order from (EXPO_PUBLIC_E2E_ORDER_STORE); inert otherwise.
+    const pin = process.env['EXPO_PUBLIC_E2E_ORDER_STORE'];
+    if (pin) { const alt = q.options.find((o) => o.legs.length === 1 && retailerOf(o.legs[0]!.storefrontId) === pin); if (alt) best = alt; }
     const legs = legsFor(best, q);
     if (legs.length === 0) { onChoose(best, q); return; }
     if (Platform.OS !== 'web') {
