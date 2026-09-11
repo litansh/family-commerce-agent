@@ -269,6 +269,8 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                   // signed in for a single poll and marked a store connected that was not.
                   if (d === 'signedin:1' && ++seenIn.current >= 2) {
                     setSignedIn(true);
+                    // The store itself says the person is in: any "needs re-connecting" suspicion is wrong, clear it now.
+                    markLinked(storeId);
                     if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
                   }
                   else if (d.startsWith('session:')) { void postSession(d.slice(8)); }

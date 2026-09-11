@@ -35,8 +35,19 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
   const finish = (verdict: string) => {
     if (finished.current) return; finished.current = true;
     void AsyncStorage.setItem(KEY(storeId), String(Date.now()));
-    void api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { verdict, looks: looks.current } }).catch(() => null);
-    if (verdict === 'out') markNeedsRelink(storeId);
+    void (async () => {
+      // "Out" on one visit is a suspicion, not a verdict: a page that had not restored its session
+      // once flagged a store the person was in fact signed in to. Only two "out" visits at least four
+      // hours apart mark a store; any "in" clears the suspicion. The family is never asked on a guess.
+      const OUT = `fca.keepalive.out.${storeId}`;
+      let decided = verdict;
+      if (verdict === 'out') {
+        const first = Number((await AsyncStorage.getItem(OUT)) ?? 0);
+        if (first && Date.now() - first > 4 * 3600_000) { markNeedsRelink(storeId); decided = 'out-confirmed-twice'; }
+        else { if (!first) await AsyncStorage.setItem(OUT, String(Date.now())); decided = 'out-suspected'; }
+      } else if (verdict === 'in') await AsyncStorage.removeItem(OUT);
+      void api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { verdict: decided, looks: looks.current } }).catch(() => null);
+    })();
     onDone();
   };
   useEffect(() => { const t = setTimeout(() => finish('timeout'), 60_000); return () => clearTimeout(t); }, []);
