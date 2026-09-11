@@ -383,7 +383,7 @@ export const STORES: Record<string, StoreDef> = {
   loginUrl: 'https://www.shufersal.co.il/online/he/login',
   signup: { url: 'https://www.shufersal.co.il/online/he/register', asks: ['name', 'id', 'phone', 'email', 'birthdate', 'password'] },
   }),
-  'carrefour': storaiStore('carrefour', 'קרפור / ביתן', 'www.ybitan.co.il', /carrefour|ybitan|quik/i, false),
+  'carrefour': storaiStore('carrefour', 'קרפור / ביתן', 'www.ybitan.co.il', /carrefour|bitan|quik/i, false),
   'keshet-teamim': storaiStore('keshet-teamim', 'קשת טעמים', 'www.keshet-teamim.co.il', /keshet/i, false),
   'mahsanei-hashuk': storaiStore('mahsanei-hashuk', 'מחסני השוק', 'www.mck.co.il', /mck|mahsanei|hashuk/i, false),
   'tiv-taam': storaiStore('tiv-taam', 'טיב טעם', 'www.tivtaam.co.il', /tiv-?taam/i, false),
