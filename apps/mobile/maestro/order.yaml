@@ -35,5 +35,6 @@ appId: com.litansh.kaniti
 # Terminal state: the store's cart is ready, or (with no connected account) the
 # store's own sign-in is shown so the person can complete it - both are correct.
 - extendedWaitUntil:
-    visible: { text: ".*(הסל מוכן|פריט 1 מתוך|כדי שנמלא את הסל).*" }
+    visible: { text: ".*הסל מוכן.*" }
     timeout: 120000
+- assertVisible: { text: "[1-9][0-9]* נוספו" }
