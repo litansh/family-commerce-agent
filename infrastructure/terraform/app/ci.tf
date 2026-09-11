@@ -15,6 +15,34 @@ variable "github_repo" {
 
 resource "aws_iam_role" "github_deploy" {
   name = "${var.name}-github-deploy"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main" }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "github_deploy" {
+  name = "${var.name}-github-deploy"
+  role = aws_iam_role.github_deploy.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
+      Resource = [aws_lambda_function.api.arn, aws_lambda_function.refresh.arn, aws_lambda_function.alerts.arn]
+    }]
+  })
+}
+
+output "github_deploy_role_arn" { value = aws_iam_role.github_deploy.arn }
 
 # The agents' key for pull-request reviews, the migration-agent way: an SSM SecureString whose
 # value is entered once by `ops/secrets.sh` (prompted, never on a command line, never in state),
@@ -36,27 +64,12 @@ resource "aws_iam_role" "github_review" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main" }
         StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*" }
       }
     }]
   })
 }
 
-resource "aws_iam_role_policy" "github_deploy" {
-  name = "${var.name}-github-deploy"
-  role = aws_iam_role.github_deploy.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
-      Resource = [aws_lambda_function.api.arn, aws_lambda_function.refresh.arn, aws_lambda_function.alerts.arn]
-    }]
-  })
-}
-
-output "github_deploy_role_arn" { value = aws_iam_role.github_deploy.arn }
 resource "aws_iam_role_policy" "github_review" {
   name = "${var.name}-github-review"
   role = aws_iam_role.github_review.id
