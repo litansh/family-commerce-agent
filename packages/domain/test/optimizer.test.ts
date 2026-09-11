@@ -266,8 +266,3 @@ test('a basket missing a line is ranked as if completed at the cheapest price of
   assert.equal(b.missingEstimate, shekels(80), 'the salmon at A plus one top-up delivery');
   assert.equal(r.options[0]!.legs[0]!.storefrontId, 'a', 'A wins: ₪100 complete beats B ₪22 + ₪80 to complete');
 });
-  assert.equal(r2.options[0]!.legs[0]!.storefrontId, 'x');
-  const zOpt = r2.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'z')!;
-  assert.equal(zOpt.missingEstimate, undefined);
-  assert.equal(r2.options[r2.options.length - 1], zOpt);
-});
