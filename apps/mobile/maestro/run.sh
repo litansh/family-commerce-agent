@@ -19,9 +19,9 @@ if [ "${REBUILD:-0}" = "1" ] || [ ! -d "$APP" ]; then
 fi
 xcrun simctl install "$DEV" "$APP"
 # Metro serves the JS; the dev client opens it through its own URL scheme.
-if ! curl -s -o /dev/null http://localhost:8081/status; then (EXPO_PUBLIC_SKIP_INTRO=1 EXPO_PUBLIC_E2E_EMAIL="$EMAIL" EXPO_PUBLIC_E2E_PASSWORD="$PASSWORD" EXPO_PUBLIC_E2E_RESET_LIST=1 EXPO_PUBLIC_E2E_ORDER_STORE=rami-levy CI=1 npx expo start --port 8081 > /tmp/metro.log 2>&1 &); until curl -s -o /dev/null http://localhost:8081/status; do sleep 2; done; fi
+if ! curl -s -o /dev/null http://localhost:8082/status; then (EXPO_PUBLIC_SKIP_INTRO=1 EXPO_PUBLIC_E2E_EMAIL="$EMAIL" EXPO_PUBLIC_E2E_PASSWORD="$PASSWORD" EXPO_PUBLIC_E2E_RESET_LIST=1 EXPO_PUBLIC_E2E_ORDER_STORE=rami-levy CI=1 npx expo start --port 8082 > /tmp/metro.log 2>&1 &); until curl -s -o /dev/null http://localhost:8082/status; do sleep 2; done; fi
 xcrun simctl terminate "$DEV" com.litansh.kaniti 2>/dev/null || true
-xcrun simctl openurl "$DEV" "com.litansh.kaniti://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+xcrun simctl openurl "$DEV" "com.litansh.kaniti://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082"
 mkdir -p maestro/shots
 FLOWS=("${@:-all}")
 for f in ${FLOWS[@]}; do maestro --device "$DEV" test -e EMAIL="$EMAIL" -e PASSWORD="$PASSWORD" "maestro/$f.yaml" || true; xcrun simctl io "$DEV" screenshot "maestro/shots/$f.png" >/dev/null 2>&1; done
