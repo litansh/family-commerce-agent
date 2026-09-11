@@ -40,7 +40,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'tabs' });
   const lines = useList();
   useLanguage();
-  const api = useMemo(() => (tokens ? new Api(tokens.idToken) : null), [tokens]);
+  // The client asks for a token before every call: `loadTokens` renews it near
+  // expiry, so an app left open for hours keeps working; a dead session signs out.
+  const api = useMemo(() => (tokens ? new Api(async () => (await loadTokens())?.idToken ?? null, () => { void signOut(); setTokens(null); }) : null), [tokens]);
 
   // Sliding between the four windows. Only the active one is mounted; on a
   // change it slides in from the side it lives on (mirrored for Hebrew), and
