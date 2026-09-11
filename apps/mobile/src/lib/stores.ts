@@ -215,6 +215,25 @@ export const STORES: Record<string, StoreDef> = {
     // addresses (403 "Just a moment", verified from a Lambda, 2026-09-10): phone only.
     signup: { url: 'https://shop.hazi-hinam.co.il/registration/personalDetails', asks: ['name', 'id', 'phone', 'email', 'address', 'password'] },
     sessionKeys: ['H_UUID'],
+    cartUrl: 'https://shop.hazi-hinam.co.il/checkout/cart',
+    // Angular over /proxy/: resolve a barcode with item/getItemByBarkod/{barcode},
+    // then item/addItemToCart {ItemId,Quantity,Type,IsCalculateCart}. The session
+    // (H_UUID + bearer the page holds) makes these the person's own cart.
+    cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
+  const B='https://shop.hazi-hinam.co.il/proxy/';
+  let auth='';try{auth=(window.sessionStorage.getItem('access_token')||window.localStorage.getItem('access_token')||'');}catch(e){}
+  const H={accept:'application/json','content-type':'application/json; charset=utf-8'};if(auth)H.Authorization=/^Bearer/i.test(auth)?auth:'Bearer '+auth;
+  const j=async(u,opt)=>{const r=await fetch(B+u,Object.assign({credentials:'include',headers:H},opt||{}));const t=await r.text();let d=null;try{d=JSON.parse(t)}catch(e){}return {s:r.status,d};};
+  for(const l of L){if(!l.gtin){out.push({gtin:l.gtin,status:'missing'});continue;}
+    const it=await j('item/getItemByBarkod/'+encodeURIComponent(l.gtin));
+    const item=it.d&&it.d.IsOK&&it.d.Results&&it.d.Results.Item;
+    if(!item){out.push({gtin:l.gtin,status:'missing'});continue;}
+    const id=item.Id||item.ItemId;
+    const add=await j('item/addItemToCart',{method:'POST',body:JSON.stringify({ItemId:id,Quantity:l.qty||1,Type:0,IsCalculateCart:true})});
+    const ok=add.d&&add.d.IsOK;
+    out.push({gtin:l.gtin,status:ok?'added':(add.s>=500?'error':'missing'),detail:item.ItemName||item.Name||String(add.s)});}
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://shop.hazi-hinam.co.il/checkout/cart',diag:{auth:!!auth}}));
+}catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
 };
 
