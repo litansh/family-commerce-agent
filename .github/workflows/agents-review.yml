@@ -18,13 +18,22 @@ jobs:
   review:
     if: ${{ !contains(github.event.pull_request.title, '[skip-agents]') }}
     runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
+      - name: is the agents' key configured?
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::ANTHROPIC_API_KEY is not set as a repository secret; the agents' review is skipped until it is."
       - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
+        if: env.HAS_KEY == 'true'
         with: { node-version: '22', cache: npm }
-      - run: npm ci || npm install
+      - if: env.HAS_KEY == 'true'
+        run: npm ci || npm install
       - uses: anthropics/claude-code-action@v1
+        if: env.HAS_KEY == 'true'
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
