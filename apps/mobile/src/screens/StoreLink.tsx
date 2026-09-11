@@ -45,7 +45,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     if (!WebView) return;
     const id = setInterval(() => {
       ticks.current += 1;
-      const js = `(async()=>{try{const ok=await (${store!.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`;
+      // While a code box is on screen, do not run the signed-in check: Shufersal's
+      // check fetches /my-account, which redirects and can disturb the OTP page.
+      const js = `(async()=>{try{if(document.querySelector('input[autocomplete="one-time-code"]')){window.ReactNativeWebView.postMessage('signedin:0');return;}const ok=await (${store!.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`;
       (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js);
       // Once, after a few seconds: report what the check actually sees, so a
       // silent "connected but nothing happens" is debuggable from the server log.
@@ -67,7 +69,13 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const OTP_JS = `(()=>{if(window.__kanitiOtp)return;window.__kanitiOtp=1;
     const isCode=(i)=>{const a=(i.getAttribute('autocomplete')||'')+' '+(i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')+' '+(i.getAttribute('aria-label')||'');if(/phone|tel|zip|מיקוד|טלפון|נייד|idNumber|תעודת/i.test(a)||i.type==='tel')return false;const ml=Number(i.getAttribute('maxlength')||0);return /one-time|otp|sms|code|קוד|verif|אימות/i.test(a)||(i.getAttribute('inputmode')==='numeric'&&ml>=4&&ml<=8&&i.type!=='password')||(/^\\\\d\\*$/.test(i.getAttribute('pattern')||'')&&ml>=4&&ml<=8);};
     const fire=(i)=>{for(const t of ['input','keydown','keyup','change'])try{i.dispatchEvent(t==='input'?new Event('input',{bubbles:true}):t==='change'?new Event('change',{bubbles:true}):new KeyboardEvent(t,{bubbles:true,key:'0'}));}catch(e){}};
-    const submitOf=(i)=>{const f=i.closest('form');const c=f||document;const b=[...c.querySelectorAll('button,input[type="submit"],a.btn,[role="button"]')].find(x=>x.getBoundingClientRect().width>0&&!x.disabled&&/אימות|אישור|המשך|כניסה|שלח|התחבר|verify|continue|submit|next|ok/i.test((x.textContent||x.value||'')+' '+(x.getAttribute('aria-label')||'')));return b||null;};
+    const submitOf=(i)=>{const f=i.closest('form');const c=f||document;
+      // NEVER the "send/resend a code" button - clicking it invalidates the code the person just typed.
+      const resend=(t)=>/שלח.*קוד|קוד.*חדש|resend|send.*code|get.*code/i.test(t);
+      const label=(x)=>((x.textContent||x.value||'')+' '+(x.getAttribute('aria-label')||'')).trim();
+      const btns=[...c.querySelectorAll('button,input[type="submit"],a.btn,[role="button"]')].filter(x=>x.getBoundingClientRect().width>0&&!x.disabled&&!resend(label(x)));
+      // Confirm/continue only. Prefer an exact "אישור"/verify; then a contains match.
+      return btns.find(x=>/^(אישור|אמת|המשך|כניסה|התחבר|verify|confirm|continue|submit|ok)$/i.test(label(x)))||btns.find(x=>/אישור|אמת|המשך|כניסה|התחבר|verify|confirm|continue|submit/i.test(label(x)))||null;};
     const report=(i,why)=>{try{const f=i.closest('form');const out={why,href:location.href,field:{name:i.name,id:i.id,type:i.type,ml:i.maxLength,ac:i.getAttribute('autocomplete'),len:(i.value||'').length},form:f?{id:f.id,action:f.getAttribute('action'),method:f.method}:null,buttons:[...(f||document).querySelectorAll('button,input[type="submit"]')].filter(x=>x.getBoundingClientRect().width>0).map(x=>((x.textContent||x.value||'').trim().slice(0,30)+(x.disabled?'(disabled)':''))).slice(0,8),text:(document.body.innerText||'').replace(/\\\\s+/g,' ').slice(0,300)};window.ReactNativeWebView.postMessage('probe:'+JSON.stringify(out));}catch(e){}};
     const tune=()=>{for(const i of document.querySelectorAll('input')){if(i.type==='hidden'||i.type==='password'||i.type==='email'||i.type==='search')continue;if(!isCode(i))continue;
       if(i.getAttribute('autocomplete')!=='one-time-code'){i.setAttribute('autocomplete','one-time-code');i.setAttribute('inputmode','numeric');i.setAttribute('pattern','[0-9]*');}
