@@ -48,8 +48,11 @@ for (const id of ids) {
     for (const r of res.results || []) console.log(`   ${r.status.padEnd(7)} ${r.gtin || ''} ${r.detail || ''}`);
     // Read the store's own cart back, to confirm the lines really landed.
     if (id === 'rami-levy') {
-      const n = await page.evaluate(async () => { try { const nx = window.$nuxt; const c = nx && nx.$store && nx.$store.getters['cart/getCartItems']; return Array.isArray(c) ? c.length : (nx && nx.$store && nx.$store.state && nx.$store.state.cart && (nx.$store.state.cart.items || []).length) || 'n/a'; } catch (e) { return 'err ' + e.message; } });
-      console.log(`   store cart now holds: ${n}`);
+      const n = await page.evaluate(async () => { try { const nx = window.$nuxt; const c = nx && nx.$store && nx.$store.getters['cart/getCartItems']; const items = (nx && nx.$store && nx.$store.state && nx.$store.state.cart && nx.$store.state.cart.items) || null; return items ? items.length : 'no cart state'; } catch (e) { return 'err ' + e.message; } });
+      console.log(`   store cart state holds: ${n}`);
+      await page.goto('https://www.rami-levy.co.il/he/basket', { waitUntil: 'domcontentloaded', timeout: 45000 }); await page.waitForTimeout(5000);
+      const badge = await page.evaluate(() => { const t=(document.body.innerText||'').replace(/\s+/g,' '); const m=t.match(/(\d+)\s*הסל שלי/); return m?m[1]:'?'; });
+      console.log(`   basket page count: ${badge}`);
     }
     await page.screenshot({ path: `e2e/shots/cart-${id}.png` });
   } catch (e) { console.log(`\n== ${id}: ${String(e).slice(0, 160)}`); }
