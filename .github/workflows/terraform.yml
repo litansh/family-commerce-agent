@@ -1,0 +1,102 @@
+name: terraform
+
+# Infrastructure the same way as code: a pull request that touches the stack gets a plan as a
+# comment; the merge to main applies it. State lives in S3; the workflow assumes the
+# fca-github-terraform role through OIDC. No laptop needs AWS credentials for this stack.
+on:
+  pull_request:
+    paths: ['infrastructure/terraform/app/**', '.github/workflows/terraform.yml']
+  push:
+    branches: [main]
+    paths: ['infrastructure/terraform/app/**', '.github/workflows/terraform.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: terraform-fca
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: 'true'
+  TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TF_VAR_telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Until the first local apply has created the role, a plan cannot run: skip with a notice, never red.
+      - uses: aws-actions/configure-aws-credentials@v4
+        id: aws
+        continue-on-error: true
+        with:
+          role-to-assume: arn:aws:iam::437075214009:role/fca-github-terraform
+          aws-region: eu-central-1
+      - if: steps.aws.outcome != 'success'
+        run: echo "::notice::The fca-github-terraform role is not there yet (first local apply pending); plan skipped."
+      - uses: hashicorp/setup-terraform@v3
+        if: steps.aws.outcome == 'success'
+        with: { terraform_version: '1.15.8' }
+      - uses: actions/setup-node@v4
+        if: steps.aws.outcome == 'success'
+        with: { node-version: '22', cache: npm }
+      - if: steps.aws.outcome == 'success'
+        run: npm ci || npm install
+      - if: steps.aws.outcome == 'success'
+        run: npm run build -w apps/api
+      - name: plan
+        id: plan
+        if: steps.aws.outcome == 'success'
+        working-directory: infrastructure/terraform/app
+        run: |
+          terraform init -input=false
+          set +e
+          terraform plan -no-color -input=false -detailed-exitcode -out=tfplan | tee /tmp/plan.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          case "$code" in 0) echo "changes=false" >> "$GITHUB_OUTPUT";; 2) echo "changes=true" >> "$GITHUB_OUTPUT";; *) exit "$code";; esac
+      - name: comment the plan on the pull request
+        if: steps.aws.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('/tmp/plan.txt', 'utf8');
+            const tail = plan.length > 60000 ? plan.slice(-60000) : plan;
+            const body = `### terraform plan (${'${{ steps.plan.outputs.changes }}' === 'true' ? 'changes' : 'no changes'})\n\n<details><summary>plan</summary>\n\n\`\`\`\n${tail}\n\`\`\`\n</details>`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+
+  apply:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::437075214009:role/fca-github-terraform
+          aws-region: eu-central-1
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: '1.15.8' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci || npm install
+      - run: npm run build -w apps/api
+      - name: apply
+        working-directory: infrastructure/terraform/app
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve -input=false -no-color | tail -40
+      - name: tell the channel
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || exit 0
+          curl -s -m 15 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=🛒 terraform apply ${GITHUB_SHA::7}: ${{ job.status }} — $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null || true

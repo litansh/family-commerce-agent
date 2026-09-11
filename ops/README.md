@@ -49,3 +49,18 @@ families is known the same hour, not the next morning.
 ## Deploying
 
 CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and the app typecheck; then builds the API, updates `fca-api`, `fca-branch-prices` and `fca-alerts` through the GitHub OIDC role (`fca-github-deploy`, in Terraform `ci.tf`), and proves production with `ops/api-health.mjs` and both shopper carts. The result is posted to the channel. Secrets in the repo: `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+
+## Terraform from GitHub
+
+`.github/workflows/terraform.yml`: a pull request that touches `infrastructure/terraform/app/**` gets a plan as a PR comment; the merge to main applies it through the `fca-github-terraform` OIDC role, with the state in S3 (`fca-tfstate-<account>`, `backend.tf`). Secrets reach Terraform as `TF_VAR_*` from the repository secrets; non-secret variables live in committed `*.auto.tfvars`. One local apply created the bucket and the roles and migrated the state; after that no laptop needs AWS credentials for the stack. Infrastructure changes are pull requests like everything else.
+## Agents on every pull request
+
+`.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. The key lives in AWS SSM as a SecureString (`/fca/anthropic-key`, put there once by `ops/secrets.sh`, prompted and never on a command line) and is read at run time through the `fca-github-review` OIDC role; a repository secret `ANTHROPIC_API_KEY` also works. Add `[skip-agents]` to a PR title to skip it (docs-only PRs).
+
+## Who decides
+
+Every decision goes through the agent that owns it: presentation → app-designer, promises → product-qa, stores → store-recipe-fixer, price files → price-portal-fixer, simulator → sim-flow-fixer, API and rules → api-fixer. The orchestrator routes and, when agents disagree, decides; the decision is written into the PR body.
+
+## A red check never reaches the owner
+
+`ops/pr.sh` opens the PR, then watches its checks. A red check is handed to the api-fixer agent on the same branch (the failing log verbatim, the workflow's own commands to reproduce), pushed, and watched again, up to three times. The Telegram post carries the final state; a PR is announced for approval only once its checks are green.
