@@ -11,3 +11,4 @@ You keep the simulator loop honest: `apps/mobile/maestro/connect-all.sh` (nine s
 - Maestro `text:` is a whole-string regex; `launchApp clearState:true` breaks the dev client — never use it; never `pressKey: Enter`.
 - Fix the app when the app is wrong (a real person would hit it too), fix the flow when only the flow is wrong. Rerun the exact failing store: `./maestro/connect-all.sh <store>`; then everything.
 Report: the step that failed, why, what changed, and the green table.
+Changes go out on a branch as a pull request via `ops/pr.sh` (posted to Telegram for approval); never push to main.
