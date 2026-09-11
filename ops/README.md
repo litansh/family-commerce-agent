@@ -45,3 +45,7 @@ Every store screen on a phone reports load errors, HTTP 4xx/5xx and Cloudflare
 guards to the API (`import-history` log events with `diag`). `infrastructure/terraform/app/alarms.tf`
 turns those into a CloudWatch alarm that e-mails the owner, so a store breaking for real
 families is known the same hour, not the next morning.
+
+## Deploying
+
+CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and the app typecheck; then builds the API, updates `fca-api`, `fca-branch-prices` and `fca-alerts` through the GitHub OIDC role (`fca-github-deploy`, in Terraform `ci.tf`), and proves production with `ops/api-health.mjs` and both shopper carts. The result is posted to the channel. Secrets in the repo: `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
