@@ -69,7 +69,8 @@ check('every option is explained', options.every((o) => o.explanation?.reason &&
 
 // Promise 4 — numbers are honest: an option's legs add up to its cash; the cheapest is the lowest cash.
 check('every option adds up (legs items + fees = cash)', options.every((o) => Math.abs(o.legs.reduce((n, l) => n + l.itemsSubtotal + l.deliveryFee, 0) + (o.travel ? o.travel.fuelCost + o.travel.parkingCost : 0) - o.cashCost) <= 1), `${options.length} options`);
-check('the first option is the cheapest', !best || options.every((o) => o.cashCost >= best.cashCost), best ? money(best.cashCost) : '-');
+const comparable = (o) => o.cashCost + (o.missingEstimate === undefined ? (o.unpricedLineIds.length ? 10_000_000 : 0) : o.missingEstimate);
+check('the first option is the cheapest once completed (cash + the cheapest top-up of what it misses)', !best || options.every((o) => comparable(o) >= comparable(best)), best ? `${money(best.cashCost)}${best.missingEstimate ? ' + ' + money(best.missingEstimate) + ' to complete' : ''}` : '-');
 // Promise 1 — nothing disappears silently: every rejected store carries a reason and its numbers.
 check('every rejected store has a reason', (q.rejected ?? []).every((r) => r.code && r.reason && typeof r.pricedLines === 'number'), `${q.rejected?.length ?? 0} rejected`);
 // Promise 2 — "only one option" must be explainable: with several stores delivering, either more options exist
@@ -85,7 +86,7 @@ check('fast is measured (live ETAs present or windows declared)', Object.keys(et
 const split = options.find((o) => o.kind === 'split_delivered');
 const singles = options.filter((o) => o.legs.length === 1 && o.kind !== 'drive' && o.kind !== 'pickup');
 if (split) {
-  check('the split saves against the best single store', singles.length === 0 || split.cashCost < Math.min(...singles.map((s) => s.cashCost)), `${money(split.cashCost)} vs ${singles.length ? money(Math.min(...singles.map((s) => s.cashCost))) : '-'}`);
+  check('the split beats every single store once each is completed', singles.length === 0 || comparable(split) <= Math.min(...singles.map(comparable)), `${money(split.cashCost)} vs ${singles.length ? money(Math.min(...singles.map(comparable))) : '-'} completed`);
   check('the split has two real legs', split.legs.length === 2 && split.legs.every((l) => l.lineIds.length > 0), split.legs.map((l) => `${l.brand} ${l.lineIds.length}`).join(' + '));
   const mins = Object.fromEntries((q.rejected ?? []).filter((r) => r.minimumOrder).map((r) => [r.storefrontId, r.minimumOrder]));
   check('each split leg clears its store minimum where one is known', split.legs.every((l) => !mins[l.storefrontId] || l.itemsSubtotal >= mins[l.storefrontId]), split.legs.map((l) => `${l.brand} ${money(l.itemsSubtotal)}${mins[l.storefrontId] ? ' (min ' + money(mins[l.storefrontId]) + ')' : ''}`).join(' + '));
