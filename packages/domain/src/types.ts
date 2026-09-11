@@ -222,6 +222,12 @@ export interface PurchaseOption {
   readonly timeCost: Agorot;
   readonly coverageRatio: number;
   readonly unpricedLineIds: readonly string[];
+  /**
+   * What the missing lines would cost at the cheapest store that has them - so a basket
+   * that leaves an item out is ranked as if it were completed, never as "cheaper".
+   * 0 for a complete option; undefined when a missing line is priced nowhere.
+   */
+  readonly missingEstimate?: Agorot;
   readonly substitutedLineCount: number;
   /** Raw numbers behind the ranking. The LLM renders this; it never computes it. */
   readonly explanation: OptionExplanation;
