@@ -24,6 +24,8 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   notify "healthy" "every check passed"
   # The briefing goes out every day, healthy or not: its absence is what a dead bot looks like.
   node ops/briefing.mjs 2>&1 | tee -a "$LOG"
+  # The scout: who delivers to our families today, and which storefront is new or not yet connectable.
+  node --experimental-strip-types ops/store-scout.mjs 2>&1 | grep -v Warning | tee -a "$LOG"
   exit 0
 fi
 
