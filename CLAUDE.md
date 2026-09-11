@@ -1,5 +1,6 @@
 # Kaniti — shared rules for every agent in this repo
 
+- **Every decision goes through the agent that owns it; the orchestrator routes and, when two agents disagree, decides.** How something is presented → app-designer (a design proposal before code). Whether a promise holds → product-qa. A store's site → store-recipe-fixer. Price files → price-portal-fixer. Simulator flows → sim-flow-fixer. API, tests, rules → api-fixer. Nobody, the owner's assistant included, hand-fixes what an agent owns without recording the decision in the PR body (which agent, what was weighed, why). A change is a pull request; the agents review it before a person does.
 - The product is `docs/WHAT-WE-PROMISE.md`: eight promises to a family, each with how to tell it is kept. A broken promise is a bug even when every test passes; never weaken a promise to make a check pass.
 
 - The phone is the product: stores are used from the person's own device, in a WebView, as the person. No credentials or PII are stored by Kaniti; sessions live sealed in the API (ADR 0008).

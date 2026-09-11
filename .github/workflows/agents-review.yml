@@ -1,0 +1,42 @@
+name: agents review
+
+# Every pull request gets the agents' review before a person's: the product-qa agent judges the
+# change against docs/WHAT-WE-PROMISE.md and the agents' rules, with the diff, the tests and the
+# labs it can run on a Linux runner (no simulator here; that is the daily run on the Mac).
+# Needs the repository secret ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    if: ${{ !contains(github.event.pull_request.title, '[skip-agents]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci || npm install
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are Kaniti's product-qa agent reviewing pull request #${{ github.event.pull_request.number }}.
+            Read CLAUDE.md, docs/WHAT-WE-PROMISE.md and .claude/agents/product-qa.md first.
+            Then read the diff (git diff origin/main...HEAD) and judge it against the promises:
+            which promise does it keep or touch, what could it break for a family, is every number
+            still honest, does anything internal reach the screen, are there tests for the new rule.
+            Run what you can here: `npm run typecheck`, `npm test`, `npm run check:recipes -w apps/mobile`,
+            `npx tsc --noEmit -p apps/mobile/tsconfig.json`. Do not deploy and do not push.
+            Post ONE review comment on the PR: a verdict line (approve / needs changes), the promises
+            touched, findings with file and line, and what the simulator run on the Mac should look at.
+            Keep it under 40 lines. Hebrew product words may stay in Hebrew.
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(git *),Bash(npm *),Bash(npx *),Bash(node *)" --max-turns 40'
