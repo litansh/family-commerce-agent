@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ListLine } from '@fca/domain';
 
-export type Line = Omit<ListLine, 'id'> & { id: string; imageUrl?: string | null; productName?: string };
+export type Line = Omit<ListLine, 'id'> & { id: string; imageUrl?: string | null; productName?: string; /** "1 ליטר", "250 גרם" - the pack the family chose, shown so two milks are never confused. */ size?: string };
 const KEY = 'fca.list';
 
 let lines: Line[] = [];

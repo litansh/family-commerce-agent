@@ -90,7 +90,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
   const [whyNot, setWhyNot] = useState(false);
   useEffect(() => {
-    api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
+    api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
 
   if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
@@ -265,7 +265,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
             })}
           </View>
         )}
-        {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
+        {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
 
 
       </View>
