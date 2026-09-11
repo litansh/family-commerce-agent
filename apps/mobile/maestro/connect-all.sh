@@ -28,11 +28,13 @@ for entry in "${STORES[@]}"; do
   if [ $# -gt 0 ] && ! printf "%s\n" "$@" | grep -qx "$id"; then continue; fi
   xcrun simctl terminate "$DEV" com.litansh.kaniti >/dev/null 2>&1 || true
   xcrun simctl openurl "$DEV" "com.litansh.kaniti://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082" >/dev/null 2>&1
-  out=$(maestro --device "$DEV" test -e STORE="$id" -e LOGIN="$re" maestro/connect-one.yaml 2>&1)
+  # The first two rows are on screen at the top of the list; centring them scrolls them under the header.
+  scroll=true; case "$id" in rami-levy|victory) scroll=false;; esac
+  out=$(maestro --device "$DEV" test -e STORE="$id" -e LOGIN="$re" -e SCROLL="$scroll" maestro/connect-one.yaml 2>&1)
   signin=$(echo "$out" | grep -q 'is visible... COMPLETED' && echo "$out" | grep -qE 'Assert that "\$\{LOGIN\}|Assert that ".*\(' && echo yes || echo NO)
   sleep 2; xcrun simctl io "$DEV" screenshot "maestro/shots/connect/$id.png" >/dev/null 2>&1
-  back=$(maestro --device "$DEV" test -e STORE="$id" maestro/connect-back.yaml 2>&1)
-  notconn=$(echo "$back" | grep -qE "Assert that id: connect-$id is visible... COMPLETED" && echo yes || echo NO)
+  back=$(maestro --device "$DEV" test -e STORE="$id" -e SCROLL="$scroll" maestro/connect-back.yaml 2>&1)
+  notconn=$(echo "$back" | grep -qF "Assert that id: connect-\${STORE} is visible... COMPLETED" && echo yes || echo NO)
   printf "%-16s %-16s %-16s\n" "$id" "$signin" "$notconn"
   { echo "$out"; echo "$back"; } > "maestro/shots/connect/$id.log"
 done

@@ -15,10 +15,10 @@ appId: com.litansh.kaniti
 - assertVisible: "החנויות המחוברות"
 # From the top of the list, so the first rows are never left under the header.
 - swipe: { direction: DOWN, duration: 300 }
-# Only scroll when the row is off screen: centring a row that is already visible overshoots under the header.
+# SCROLL=false for the rows on screen at the top of the list: centring those scrolls them under the header.
 - runFlow:
     when:
-      notVisible: { id: "connect-${STORE}" }
+      true: ${SCROLL}
     commands:
       - scrollUntilVisible:
           element: { id: "connect-${STORE}" }
