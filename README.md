@@ -58,6 +58,22 @@ ID number or name.
 On the web every store says "connect from your phone" in one line, and the connection shows up
 on the web by itself once the phone has done it. The phone app is where the product lives.
 
+### Connection groups (`apps/mobile/src/lib/stores.ts`)
+
+Nine stores, five platforms. A store is a platform recipe plus its own facts; a fix to a platform
+fixes every chain on it. Each recipe is syntax-checked (`npm run check:recipes -w @fca/mobile`) and
+its sign-in detector is proven "not signed in" on the logged-out page, side menu open, by
+`e2e/detector-lab.mjs` (9/9).
+
+| Group | Stores | Sign in | Cart |
+|---|---|---|---|
+| stor.ai | Victory, Carrefour/Bitan, Keshet Teamim, Mahsanei HaShuk, Tiv Taam | side-menu login: SMS code (Victory) or password | per-item deep links |
+| Rami Levy (Nuxt) | Rami Levy | e-mail → SMS/voice code | native recipe, **verified live** |
+| Wolt | Wolt Market + the chains' Wolt storefronts | e-mail link / phone code | per-item deep links; live delivery minutes on compare |
+| Shufersal (Hybris) | Shufersal | e-mail + password (Face ID) | native recipe |
+| Hatzi Hinam (proxy) | Hatzi Hinam | e-mail-or-ID + password | native recipe |
+
+
 ```bash
 npm test                                   # unit tests incl. the cloud drivers (fake fetch)
 cd apps/mobile && npx expo export --platform web --output-dir dist && npx playwright test e2e/connect.spec.ts   # the web flow, API mocked
