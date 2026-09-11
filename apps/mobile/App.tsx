@@ -3,6 +3,8 @@ import { Alert, Animated, PanResponder, Platform, View } from 'react-native';
 import { t as theme } from './src/ui';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SessionKeeper } from './src/SessionKeeper';
+import { usePending } from './src/lib/pending';
 import type { PurchaseOption } from '@fca/domain';
 import { regionOf } from '@fca/domain';
 import { Api, type Household, type QuoteResult } from './src/lib/api';
@@ -110,6 +112,7 @@ export default function App() {
       : <MeScreen api={api} household={household} onSignOut={doSignOut} onShowIntro={() => setIntro(true)} />;
   }
 
+  const pendingCount = usePending().length;
   // On the web the app sits in a phone-width frame; it is a phone app that
   // happens to run in a browser, and stretched to a desktop it looks wrong.
   const frame = Platform.OS === 'web' ? { width: '100%' as const, maxWidth: 430, alignSelf: 'center' as const, flex: 1, backgroundColor: theme.bg } : { flex: 1 };
@@ -121,7 +124,8 @@ export default function App() {
           {showTabs
             ? <Animated.View {...pan.panHandlers} style={{ flex: 1, transform: [{ translateX: slide }] }}>{body}</Animated.View>
             : <View style={{ flex: 1 }}>{body}</View>}
-          {showTabs ? <TabBar active={tab} onChange={goTab} badge={lines.length || undefined} /> : null}
+          {showTabs ? <TabBar active={tab} onChange={goTab} badge={lines.length || undefined} ordersBadge={pendingCount || undefined} /> : null}
+          {household && api ? <SessionKeeper api={api} householdId={household.id} /> : null}
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

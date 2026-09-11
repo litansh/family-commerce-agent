@@ -6,7 +6,7 @@ import { t as tr } from '../lib/i18n';
 import { Button, Chip, Header, LanguagePicker, S, t } from '../ui';
 import { useLanguage } from '../lib/i18n';
 import { STORE_ORDER, STORES } from '../lib/stores';
-import { useLinked, markLinked, markUnlinked } from '../lib/linked';
+import { useLinked, useRelink, markLinked, markUnlinked } from '../lib/linked';
 import { StoreLink } from './StoreLink';
 import { Mark } from '../Logo';
 import { BUILD } from '../lib/config';
@@ -15,6 +15,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   const s = S();
   useLanguage();
   const local = useLinked();
+  const relink = useRelink();
   // The cloud's answer is the family's answer: a store connected on one phone
   // is connected on every device. The device flag is a cache of it.
   const [cloud, setCloud] = useState<Record<string, { connected: boolean; method?: string }>>({});
@@ -58,16 +59,20 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
           {/* Every store Kaniti can order from - not only the ones picked at setup. */}
           {storeIds.map((r) => {
             const on = linked.includes(r);
+            const lapsed = on && relink.includes(r);
             const otp = STORES[r]?.loginKind === 'otp';
             // On the web, a store with no cloud rung connects on the phone; say so up front.
-            const badge = on ? tr('linked', {}) : Platform.OS === 'web' ? (STORES[r]?.cloud ? tr('cloudBadge') : tr('phoneBadge')) : otp ? tr('otpBadge') : tr('pwBadge');
+            const badge = lapsed ? tr('relinkBadge') : on ? tr('linked', {}) : Platform.OS === 'web' ? (STORES[r]?.cloud ? tr('cloudBadge') : tr('phoneBadge')) : otp ? tr('otpBadge') : tr('pwBadge');
             return (
               <View key={r} testID={`store-row-${r}`} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={[s.rowStart, { flexShrink: 1, flexWrap: 'wrap' }]}>
                   <Text style={s.body} numberOfLines={1}>{STORES[r]?.name ?? r}</Text>
-                  <Chip text={badge} tone={on ? 'good' : otp || STORES[r]?.cloud ? 'good' : 'neutral'} />
+                  <Chip text={badge} tone={lapsed ? 'warn' : on ? 'good' : otp || STORES[r]?.cloud ? 'good' : 'neutral'} />
+                  {lapsed ? <Text style={[s.small, { color: t.amber, width: '100%' }]}>{tr(otp ? 'relinkWhyOtp' : 'relinkWhyPw', { s: STORES[r]?.name ?? r })}</Text> : null}
                 </View>
-                {on
+                {lapsed
+                  ? <Pressable onPress={() => setLinking(r)} hitSlop={8} testID={`relink-${r}`}><Text style={[s.link, { color: t.amber }]}>{tr('relinkNow')}</Text></Pressable>
+                  : on
                   ? <View style={[s.rowStart, { gap: 14 }]}>
                       <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('sync')}</Text></Pressable>
                       <Pressable onPress={() => { markUnlinked(r); void api.disconnectStore(household.id, r).then(refreshCloud).catch(() => null); }} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>

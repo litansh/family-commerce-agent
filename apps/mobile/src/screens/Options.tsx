@@ -8,6 +8,7 @@ import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
 import { money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
+import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
@@ -54,9 +55,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const [onDevice, setOnDevice] = useState<{ storeId: string; lines: CartLine[]; rest: { storeId: string; lines: CartLine[] }[]; best: PurchaseOption; q: QuoteResult } | null>(null);
   const onDeviceDone = async (added: readonly CartLine[]) => {
     const cur = onDevice; if (!cur) return;
-    // Teach the memory what went into the cart, then the next store if the basket is split.
-    const bought = added.filter((l) => l.gtin).map((l) => ({ phrase: l.name, gtin: l.gtin!, productName: l.name, packQty: l.qty }));
-    if (bought.length) await api.recordShop(household.id, bought).catch(() => null);
+    // The cart is filled; the purchase is the store's checkout, which is the family's. Remember it as
+    // pending: the Orders tab asks "did you buy it?" and only a yes teaches the memory. Then the next store.
+    if (added.length) addPending(cur.storeId, added);
     if (cur.rest.length) setOnDevice({ ...cur.rest[0]!, rest: cur.rest.slice(1), best: cur.best, q: cur.q });
     else { setOnDevice(null); onChoose(cur.best, cur.q); }
   };
