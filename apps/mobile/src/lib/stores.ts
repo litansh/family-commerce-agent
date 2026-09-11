@@ -127,23 +127,25 @@ export const STORES: Record<string, StoreDef> = {
   const byBarcode={};
   // The catalogue answer has shipped as data[], data.items[], items[] - read all of them, and note the shape for the log.
   const shape={};const rows=(j)=>{if(!j)return[];const c=[j.data,j.items,j.products,j.data&&j.data.items,j.data&&j.data.data,j.results];for(const x of c)if(Array.isArray(x))return x;return[];};
-  const lookup=async(body)=>{const r=await fetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));shape.keys=j&&typeof j==='object'?Object.keys(j).slice(0,6):typeof j;const arr=rows(j);shape.rows=arr.length;return arr;};
+  const tfetch=(u,o,ms)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||12000);return fetch(u,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t));};
+  const lookup=async(body)=>{const r=await tfetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify(body)},12000);const j=await r.json().catch(()=>({}));shape.keys=j&&typeof j==='object'?Object.keys(j).slice(0,6):typeof j;const arr=rows(j);shape.rows=arr.length;return arr;};
   const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(bc&&id!=null&&!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
   if(codes.length){take(await lookup({store,items:codes.join(','),itemsBy:'barcode',size:codes.length}));
     // Not in this branch? try without a branch, then one by one.
     const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
   // Still missing: the store's own text search by the product name, first hit that carries a barcode.
   const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const hit=arr.find(it=>it&&(it.id||it.C));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
+  try{window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'cart progress',store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape}));}catch(e){}
   const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   const items=Object.keys(qty).map(id=>({C:isNaN(+id)?id:+id,Quantity:qty[id]}));
   let cartStatus=0,via='';
   if(items.length){
     const body={store,isClub,supplyAt:null,items,meta:null};
     // Prefer the site's own axios: its request interceptor carries the (anonymous or signed-in) bearer.
-    try{if(n&&n.$axios&&n.$axios.post){const rr=await n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,{headers:{EcomToken:String(ecom)}});cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
+    try{if(n&&n.$axios&&n.$axios.post){const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,{headers:{EcomToken:String(ecom)}}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
     if(cartStatus!==200){
       const h={'content-type':'application/json',accept:'application/json'};if(auth)h.Authorization=auth;h.EcomToken=String(ecom);
-      const r=await fetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)});cartStatus=r.status;via=via+'+fetch';
+      const r=await tfetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)},15000);cartStatus=r.status;via=via+'+fetch';
     }
     if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
   }
