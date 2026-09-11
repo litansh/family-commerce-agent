@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Text, View } from 'react-native';
 import { STORES } from '../lib/stores';
+import { markUnlinked } from '../lib/linked';
 import { t as tr } from '../lib/i18n';
 import { Button, S, t } from '../ui';
 import { Pressable } from 'react-native';
@@ -34,6 +35,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState<number | null>(null);
   const didImport = useRef(false);
+  const notIn = useRef(0);
   const webref = useRef<import('react-native-webview').WebView | null>(null);
 
   // Native module: require lazily so the web build still loads.
@@ -185,6 +187,13 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 onLoadEnd={settle}
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
+                  if (d === 'signedin:0') {
+                    // The store's own page says "not signed in". A stale "connected" flag on this
+                    // phone (an earlier misread, an expired session) is cleared after a few looks,
+                    // so Me never keeps showing a store as connected that is not.
+                    notIn.current += 1;
+                    if (notIn.current === 3) markUnlinked(storeId);
+                  }
                   if (d === 'signedin:1') {
                     setSignedIn(true);
                     if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
