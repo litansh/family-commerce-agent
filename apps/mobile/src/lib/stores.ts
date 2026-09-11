@@ -107,7 +107,7 @@ export const STORES: Record<string, StoreDef> = {
     // `/api/v2/site/auth/login` answers 422 "recaptcha" without a widget token — phone only.
     signup: { url: 'https://www.rami-levy.co.il/he', asks: ['email', 'code'] },
     sessionKeys: ['auth._token.local', 'auth._refresh_token.local'],
-    cartUrl: 'https://www.rami-levy.co.il/he/cart',
+    cartUrl: 'https://www.rami-levy.co.il/he/basket',
     // From the site's own bundle: POST www-api…/api/v2/cart {store,isClub,supplyAt,items:{[itemId]:qty},meta}
     // with the session's EcomToken; item ids come from /api/catalog?itemsBy=barcode. Runs in the page,
     // so it is the person's own session and the store sees its own app at work.
@@ -144,7 +144,7 @@ export const STORES: Record<string, StoreDef> = {
     // Signed in but no delivery address known in this session: the cart backend hangs on the
     // default branch. Say so and let the screen hand over to the store's own pages.
     for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
-    window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
+    window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
   const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   // The site's own helper (collect.js pluck('Quantity','C')) builds items as a MAP {itemId: quantity}.
   // Captured from the site itself (e2e/rl-cart-capture.mjs): quantities are strings with two
@@ -163,7 +163,7 @@ export const STORES: Record<string, StoreDef> = {
     }
     if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
