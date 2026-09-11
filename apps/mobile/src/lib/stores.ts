@@ -121,8 +121,16 @@ export const STORES: Record<string, StoreDef> = {
   const store=(st&&st.getters&&st.getters['cart/getStoreId'])||331;
   const codes=L.filter(l=>l.gtin).map(l=>l.gtin);
   const byBarcode={};
-  if(codes.length){const r=await fetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify({store,items:codes.join(','),itemsBy:'barcode',size:codes.length})});const j=await r.json().catch(()=>({}));const arr=(j&&(j.data||j.items||j.products))||[];for(const it of (Array.isArray(arr)?arr:[])){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(bc&&id!=null)byBarcode[bc]={id,name:it.name||it.Name||''};}}
-  const qty={};for(const l of L){const hit=l.gtin&&byBarcode[l.gtin];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing'});}
+  // The catalogue answer has shipped as data[], data.items[], items[] - read all of them, and note the shape for the log.
+  const shape={};const rows=(j)=>{if(!j)return[];const c=[j.data,j.items,j.products,j.data&&j.data.items,j.data&&j.data.data,j.results];for(const x of c)if(Array.isArray(x))return x;return[];};
+  const lookup=async(body)=>{const r=await fetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));shape.keys=j&&typeof j==='object'?Object.keys(j).slice(0,6):typeof j;const arr=rows(j);shape.rows=arr.length;return arr;};
+  const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(bc&&id!=null&&!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
+  if(codes.length){take(await lookup({store,items:codes.join(','),itemsBy:'barcode',size:codes.length}));
+    // Not in this branch? try without a branch, then one by one.
+    const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
+  // Still missing: the store's own text search by the product name, first hit that carries a barcode.
+  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const hit=arr.find(it=>it&&(it.id||it.C));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
+  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   const items=Object.keys(qty).map(id=>({C:isNaN(+id)?id:+id,Quantity:qty[id]}));
   let cartStatus=0,via='';
   if(items.length){
@@ -135,7 +143,7 @@ export const STORES: Record<string, StoreDef> = {
     }
     if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,found:Object.keys(byBarcode).length,cartStatus,via}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
