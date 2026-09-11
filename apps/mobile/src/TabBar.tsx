@@ -15,7 +15,7 @@ const TABS: { key: Tab; icon: IconName; label: string }[] = [
  * A quiet floating bar: white, hairline edge, soft shadow. The active tab is
  * ink with its label under it and a small green dot — a mark, not a blob.
  */
-export function TabBar({ active, onChange, badge }: { active: Tab; onChange: (t: Tab) => void; badge?: number }) {
+export function TabBar({ active, onChange, badge, ordersBadge }: { active: Tab; onChange: (t: Tab) => void; badge?: number; ordersBadge?: number }) {
   const bar = Platform.select({
     ios: { shadowColor: '#0E1512', shadowOpacity: 0.10, shadowRadius: 22, shadowOffset: { width: 0, height: 8 } },
     android: { elevation: 10 },
@@ -30,9 +30,9 @@ export function TabBar({ active, onChange, badge }: { active: Tab; onChange: (t:
             <Pressable key={tab.key} onPress={() => onChange(tab.key)} hitSlop={6} style={({ pressed }) => [{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 20 }, pressed && { opacity: 0.5 }]}>
               <View>
                 <Icon name={tab.icon} size={22} color={on ? t.ink : t.faint} />
-                {tab.key === 'list' && badge ? (
+                {(tab.key === 'list' && badge) || (tab.key === 'orders' && ordersBadge) ? (
                   <View style={{ position: 'absolute', top: -6, right: -10, backgroundColor: t.accent, borderRadius: 999, minWidth: 17, height: 17, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: t.card }}>
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{badge}</Text>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{tab.key === 'list' ? badge : ordersBadge}</Text>
                   </View>
                 ) : null}
               </View>
