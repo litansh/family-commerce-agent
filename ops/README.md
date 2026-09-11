@@ -56,3 +56,7 @@ CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and t
 ## Who decides
 
 Every decision goes through the agent that owns it: presentation → app-designer, promises → product-qa, stores → store-recipe-fixer, price files → price-portal-fixer, simulator → sim-flow-fixer, API and rules → api-fixer. The orchestrator routes and, when agents disagree, decides; the decision is written into the PR body.
+
+## A red check never reaches the owner
+
+`ops/pr.sh` opens the PR, then watches its checks. A red check is handed to the api-fixer agent on the same branch (the failing log verbatim, the workflow's own commands to reproduce), pushed, and watched again, up to three times. The Telegram post carries the final state; a PR is announced for approval only once its checks are green.
