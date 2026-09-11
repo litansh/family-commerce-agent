@@ -169,7 +169,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               {/* A line this store lacks, priced with its closest product: named, so the family decides. */}
               {(() => { const subs = o.legs.flatMap((leg) => Object.values(q.storefrontLines?.[leg.storefrontId] ?? {}).filter((l) => l.substituted && l.reason).map((l) => l.reason!)); return subs.length ? <Text style={[s.small, { color: t.amber, marginTop: 6 }]}>{tr('subsNamed', { x: subs.join(' · ') })}</Text> : null; })()}
               {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(o.timeCost)}</Text></View>}
-              {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}</Text>}
+              {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}{o.missingEstimate ? ` · ${tr('toComplete', { x: money(o.missingEstimate) })}` : ''}</Text>}
               <View style={[s.rowStart, { marginTop: 10 }]}>
                 <Chip text={tr('coverage', { p: Math.round(o.coverageRatio * 100) })} tone={o.coverageRatio >= 0.99 ? 'good' : 'neutral'} />
                 {(() => { const cs = o.legs.reduce((sum, leg) => sum + (q.couponSavings?.[leg.storefrontId] ?? 0), 0); return cs > 0 ? <Chip text={tr('couponChip', { x: money(cs) })} tone="good" /> : null; })()}

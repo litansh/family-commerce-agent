@@ -257,10 +257,17 @@ test('one missing line never disqualifies a store, whatever the list length', ()
   assert.deepEqual(b.unpricedLineIds, ['l7']);
 });
 
-test('a store missing a line never ranks above a complete basket, however cheap its partial total', () => {
+test('a basket missing a line is ranked as if completed at the cheapest price of that line', () => {
+  // A: complete, ₪80 + ₪20. B: misses the ₪60 salmon; ₪2 + ₪20 alone, but ₪82 once the salmon is added.
   const full = quote('a', 'A', [line('l0', 10), line('l1', 10), line('l2', 60)], 20, 3);
   const partial = quote('b', 'B', [line('l0', 1), line('l1', 1)], 20, 3);
   const r = optimize({ quotes: [full, partial], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(3) });
-  assert.equal(r.options[0]!.legs[0]!.storefrontId, 'a');
-  assert.ok(r.options.some((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'b' && o.unpricedLineIds.length === 1));
+  const b = r.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'b')!;
+  assert.equal(b.missingEstimate, shekels(80), 'the salmon at A plus one top-up delivery');
+  assert.equal(r.options[0]!.legs[0]!.storefrontId, 'a', 'A wins: ₪100 complete beats B ₪22 + ₪80 to complete');
+});
+  assert.equal(r2.options[0]!.legs[0]!.storefrontId, 'x');
+  const zOpt = r2.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'z')!;
+  assert.equal(zOpt.missingEstimate, undefined);
+  assert.equal(r2.options[r2.options.length - 1], zOpt);
 });
