@@ -6,3 +6,4 @@ export * from './memory.ts';
 export * from './coupons.ts';
 export * from './region.ts';
 export * from './optimizer.ts';
+export * from './size.ts';

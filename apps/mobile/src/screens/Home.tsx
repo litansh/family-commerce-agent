@@ -51,7 +51,7 @@ export function HomeScreen({ api, household, onAisle, onList }: { api: Api; hous
   const dealsRef = useRef<ScrollView | null>(null);
   const usualsRef = useRef<ScrollView | null>(null);
   useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
-  useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
+  useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
 
   const onList_ = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);
   const due = useMemo(() => new Set(suggestions.filter((x) => x.reason === 'overdue').map((x) => x.preference.key)), [suggestions]);
