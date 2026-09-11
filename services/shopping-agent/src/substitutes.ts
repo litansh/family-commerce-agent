@@ -18,10 +18,14 @@ import type { CatalogProvider, QuoteRequest, QuoteResponse } from '@fca/retailer
  */
 const PROCESSED = /מעושן|מעושנת|בחומץ|במלח|כבוש|כבושים|חמוצים|קצוצ|חתוכ|מקולפ|רסק|משומר|שימורים|קפוא|קפואה|קפואים|מיובש|מיובשים|אבקת|רוטב|מרק|ממרח|טעם|בטעם|מרוכז|תרכיז/;
 const words = (s: string) => s.toLowerCase().replace(/["'׳״%().,\-]/g, ' ').split(/\s+/).filter((w) => w.length > 1 && !/^\d+$/.test(w) && !/^(ק"ג|קג|גרם|גר|ליטר|ל|מל|יח|יחידות|x)$/.test(w));
+/** Hebrew plural and gender endings fall away, so עגבניות ~ עגבניה, מלפפונים ~ מלפפון, ביצים ~ ביצה. */
+const finals = (w: string) => w.replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ');
+export const hebStem = (w: string): string => { const x = finals(w); return x.length > 4 ? x.replace(/(יות|ות|ים|ין|יה|ה|ת)$/u, '') : x; };
+export const sameWord = (a: string, b: string): boolean => { if (a === b) return true; const [x, y] = [hebStem(a), hebStem(b)]; return x.length >= 3 && y.length >= 3 && (x === y || x.startsWith(y) || y.startsWith(x)); };
 export function pickSubstitute<T extends { gtin?: string; name: string; pricedAtChains: number }>(query: string, candidates: readonly T[]): T | undefined {
   const q = words(query);
   const asksProcessed = PROCESSED.test(query);
-  const same = candidates.filter((c) => c.gtin && c.pricedAtChains > 0 && q.every((w) => words(c.name).some((v) => v === w || v.startsWith(w) || w.startsWith(v))) && (asksProcessed || !PROCESSED.test(c.name)));
+  const same = candidates.filter((c) => c.gtin && c.pricedAtChains > 0 && q.every((w) => words(c.name).some((v) => sameWord(v, w))) && (asksProcessed || !PROCESSED.test(c.name)));
   return same.sort((a, b) => b.pricedAtChains - a.pricedAtChains || a.name.length - b.name.length)[0];
 }
 
