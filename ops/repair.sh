@@ -26,6 +26,8 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   node ops/briefing.mjs 2>&1 | tee -a "$LOG"
   # The scout: who delivers to our families today, and which storefront is new or not yet connectable.
   node --experimental-strip-types ops/store-scout.mjs 2>&1 | grep -v Warning | tee -a "$LOG"
+  # Open pull requests without an agents' review get one (the review workflow needs a key; this needs only this Mac).
+  for n in $(gh pr list --state open --json number --jq '.[].number' 2>/dev/null); do ops/pr-review.sh "$n" 2>&1 | tail -1 | tee -a "$LOG"; done
   # The product review runs on green days too: a promise can be broken while every check passes.
   ops/qa.sh
   exit 0

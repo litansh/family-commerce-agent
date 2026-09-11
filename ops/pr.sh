@@ -40,6 +40,9 @@ if [ "$WAIT" = 1 ]; then
       --allowedTools "Read,Grep,Glob,Edit,Write,Bash(node *),Bash(npx *),Bash(npm *),Bash(git *),Bash(gh *),Bash(cat *),Bash(ls *)" >> "$LOG" 2>&1 || true
   done
 fi
+# The agents' review, from this Mac with the local login, so every PR gets one without any key in GitHub.
+PRNUM=$(gh pr view "$URL" --json number --jq .number 2>/dev/null || true)
+[ -n "$PRNUM" ] && (ops/pr-review.sh "$PRNUM" >/dev/null 2>&1 &)
 SUMMARY=$(printf '%s' "$BODY" | head -c 600)
 tg "🛒 PR for approval ($STATUS): $TITLE
 $URL
