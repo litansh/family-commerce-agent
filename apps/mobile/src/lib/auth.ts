@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { config } from './config';
+import { refreshTokens } from './cognito';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -91,6 +92,9 @@ export async function signIn(provider?: 'Google', mode: 'login' | 'signup' = 'lo
 }
 
 async function refresh(refreshToken: string): Promise<Tokens | null> {
+  // Cognito's own refresh first (works for e-mail + password sign-ins); the hosted-UI token endpoint for Google sign-ins.
+  const direct = await refreshTokens(refreshToken);
+  if (direct) { await store(direct); return direct; }
   try {
     const res = await AuthSession.refreshAsync({ clientId: config.clientId, refreshToken }, discovery);
     const t: Tokens = {

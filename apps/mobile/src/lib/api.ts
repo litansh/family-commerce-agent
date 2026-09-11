@@ -41,14 +41,29 @@ export interface Deal {
 }
 
 export class Api {
-  constructor(private readonly idToken: string) {}
+  readonly #token: () => Promise<string | null>;
+  readonly #onExpired?: () => void;
+  /**
+   * `token` is asked for before every call and may refresh (the app passes
+   * `loadTokens`, which renews a token within a minute of expiry). A 401 is
+   * retried once with a fresh token; a second 401 means the session is gone
+   * and `onExpired` (sign out) runs, instead of every screen failing quietly.
+   */
+  constructor(token: string | (() => Promise<string | null>), onExpired?: () => void) {
+    this.#token = typeof token === 'string' ? async () => token : token;
+    this.#onExpired = onExpired;
+  }
 
-  async #call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async #call<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
+    const tok = await this.#token();
+    if (!tok) { this.#onExpired?.(); throw new Error('signed out'); }
     const res = await fetch(`${config.apiUrl}${path}`, {
       method,
-      headers: { authorization: `Bearer ${this.idToken}`, 'content-type': 'application/json' },
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
+    if (res.status === 401 && retry) return this.#call<T>(method, path, body, false);
+    if (res.status === 401) { this.#onExpired?.(); throw new Error('signed out'); }
     const data = (await res.json()) as T & { error?: string; message?: string };
     if (!res.ok) throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
     return data;

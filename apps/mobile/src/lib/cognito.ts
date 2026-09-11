@@ -64,3 +64,15 @@ export function explain(e: unknown, t: (k: string) => string): string {
     default: return e instanceof Error ? e.message : String(e);
   }
 }
+
+/** Renew a password sign-in with its refresh token (Cognito's own flow; no hosted UI needed). */
+export async function refreshTokens(refreshToken: string): Promise<Tokens | null> {
+  try {
+    const r = await call<{ AuthenticationResult?: { IdToken: string; AccessToken: string; ExpiresIn: number } }>('InitiateAuth', {
+      ClientId: config.clientId, AuthFlow: 'REFRESH_TOKEN_AUTH', AuthParameters: { REFRESH_TOKEN: refreshToken },
+    });
+    const a = r.AuthenticationResult;
+    if (!a) return null;
+    return { idToken: a.IdToken, accessToken: a.AccessToken, refreshToken, expiresAt: Date.now() + a.ExpiresIn * 1000 };
+  } catch { return null; }
+}
