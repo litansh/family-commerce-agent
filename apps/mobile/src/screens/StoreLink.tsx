@@ -3,7 +3,7 @@ import { confirmFromHistory } from '../lib/pending';
 import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Modal, Platform, Text, View } from 'react-native';
 import { STORES, signupFillJs, type SignupKnown } from '../lib/stores';
-import { markUnlinked } from '../lib/linked';
+import { markLinked, markUnlinked } from '../lib/linked';
 import { t as tr } from '../lib/i18n';
 import { Button, S, t } from '../ui';
 import { Pressable } from 'react-native';
