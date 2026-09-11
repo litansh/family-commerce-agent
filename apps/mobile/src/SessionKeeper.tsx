@@ -16,7 +16,7 @@ import { AppState, Platform, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Api } from './lib/api';
 import { STORES } from './lib/stores';
-import { markNeedsRelink, useLinked } from './lib/linked';
+import { markLinked, markNeedsRelink, useLinked } from './lib/linked';
 import { confirmFromHistory } from './lib/pending';
 import { HISTORY_JS } from './screens/StoreLink';
 import { BUILD } from './lib/config';
@@ -45,7 +45,7 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
         const first = Number((await AsyncStorage.getItem(OUT)) ?? 0);
         if (first && Date.now() - first > 4 * 3600_000) { markNeedsRelink(storeId); decided = 'out-confirmed-twice'; }
         else { if (!first) await AsyncStorage.setItem(OUT, String(Date.now())); decided = 'out-suspected'; }
-      } else if (verdict === 'in') await AsyncStorage.removeItem(OUT);
+      } else if (verdict === 'in') { await AsyncStorage.removeItem(OUT); markLinked(storeId); }
       void api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { verdict: decided, looks: looks.current } }).catch(() => null);
     })();
     onDone();
