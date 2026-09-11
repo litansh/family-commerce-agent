@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { resolvePending, usePending } from '../lib/pending';
+import type { StoreOrder } from '../lib/api';
 import { STORES } from '../lib/stores';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { Api, Household, Order } from '../lib/api';
@@ -10,6 +11,8 @@ export function OrdersScreen({ api, household, onOpen }: { api: Api; household: 
   const s = S();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const pending = usePending();
+  const [bought, setBought] = useState<{ storeId: string; order: StoreOrder }[]>([]);
+  useEffect(() => { api.history(household.id).then((h) => setBought(Object.entries(h.stores).flatMap(([storeId, v]) => (v.orders ?? []).map((order) => ({ storeId, order }))).sort((a, b) => String(b.order.at ?? '').localeCompare(String(a.order.at ?? ''))).slice(0, 30))).catch(() => null); }, [api, household.id]);
   const confirm = async (id: string, yes: boolean) => {
     const p = pending.find((x) => x.id === id); if (!p) return;
     resolvePending(id);
@@ -34,7 +37,20 @@ export function OrdersScreen({ api, household, onOpen }: { api: Api; household: 
             </View>
           </View>
         ))}
-        {!orders ? <><Skeleton /><Skeleton /></> : orders.length === 0 ? <Empty title={tr('noOrders')} hint="" /> : orders.map((o) => (
+        {/* What the family really bought, as the stores themselves list it. */}
+        {bought.length > 0 ? <Text style={[s.title, { fontSize: 16, marginTop: 6, marginBottom: 6 }]}>{tr('boughtTitle')}</Text> : null}
+        {bought.map(({ storeId, order }, i) => (
+          <View key={`${storeId}-${order.id ?? i}`} style={s.card} testID={`bought-${storeId}`}>
+            <View style={s.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.title}>{tr('boughtAt', { s: STORES[storeId]?.name ?? storeId })}</Text>
+                <Text style={s.small}>{order.at ?? ''} · {order.lines.length} {tr('items')} · {order.lines.slice(0, 3).map((l) => l.name).join(', ')}{order.lines.length > 3 ? '…' : ''}</Text>
+              </View>
+              {order.total ? <Text style={s.price}>{money(Math.round(order.total * 100))}</Text> : null}
+            </View>
+          </View>
+        ))}
+        {!orders ? <><Skeleton /><Skeleton /></> : orders.length === 0 && bought.length === 0 ? <Empty title={tr('noOrders')} hint="" /> : (orders ?? []).map((o) => (
           <Pressable key={o.id} onPress={() => onOpen(o.id)} style={({ pressed }) => [s.card, pressed && { opacity: 0.7 }]}>
             <View style={s.row}>
               <View>

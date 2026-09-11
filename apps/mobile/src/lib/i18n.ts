@@ -87,7 +87,7 @@ const he: Strings = {
   field_name: 'שם פרטי ומשפחה', field_id: 'תעודת זהות', field_phone: 'טלפון נייד', field_email: 'אימייל', field_birthdate: 'תאריך לידה', field_password: 'סיסמה חדשה', field_address: 'כתובת למשלוח', field_code: 'קוד שיגיע ב-SMS / במייל',
   storeLoadFailed: 'האתר של {s} לא נטען כרגע.', tryAgain: 'נסו שוב',
   relinkBadge: 'צריך חיבור מחדש', relinkNow: 'חברו מחדש', relinkWhyOtp: '{s} סגרו את החיבור מצדם (זה קורה אחרי זמן בלי קניות). לוחצים, מקבלים קוד ב-SMS, וזהו — 20 שניות.', relinkWhyPw: '{s} סגרו את החיבור מצדם (זה קורה אחרי זמן בלי קניות). לוחצים, Face ID ממלא את הסיסמה, וזהו.',
-  pendingAsk: 'קניתם בסוף ב{s}?', pendingYes: 'כן, קניתי', pendingNo: 'לא הפעם',
+  pendingAsk: 'קניתם בסוף ב{s}?', pendingYes: 'כן, קניתי', pendingNo: 'לא הפעם', boughtTitle: 'מה קניתם באמת', boughtAt: 'נקנה ב{s}',
   guardChallenge: 'האתר של {s} מבקש לוודא שאתם לא רובוט — לחצו על התיבה בעמוד, ואז ממשיכים כרגיל.', guardBlocked: 'האתר של {s} חסם את הגישה מהאפליקציה כרגע. נסו שוב, או התחברו בדפדפן.', guardOpenBrowser: 'פתחו בדפדפן',
   phoneBadge: 'מהטלפון', cloudBadge: 'מהאתר', sessionSaved: 'החיבור נשמר גם בענן ✓', sessionNotSaved: 'החיבור נשמר בטלפון הזה',
   // Ordering on the phone
@@ -180,7 +180,7 @@ const en: Strings = {
   field_name: 'First and last name', field_id: 'ID number', field_phone: 'Mobile phone', field_email: 'Email', field_birthdate: 'Date of birth', field_password: 'New password', field_address: 'Delivery address', field_code: 'Code sent by SMS / email',
   storeLoadFailed: '{s}’s site did not load just now.', tryAgain: 'Try again',
   relinkBadge: 'Needs re-connecting', relinkNow: 'Re-connect', relinkWhyOtp: '{s} closed the session on their side (it happens after a while without shopping). Tap, get an SMS code, done — 20 seconds.', relinkWhyPw: '{s} closed the session on their side (it happens after a while without shopping). Tap, Face ID fills the password, done.',
-  pendingAsk: 'Did you buy at {s} in the end?', pendingYes: 'Yes, I did', pendingNo: 'Not this time',
+  pendingAsk: 'Did you buy at {s} in the end?', pendingYes: 'Yes, I did', pendingNo: 'Not this time', boughtTitle: 'What you really bought', boughtAt: 'Bought at {s}',
   guardChallenge: '{s}’s site wants to check you are human — tap the box on the page, then carry on as usual.', guardBlocked: '{s}’s site is blocking the app right now. Try again, or sign in in the browser.', guardOpenBrowser: 'Open in browser',
   phoneBadge: 'On the phone', cloudBadge: 'From the site', sessionSaved: 'Connection also saved to the cloud ✓', sessionNotSaved: 'Connection saved on this phone',
   // Ordering on the phone

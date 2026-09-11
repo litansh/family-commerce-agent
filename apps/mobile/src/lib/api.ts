@@ -12,6 +12,8 @@ export interface Order {
   paymentMethod?: string; retailerOrderId?: string; error?: string;
 }
 
+export interface StoreOrder { id?: string; at?: string; total?: number; lines: { name: string; code?: string; qty?: number }[] }
+
 export interface DriveBranch {
   storefrontId: string; chain: string; brand: string; branchName: string; address: string;
   distanceKm: number; minutes: number; itemsSubtotal: number; driveCost: number;
@@ -125,6 +127,8 @@ export class Api {
   suggest = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<{ suggestions: Suggestion[] }>('POST', `/households/${hid}/suggest`, { lines });
   confirm = (hid: string, c: { phrase: string; gtin: string; productName: string; brand?: string }) =>
     this.#call<unknown>('POST', `/households/${hid}/memory/confirm`, c);
+  /** The stores' own orders, imported from the phone. */
+  history = (hid: string) => this.#call<{ stores: Record<string, { at: string; orders: StoreOrder[] }> }>('GET', `/households/${hid}/history`);
   recordShop = (hid: string, bought: PurchasedLine[]) => this.#call<unknown>('POST', `/households/${hid}/memory/shop`, { bought });
 }
 
