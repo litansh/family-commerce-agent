@@ -1,14 +1,83 @@
 name: ci
+
+# Every pull request: typecheck, unit tests, the recipe guard, the app's typecheck.
+# Every merge to main: the same, then build the API and deploy the three Lambdas through
+# GitHub's OIDC role (no keys in GitHub), then prove production with the API health check
+# and the shopper's two carts. A failed test never deploys; a failed smoke is red on main.
 on:
   push: { branches: [main] }
   pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '22' }
+        with: { node-version: '22', cache: npm }
       - run: npm ci || npm install
-      - run: npm run typecheck
-      - run: npm test
+      - name: typecheck (packages, services, api)
+        run: npm run typecheck
+      - name: unit tests
+        run: npm test
+      - name: store recipes parse
+        run: npm run check:recipes -w apps/mobile
+      - name: app typecheck
+        run: npx tsc --noEmit -p apps/mobile/tsconfig.json
+      - name: build the API bundle
+        run: npm run build -w apps/api
+      - uses: actions/upload-artifact@v4
+        with: { name: api-dist, path: apps/api/dist, retention-days: 7 }
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: eu-central-1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - uses: actions/download-artifact@v4
+        with: { name: api-dist, path: apps/api/dist }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::437075214009:role/fca-github-deploy
+          aws-region: eu-central-1
+      - name: deploy the three Lambdas
+        run: |
+          cd apps/api/dist && zip -qr /tmp/api.zip . && cd -
+          for fn in fca-api fca-branch-prices fca-alerts; do
+            aws lambda update-function-code --function-name "$fn" --zip-file fileb:///tmp/api.zip --query 'LastModified' --output text
+            aws lambda wait function-updated --function-name "$fn"
+          done
+      - name: prove production (API health, both shopper carts)
+        env:
+          KANITI_E2E_EMAIL: ${{ secrets.KANITI_E2E_EMAIL }}
+          KANITI_E2E_PASSWORD: ${{ secrets.KANITI_E2E_PASSWORD }}
+        run: |
+          npm ci || npm install
+          mkdir -p ~/.kaniti && printf 'KANITI_E2E_EMAIL=%s\nKANITI_E2E_PASSWORD=%s\n' "$KANITI_E2E_EMAIL" "$KANITI_E2E_PASSWORD" > ~/.kaniti/e2e.env
+          node ops/api-health.mjs
+          node ops/test-cart.mjs --short
+          node ops/test-cart.mjs
+      - name: tell the channel
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || exit 0
+          STATUS="${{ job.status }}"; SHA="${GITHUB_SHA::7}"
+          curl -s -m 15 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=🛒 deploy $SHA: $STATUS — $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null || true
