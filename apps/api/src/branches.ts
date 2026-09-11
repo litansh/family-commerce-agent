@@ -163,6 +163,7 @@ export class BranchPrices {
       for (const b of inCity) {
         const c = cache.branches.find((x) => x.storeId === b.storeId && x.subChainId === b.subChainId);
         if (!c) continue;
+        if (c.lat === undefined && b.lat !== undefined && b.lng !== undefined) { Object.assign(c, { lat: b.lat, lng: b.lng }); changed = true; }
         if (c.lat === undefined && geocoded < 25) {
           const cityName = /^\d+$/.test(b.city) ? (names[b.city] ?? b.city) : b.city;
           const g = await geocode(`${b.address}, ${cityName}`);

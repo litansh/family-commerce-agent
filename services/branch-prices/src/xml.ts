@@ -16,6 +16,9 @@ export interface Branch {
   /** As published: a Hebrew city name, or a CBS settlement code (Shufersal, Rami Levy). */
   readonly city: string;
   readonly zip?: string;
+  /** Some chains publish coordinates themselves (Hatzi Hinam's branch API); the rest are geocoded later. */
+  readonly lat?: number;
+  readonly lng?: number;
 }
 
 /** One branch's price list: barcode → [price in agorot, name]. Compact on purpose (it is stored and shipped as JSON). */
