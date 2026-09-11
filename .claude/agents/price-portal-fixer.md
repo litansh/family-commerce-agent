@@ -12,3 +12,4 @@ You keep Kaniti's "and if we drive there?" numbers flowing: every chain's daily 
 - Typecheck: `npx tsc --build services/branch-prices && npx tsc -p apps/api/tsconfig.json --noEmit`.
 - A portal that now needs a login we do not have, or that blocks this network, is a human decision: say so in ops/NEEDS-HUMAN.md rather than guessing.
 Report: which portal changed, how, what you changed, and the lab output.
+Changes go out on a branch as a pull request via `ops/pr.sh` (posted to Telegram for approval); never push to main.
