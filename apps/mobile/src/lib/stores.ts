@@ -60,6 +60,8 @@ export interface StoreDef {
   readonly cartJs?: (lines: readonly CartLine[]) => string;
   /** The store's cart page, shown after the recipe ran (or straight away when there is no recipe). */
   readonly cartUrl?: string;
+  /** The store's own product search for a free-text name: the universal last resort for any line, on any store. */
+  readonly searchUrl?: (q: string) => string;
 }
 export interface CartLine { readonly gtin?: string; readonly name: string; readonly qty: number; readonly link?: string }
 export type SignupField = 'name' | 'id' | 'phone' | 'email' | 'birthdate' | 'password' | 'address' | 'code';
@@ -114,8 +116,8 @@ const genericSignedIn = `(()=>{const t=(document.body.innerText||'').slice(0,400
  * A platform recipe: everything that depends on how a storefront is built,
  * not on which chain runs it. A store is one platform plus its own facts.
  */
-export type Platform = Pick<StoreDef, 'group' | 'loginKind' | 'signedInCheck' | 'openLoginJs' | 'prefillEmailJs' | 'forgotJs' | 'historyJs' | 'sessionKeys' | 'cartJs' | 'cartUrl' | 'cloud'>;
-type StoreFacts = Pick<StoreDef, 'id' | 'name' | 'storefront' | 'loginUrl' | 'signup'> & Partial<Pick<StoreDef, 'loginKind' | 'cartUrl'>>;
+export type Platform = Pick<StoreDef, 'group' | 'loginKind' | 'signedInCheck' | 'openLoginJs' | 'prefillEmailJs' | 'forgotJs' | 'historyJs' | 'sessionKeys' | 'cartJs' | 'cartUrl' | 'cloud' | 'searchUrl'>;
+type StoreFacts = Pick<StoreDef, 'id' | 'name' | 'storefront' | 'loginUrl' | 'signup'> & Partial<Pick<StoreDef, 'loginKind' | 'cartUrl' | 'searchUrl'>>;
 const define = (platform: Platform, facts: StoreFacts): StoreDef => ({ ...platform, ...facts });
 
 // ---------------------------------------------------------------------------
@@ -143,6 +145,8 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
   // The platform serves a separate phone app; its login lives at /login (desktop uses ?loginOrRegister=1, which the phone version ignores).
   loginUrl: `https://${host}/login`,
   signup: { url: `https://${host}/?loginOrRegister=1`, asks: otp ? ['phone', 'code'] : ['name', 'phone', 'email', 'password'] },
+  searchUrl: (q) => `https://${host}/search?q=${encodeURIComponent(q)}`,
+  cartUrl: `https://${host}/cart`,
 });
 
 // ---------------------------------------------------------------------------
@@ -152,6 +156,7 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
 // ---------------------------------------------------------------------------
 export const RAMI_LEVY: Platform = {
   group: 'code', loginKind: 'otp',
+  searchUrl: (q) => `https://www.rami-levy.co.il/he/online/search?q=${encodeURIComponent(q)}`,
   signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}return ${genericSignedIn};})()`,
   // On the phone the trigger is a <div aria-label="התחברות">, not a button.
   openLoginJs: `(()=>{if(document.querySelector('input[type="email"]'))return;const b=document.querySelector('[aria-label="התחברות"],[aria-label="כניסה"]')||[...document.querySelectorAll('button,a,div,span')].find(x=>x.children.length<3&&/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
@@ -238,6 +243,8 @@ export const RAMI_LEVY: Platform = {
 // ---------------------------------------------------------------------------
 export const WOLT: Platform = {
   group: 'code', loginKind: 'otp',
+  // Wolt's search is city-scoped; the storefront page (from the quote) is the better door, this is the last resort.
+  searchUrl: (q) => `https://wolt.com/he/isr/tel-aviv/search?q=${encodeURIComponent(q)}`,
   signedInCheck: `(()=>{return /(^|;\\s*)__wrtoken=[^;]{20,}/.test(document.cookie)&&!document.querySelector('input[type="email"]');})()`,
   // Refresh-token cookie → bearer → the orders page API; keep grocery venues only
   // (restaurants would teach the family's "usuals" the wrong things).
@@ -274,6 +281,7 @@ export const WOLT: Platform = {
 // ---------------------------------------------------------------------------
 export const SHUFERSAL: Platform = {
   group: 'hybris', loginKind: 'password',
+  searchUrl: (q) => `https://www.shufersal.co.il/online/he/search?text=${encodeURIComponent(q)}`,
   signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
   prefillEmailJs: (email) => setInput('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
@@ -300,6 +308,7 @@ export const SHUFERSAL: Platform = {
 // ---------------------------------------------------------------------------
 export const HAZI_HINAM: Platform = {
   group: 'other', loginKind: 'password',
+  searchUrl: (q) => `https://shop.hazi-hinam.co.il/search/${encodeURIComponent(q)}`,
   signedInCheck: genericSignedIn,
   // Their "e-mail / ID" box is a plain text field above the password.
   prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),

@@ -529,9 +529,15 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       for (const o of result.options) for (const leg of o.legs) noteEta(leg.storefrontId);
       // Rejected storefronts too: "Wolt in 40 minutes, but ₪60 short of its minimum" is a real choice.
       for (const r of result.rejected) noteEta(r.storefrontId);
+      // Each storefront's own resolution of every line (its product, its deep link), for the
+      // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
+      const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
+      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>> = {};
+      for (const q of res.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}) }]));
       return ok({
         currency: region.currency,
         etas,
+        storefrontLines,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,
