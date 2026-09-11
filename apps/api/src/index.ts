@@ -571,10 +571,20 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // branch index is keyed by barcode - so borrow the first barcode any storefront resolved the line to.
       const gtinOf = (id: string, own?: string) => own ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
       const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => { const g = gtinOf(l.id, l.gtin); return { id: l.id, query: l.query, ...(g ? { gtin: g } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }; })).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
+      // The in-store card must compare like with like: the branch's basket covers only the lines it
+      // prices, so put next to it what the SAME lines cost at the winning delivered store.
+      const bestQuote = substituted.quotes.find((q) => q.storefrontId === bestId);
+      const driveOut = { ...drive, branches: drive.branches.map((b) => {
+        const miss = new Set(b.missingLineIds);
+        const same = bestQuote ? bestQuote.lines.filter((l) => !miss.has(l.lineId)).reduce((n, l) => n + l.lineTotal, 0) : 0;
+        return bestQuote && same > 0 ? { ...b, sameLines: { brand: bestQuote.brand, items: same, delivered: same + bestQuote.deliveryFee } } : b;
+      }) };
+      // One line per compare, so "why only one option?" is answerable from the log.
+      console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}`), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
       return ok({
         currency: region.currency,
         etas,
-        drive,
+        drive: driveOut,
         storefrontLines,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),

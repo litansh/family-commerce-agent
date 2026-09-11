@@ -18,6 +18,8 @@ export interface DriveBranch {
   storefrontId: string; chain: string; brand: string; branchName: string; address: string;
   distanceKm: number; minutes: number; itemsSubtotal: number; driveCost: number;
   coveredLines: number; totalLines: number; missingLineIds: string[]; pricedAt: string;
+  /** The same covered lines at the winning delivered store, for an honest comparison. */
+  sameLines?: { brand: string; items: number; delivered: number };
 }
 
 export interface QuoteResult {

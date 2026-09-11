@@ -215,9 +215,12 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
             {q.drive.status === 'pending' || q.drive.branches.length === 0
               ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : q.drive.status === 'none' ? tr('driveNoAddress') : tr('driveNone')}</Text>
               : (() => {
-                const cheapest = best ? best.cashCost : 0;
                 return q.drive.branches.map((b) => {
-                  const diff = cheapest > 0 ? cheapest - (b.itemsSubtotal + b.driveCost) : 0;
+                  // Like with like: the same lines at the winning delivered store. A branch that prices only
+                  // part of the list is never compared against the whole delivered cart.
+                  const full = b.coveredLines === b.totalLines;
+                  const ref = b.sameLines ? (full ? b.sameLines.delivered : b.sameLines.items) : 0;
+                  const diff = ref > 0 ? ref - (b.itemsSubtotal + (full ? b.driveCost : 0)) : 0;
                   return (
                     <View key={b.storefrontId} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
                       <View style={{ flex: 1 }}>
@@ -227,7 +230,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
                         <Text style={[s.price, { fontSize: 18, color: diff > 0 ? t.accent : t.ink }]}>{money(b.itemsSubtotal)}</Text>
-                        {cheapest > 0 ? <Text style={[s.faint, { fontSize: 11, color: diff > 0 ? t.accent : t.amber }]}>{diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })}</Text> : null}
+                        {ref > 0 ? <Text style={[s.faint, { fontSize: 11, color: diff > 0 ? t.accent : t.amber }]}>{full ? (diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })) : tr('driveSameLines', { n: b.coveredLines, s: b.sameLines!.brand, x: money(ref) })}</Text> : null}
                       </View>
                     </View>
                   );
