@@ -224,7 +224,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
                 onLoadEnd={settle}
                 onError={onLoadError}
-                onHttpError={(e: { nativeEvent: { statusCode?: number; url?: string } }) => { if ((e.nativeEvent.statusCode ?? 0) >= 500) void api.importHistory(householdId, storeId, [], { build: BUILD, httpError: e.nativeEvent }).catch(() => null); }}
+                onHttpError={(e: { nativeEvent: { statusCode?: number; url?: string } }) => { if ((e.nativeEvent.statusCode ?? 0) >= 400) void api.importHistory(householdId, storeId, [], { build: BUILD, httpError: e.nativeEvent }).catch(() => null); }}
                 renderError={() => (
                   <View style={[s.pad, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg }]}>
                     <Text style={[s.body, { textAlign: 'center' }]}>{tr('storeLoadFailed', { s: store.name })}</Text>
