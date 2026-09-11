@@ -49,3 +49,7 @@ families is known the same hour, not the next morning.
 ## Deploying
 
 CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and the app typecheck; then builds the API, updates `fca-api`, `fca-branch-prices` and `fca-alerts` through the GitHub OIDC role (`fca-github-deploy`, in Terraform `ci.tf`), and proves production with `ops/api-health.mjs` and both shopper carts. The result is posted to the channel. Secrets in the repo: `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+
+## Terraform from GitHub
+
+`.github/workflows/terraform.yml`: a pull request that touches `infrastructure/terraform/app/**` gets a plan as a PR comment; the merge to main applies it through the `fca-github-terraform` OIDC role, with the state in S3 (`fca-tfstate-<account>`, `backend.tf`). Secrets reach Terraform as `TF_VAR_*` from the repository secrets; non-secret variables live in committed `*.auto.tfvars`. One local apply created the bucket and the roles and migrated the state; after that no laptop needs AWS credentials for the stack. Infrastructure changes are pull requests like everything else.
