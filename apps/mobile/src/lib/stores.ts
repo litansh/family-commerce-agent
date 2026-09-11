@@ -122,7 +122,10 @@ export const STORES: Record<string, StoreDef> = {
   // A fresh session still sits on the default 331, which stocks a different range - so read the
   // person's own addresses and use the selected one's branch, telling the site's cart the same.
   let store=(st&&st.getters&&st.getters['cart/getStoreId'])||331,branchFrom='default';
-  try{const au=st&&st.state&&st.state.authuser;let list=(au&&(au.addresses||au.allAddresses))||(st&&st.getters&&(st.getters['authuser/getAddresses']||st.getters['authuser/addresses']))||[];list=Array.isArray(list)?list:Object.values(list||{});const selId=st&&st.getters&&st.getters['checkout/getAddressSelect'];const a=list.find(x=>x&&selId&&String(x.id)===String(selId))||list[0];if(a&&(a.store_id||a.storeId)){store=a.store_id||a.storeId;branchFrom='address';try{st.commit('cart/setStoreIdNoneUpdateCart',store);}catch(e){}}}catch(e){}
+  // From the site's own code: addresses are authuser.user.addresses, the chosen one is
+  // checkout.address.addressSelect, and each address carries store_id + area_id, which the
+  // site commits as cart/setStoreId + cart/setAreaId. Do exactly that.
+  try{const u=(st&&st.getters&&st.getters['authuser/loggedInUser'])||(st&&st.state&&st.state.authuser&&st.state.authuser.user)||null;const list=(u&&Array.isArray(u.addresses))?u.addresses:[];const selId=st&&st.getters&&st.getters['checkout/getAddressSelect'];const a=list.find(x=>x&&selId!=null&&String(x.id)===String(selId))||list.find(x=>x&&x.store_id)||null;if(a&&a.store_id){store=a.store_id;branchFrom=(selId!=null&&String(a.id)===String(selId))?'selected address':'first address';try{st.commit('cart/setStoreId',store);if(a.area_id)st.commit('cart/setAreaId',a.area_id);}catch(e){}}}catch(e){}
   const codes=L.filter(l=>l.gtin).map(l=>l.gtin);
   const byBarcode={};
   // The catalogue answer has shipped as data[], data.items[], items[] - read all of them, and note the shape for the log.
@@ -135,7 +138,13 @@ export const STORES: Record<string, StoreDef> = {
     const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
   // Still missing: the store's own text search by the product name, first hit that carries a barcode.
   const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const hit=arr.find(it=>it&&(it.id||it.C));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
-  try{window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'cart progress',store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape}));}catch(e){}
+  try{const S=st&&st.state||{};const keys=(o)=>o&&typeof o==='object'?Object.keys(o).slice(0,25):typeof o;const au=S.authuser||{};const u=(st&&st.getters&&st.getters['authuser/loggedInUser'])||au.user||null;const addrCands={};for(const k of Object.keys(au)){const v=au[k];if(Array.isArray(v)&&v.length&&v[0]&&typeof v[0]==='object')addrCands[k]=keys(v[0]);}
+    window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'cart progress',store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,state:{authuser:keys(au),user:keys(u),userArrays:addrCands,cart:keys(S.cart),checkout:keys(S.checkout),getters:Object.keys((st&&st.getters)||{}).filter(g=>/address|store|branch|supply/i.test(g)).slice(0,20)}}));}catch(e){}
+  if(branchFrom==='default'&&ecom){
+    // Signed in but no delivery address known in this session: the cart backend hangs on the
+    // default branch. Say so and let the screen hand over to the store's own pages.
+    for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
+    window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
   const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   const items=Object.keys(qty).map(id=>({C:isNaN(+id)?id:+id,Quantity:qty[id]}));
   let cartStatus=0,via='';
