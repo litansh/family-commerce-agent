@@ -37,6 +37,9 @@ export interface DriveCandidate {
  */
 export const SUSPICIOUS_PRICE_RATIO = 3;
 
+/** A storefront must price at least this share of the list to be worth a second delivery as a split leg. */
+export const PARTIAL_LEG_MIN_COVERAGE = 0.4;
+
 export interface OptimizeResult {
   readonly options: readonly PurchaseOption[];
   /** Storefronts excluded, and why - with the numbers, so the app can turn an absence into a hint. */
@@ -130,7 +133,11 @@ export function optimize(input: OptimizeInput): OptimizeResult {
   // --- Split. Measured to be worth it at family scale (~₪67 on a ₪1,000 basket)
   // and measured NOT to be worth a third store, so maxStores caps it.
   if (constants.maxStores >= 2) {
-    const split = bestSplit(delivery, requestedLineIds, constants, best);
+    // A storefront that lacks a few lines is no option on its own, but it is a fine second leg:
+    // the anchor (full coverage) keeps what the partial store cannot supply. The salmon Rami Levy
+    // does not stock stays at the anchor; everything Rami Levy sells cheaper moves there.
+    const partial = quotes.filter((q) => q.serviceType === 'delivery' && !eligible.includes(q) && coverageRatio(q) >= PARTIAL_LEG_MIN_COVERAGE);
+    const split = bestSplit([...delivery, ...partial], requestedLineIds, constants, best);
     if (split !== undefined) options.push(split);
   }
 

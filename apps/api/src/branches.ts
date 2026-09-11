@@ -108,8 +108,13 @@ export class BranchPrices {
         coveredLines: q.quote.pricedLines, totalLines: lines.length, missingLineIds: lines.filter((l) => !priced.has(l.id)).map((l) => l.id), pricedAt: b.indexedAt,
       });
     }
-    // Only branches that price most of the list are a real alternative; the rest would mean a second trip.
-    const useful = views.filter((v) => v.totalLines === 0 || v.coveredLines / v.totalLines >= 0.6).sort((a, b) => a.itemsSubtotal + a.driveCost - (b.itemsSubtotal + b.driveCost));
+    // Branches that price most of the list are real alternatives; the rest would mean a second trip.
+    // A long list rarely matches half a branch's barcodes, so the best branch is always shown with
+    // its coverage stated ("22 מתוך 39") rather than an empty card that explains nothing.
+    const cov = (v: DriveView) => (v.totalLines === 0 ? 1 : v.coveredLines / v.totalLines);
+    const byValue = [...views].sort((a, b) => a.itemsSubtotal + a.driveCost - (b.itemsSubtotal + b.driveCost));
+    let useful = byValue.filter((v) => cov(v) >= 0.5);
+    if (useful.length === 0) useful = [...views].sort((a, b) => cov(b) - cov(a)).filter((v) => cov(v) >= 0.3).slice(0, 2);
     return { status: 'ready', branches: useful };
   }
 

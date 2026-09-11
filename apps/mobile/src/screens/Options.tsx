@@ -166,6 +166,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                   <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
                 </View>
               ))}
+              {/* A line this store lacks, priced with its closest product: named, so the family decides. */}
+              {(() => { const subs = o.legs.flatMap((leg) => Object.values(q.storefrontLines?.[leg.storefrontId] ?? {}).filter((l) => l.substituted && l.reason).map((l) => l.reason!)); return subs.length ? <Text style={[s.small, { color: t.amber, marginTop: 6 }]}>{tr('subsNamed', { x: subs.join(' · ') })}</Text> : null; })()}
               {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(o.timeCost)}</Text></View>}
               {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}</Text>}
               <View style={[s.rowStart, { marginTop: 10 }]}>
@@ -206,12 +208,12 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
           );
         })()}
         {/* In-store: what the list costs at the branches near home if the family drives. Cash and driving side by side, never one number. */}
-        {q.drive && q.drive.status !== 'none' ? (
+        {q.drive ? (
           <View style={[s.card, { paddingVertical: 6 }]} testID="drive-card">
             <Text style={[s.title, { fontSize: 16, paddingTop: 8 }]}>{tr('driveTitle')}</Text>
             <Text style={[s.faint, { fontSize: 11, paddingBottom: 6 }]}>{tr('driveSub')}</Text>
             {q.drive.status === 'pending' || q.drive.branches.length === 0
-              ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : tr('driveNone')}</Text>
+              ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : q.drive.status === 'none' ? tr('driveNoAddress') : tr('driveNone')}</Text>
               : (() => {
                 const cheapest = best ? best.cashCost : 0;
                 return q.drive.branches.map((b) => {

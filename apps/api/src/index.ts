@@ -25,9 +25,12 @@ import {
   confirm,
   DEFAULT_CONSTANTS,
   optimize,
+  PARTIAL_LEG_MIN_COVERAGE,
   recordShop,
   suggestMissing,
+  type Agorot,
   type ListLine,
+  type QuotedLine,
   type ProductChoice,
   type PurchasedLine,
   regionOf,
@@ -38,8 +41,8 @@ import {
   type StorefrontQuote,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
-import { quoteWithFallback } from '@fca/shopping-agent';
-import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion } from '@fca/retailer-connectors';
+import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
+import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteRequest, type QuoteResponse } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -514,7 +517,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     }
 
     if (method === 'POST' && rest === 'quote') {
-      const { quote: quoteProvider } = requirePricing();
+      const { quote: quoteProvider, catalog } = requirePricing();
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const lines = applied.map((a) => a.line);
@@ -527,15 +530,20 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         },
         memory,
       );
+      // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
+      // lines the near-complete storefronts miss, find the closest product in the catalogue and price
+      // the basket once more with it; a storefront that carries the substitute gets the line back,
+      // marked as a substitution the card shows ("סלמון → פילה סלמון"). One extra quote, not one per store.
+      const substituted = await substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; });
       // Personal coupons the worker read from the family's accounts change
       // which chain wins; apply them before ranking.
       const couponRows = await Promise.all((household.retailers ?? []).map(async (r) => (await readRow(TABLE, hid, `COUPONS#${r}`)) as { coupons?: Coupon[] } | undefined));
       const coupons = couponRows.flatMap((r) => r?.coupons ?? []);
-      const couponed: StorefrontQuote[] = res.quotes.map((q) => applyCoupons(q, coupons));
+      const couponed: StorefrontQuote[] = substituted.quotes.map((q) => applyCoupons(q, coupons));
       const result = optimize({ quotes: couponed, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
       const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
-      const bestLines = res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
+      const bestLines = substituted.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
       const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
       const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
@@ -555,13 +563,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
-      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>> = {};
-      for (const q of res.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}) }]));
+      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string }>> = {};
+      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, ...(l.substitutionReason ? { reason: l.substitutionReason } : {}) } : {}) }]));
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
       // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
       // branch index is keyed by barcode - so borrow the first barcode any storefront resolved the line to.
-      const gtinOf = (id: string, own?: string) => own ?? res.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? res.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
+      const gtinOf = (id: string, own?: string) => own ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
       const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => { const g = gtinOf(l.id, l.gtin); return { id: l.id, query: l.query, ...(g ? { gtin: g } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }; })).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
       return ok({
         currency: region.currency,
@@ -574,7 +582,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         couponSavings,
         rejected: result.rejected,
         warnings: result.warnings,
-        assumptions: res.assumptions,
+        assumptions: substituted.assumptions,
         quotedLines,
         suggestions: suggestMissing(memory, lines),
       });

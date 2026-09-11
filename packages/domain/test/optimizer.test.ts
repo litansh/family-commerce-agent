@@ -229,3 +229,18 @@ test('no eligible storefront yields no options rather than a bad one', () => {
   });
   assert.deepEqual(options, []);
 });
+
+test('a storefront missing a line still serves as the second leg of a split: the anchor keeps what it lacks', () => {
+  const full = quote('shufersal', 'Shufersal', [line('milk', 8), line('bread', 9), line('salmon', 60), line('eggs', 14), line('rice', 12)], 30, 5);
+  // Rami Levy has no salmon (4 of 5 lines) but is much cheaper on the rest.
+  const partial = quote('rami-levy', 'Rami Levy', [line('milk', 2), line('bread', 2), line('eggs', 4), line('rice', 3)], 20, 5);
+  const r = optimize({ quotes: [full, partial], constants: { ...DEFAULT_CONSTANTS, minSavingForSecondStore: shekels(5) }, requestedLineIds: ids(0).concat(['milk', 'bread', 'salmon', 'eggs', 'rice']) });
+  const split = r.options.find((o) => o.kind === 'split_delivered');
+  assert.ok(split, 'a split is offered');
+  const rl = split!.legs.find((l) => l.storefrontId === 'rami-levy')!;
+  const sh = split!.legs.find((l) => l.storefrontId === 'shufersal')!;
+  assert.deepEqual([...rl.lineIds].sort(), ['bread', 'eggs', 'milk', 'rice']);
+  assert.deepEqual(sh.lineIds, ['salmon']);
+  // On its own, the partial store is still rejected for coverage.
+  assert.ok(r.rejected.some((x) => x.storefrontId === 'rami-levy' && x.code === 'coverage'));
+});
