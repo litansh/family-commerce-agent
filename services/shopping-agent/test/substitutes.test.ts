@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickSubstitute, sameWord, substituteMissing } from '../src/substitutes.ts';
+import { hebStem, pickSubstitute, sameWord, substituteMissing } from '../src/substitutes.ts';
 import type { StorefrontQuote, QuotedLine, ListLine } from '@fca/domain';
 
 const line = (id: string, name: string, price: number, over: Partial<QuotedLine> = {}): QuotedLine => ({ lineId: id, query: name, productName: name, qty: 1, unitPrice: price as never, lineTotal: price as never, substituted: false, clubOnly: false, resolutionSource: 'provider', ...over });
@@ -44,6 +44,9 @@ test('a substitute is the same kind of product: no pickles for cucumbers, no smo
 });
 
 test('plural and singular are the same word: tomatoes ~ a packed tomato, cucumbers ~ a packed cucumber', () => {
+  // The masculine plural ends in a final ם; the stem must lose it after the final letter is normalised.
+  assert.equal(hebStem('ביצים'), 'ביצ');
+  assert.equal(hebStem('מלפפונים'), hebStem('מלפפון'));
   assert.ok(sameWord('עגבניות', 'עגבניה'));
   assert.ok(sameWord('מלפפונים', 'מלפפון'));
   assert.ok(sameWord('ביצים', 'ביצה'));

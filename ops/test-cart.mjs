@@ -101,7 +101,7 @@ check('stores lacking lines are handled (substitute named or split leg), not dro
 const norm = (x) => x.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter((w) => w.length > 1);
 // Hebrew plural and gender endings fall away (עגבניות ~ עגבניה), the same rule the picker uses.
 const finals = (w) => w.replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ');
-const stem = (w) => { const x = finals(w); return x.length > 4 ? x.replace(/(יות|ות|ים|ין|יה|ה|ת)$/u, '') : x; };
+const stem = (w) => { const x = finals(w); return x.length > 4 ? x.replace(/(יות|ות|ימ|ינ|יה|ה|ת)$/u, '') : x; }; // endings written with regular letters: finals are normalised first
 const same = (a, b) => { if (a === b) return true; const [x, y] = [stem(a), stem(b)]; return x.length >= 3 && y.length >= 3 && (x === y || x.startsWith(y) || y.startsWith(x)); };
 const badSubs = Object.values(q.storefrontLines ?? {}).flatMap((m) => Object.entries(m)).filter(([id, l]) => l.substituted && l.reason && /→/.test(l.reason) && l.swapBy !== 'store').filter(([id, l]) => { const orig = norm(LIST.find((x) => x.id === id)?.query ?? ''); const alt = norm(l.productName); return orig.length && !orig.some((w) => alt.some((v) => same(v, w))); });
 check('substitutes are the same kind of product', badSubs.length === 0, badSubs.length ? badSubs.slice(0, 3).map(([, l]) => l.reason).join('; ') : 'all share a word with the line');

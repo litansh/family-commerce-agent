@@ -18,9 +18,13 @@ import type { CatalogProvider, QuoteRequest, QuoteResponse } from '@fca/retailer
  */
 const PROCESSED = /מעושן|מעושנת|בחומץ|במלח|כבוש|כבושים|חמוצים|קצוצ|חתוכ|מקולפ|רסק|משומר|שימורים|קפוא|קפואה|קפואים|מיובש|מיובשים|אבקת|רוטב|מרק|ממרח|טעם|בטעם|מרוכז|תרכיז/;
 const words = (s: string) => s.toLowerCase().replace(/["'׳״%().,\-]/g, ' ').split(/\s+/).filter((w) => w.length > 1 && !/^\d+$/.test(w) && !/^(ק"ג|קג|גרם|גר|ליטר|ל|מל|יח|יחידות|x)$/.test(w));
-/** Hebrew plural and gender endings fall away, so עגבניות ~ עגבניה, מלפפונים ~ מלפפון, ביצים ~ ביצה. */
+/**
+ * Hebrew plural and gender endings fall away, so עגבניות ~ עגבניה, מלפפונים ~ מלפפון, ביצים ~ ביצה.
+ * Final letters are normalised first, so the endings are written with the regular letters
+ * (ימ, ינ): with the final ם/ן the plural was never stripped and ביצים stayed apart from ביצה.
+ */
 const finals = (w: string) => w.replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ');
-export const hebStem = (w: string): string => { const x = finals(w); return x.length > 4 ? x.replace(/(יות|ות|ים|ין|יה|ה|ת)$/u, '') : x; };
+export const hebStem = (w: string): string => { const x = finals(w); return x.length > 4 ? x.replace(/(יות|ות|ימ|ינ|יה|ה|ת)$/u, '') : x; };
 export const sameWord = (a: string, b: string): boolean => { if (a === b) return true; const [x, y] = [hebStem(a), hebStem(b)]; return x.length >= 3 && y.length >= 3 && (x === y || x.startsWith(y) || y.startsWith(x)); };
 export function pickSubstitute<T extends { gtin?: string; name: string; pricedAtChains: number }>(query: string, candidates: readonly T[]): T | undefined {
   const q = words(query);
