@@ -69,7 +69,11 @@ export function optimize(input: OptimizeInput): OptimizeResult {
   // incomplete one, and offering it causes the top-up trip we exist to prevent.
   const eligible = quotes.filter((q) => {
     const cov = coverageRatio(q);
-    if (cov < constants.minCoverageRatio) {
+    // One missing line never disqualifies a store: on an eight-line top-up a 90 % floor would
+    // reject a store for the salmon alone. The missing line is named on the card instead.
+    const missing = q.requestedLines - q.pricedLines;
+    const allowedMissing = Math.max(1, Math.floor(q.requestedLines * (1 - constants.minCoverageRatio)));
+    if (missing > allowedMissing) {
       rejected.push({
         storefrontId: q.storefrontId, brand: q.brand, code: 'coverage',
         reason: `prices only ${q.pricedLines}/${q.requestedLines} lines (${pct(cov)}) — below the ${pct(constants.minCoverageRatio)} floor`,
@@ -97,8 +101,11 @@ export function optimize(input: OptimizeInput): OptimizeResult {
   const delivery = eligible.filter((q) => q.serviceType === 'delivery');
   const pickup = eligible.filter((q) => q.serviceType === 'pickup');
 
-  // --- Baseline: the cheapest complete single delivered basket.
-  const singles = [...delivery].sort((a, b) => a.deliveredTotal - b.deliveredTotal);
+  // --- Baseline: the cheapest COMPLETE single delivered basket. A store missing a line is an
+  // option, but its total leaves that item out, so it can never be the baseline while a
+  // complete basket exists - a partial total is not a cheaper one (promise 4).
+  const complete = (q: StorefrontQuote) => q.pricedLines >= q.requestedLines;
+  const singles = [...delivery].sort((a, b) => Number(complete(b)) - Number(complete(a)) || a.deliveredTotal - b.deliveredTotal);
   const best = singles[0];
   if (best === undefined) {
     return { options: [], rejected, warnings };
@@ -361,8 +368,10 @@ function rank(
   _constants: HouseholdConstants,
   _baseline: StorefrontQuote,
 ): readonly PurchaseOption[] {
+  // Complete options first: an option that leaves a line out is not cheaper, it is smaller.
   return [...options].sort(
     (a, b) =>
+      a.unpricedLineIds.length - b.unpricedLineIds.length ||
       a.cashCost - b.cashCost ||
       a.legs.length - b.legs.length ||
       a.substitutedLineCount - b.substitutedLineCount,
