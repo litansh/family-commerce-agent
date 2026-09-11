@@ -37,5 +37,7 @@ export function sameCity(published: string, cityName: string, names: SettlementN
   const n = normCity(p);
   if (!n) return false;
   // "תל אביב" is "תל אביב יפו"; "ראשון לציון" is not "ראש העין".
+  // A chain that folds the city into the address line ("ראשון לציון 1 פתח תקווה"): the city is what the line ends with.
+  if (/\d/.test(n)) return n.endsWith(' ' + target);
   return n === target || n.startsWith(target + ' ') || target.startsWith(n + ' ');
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CONSTANTS } from '@fca/domain';
-import { branchesInCity, nearestBranches, priceAtBranch, sameCity, travelTo, haversineKm, parseCarrefourPage, storeIdOf, type GeoBranch } from '../src/index.ts';
+import { parseHaziHinamBranches, branchesInCity, nearestBranches, priceAtBranch, sameCity, travelTo, haversineKm, parseCarrefourPage, storeIdOf, type GeoBranch } from '../src/index.ts';
 
 const b = (chain: string, storeId: string, lat: number, lng: number): GeoBranch => ({ chain, brand: chain, chainId: '1', subChainId: '0', storeId, name: `סניף ${storeId}`, address: '', city: 'תל אביב', lat, lng });
 const home = { lat: 32.08, lng: 34.78 };
@@ -45,4 +45,16 @@ test('the carrefour page and file names give the day, the files and the branch',
   assert.equal(p.path, '20260911');
   assert.equal(storeIdOf(p.files[0]!.name), '002');
   assert.equal(storeIdOf('Stores7290055700007-000-20260911-000100.xml'), undefined);
+});
+
+test('hatzi hinam branches come from its shop API, with coordinates and the city split off the address', () => {
+  const b = parseHaziHinamBranches(JSON.stringify({ IsOK: true, Results: { Branches: [
+    { Code: 100, IsActive: true, Name: 'שרונים', Address: 'הרקון 2, הוד השרון', Latitude: 32.13, Longitude: 34.9 },
+    { Code: 101, IsActive: true, Name: 'אם המושבות', Address: 'ראשון לציון 1 פתח תקווה', Latitude: 32.1, Longitude: 34.87 },
+    { Code: 9, IsActive: false, Name: 'סגור', Address: 'x, y' },
+  ] } }));
+  assert.equal(b.length, 2);
+  assert.deepEqual(b[0], { chainId: '7290700100008', subChainId: '000', storeId: '100', name: 'שרונים', address: 'הרקון 2', city: 'הוד השרון', lat: 32.13, lng: 34.9 });
+  assert.ok(sameCity(b[1]!.city, 'פתח תקווה', {}));
+  assert.ok(!sameCity(b[1]!.city, 'ראשון לציון', {}));
 });

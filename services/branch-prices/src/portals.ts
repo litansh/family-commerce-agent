@@ -148,14 +148,27 @@ export function cerberusPortal(chain: string, fetchImpl: typeof fetch = fetch): 
 
 // --- Hatzi Hinam ---------------------------------------------------------------
 
+/** `{ Results: { Branches: [{ Code, Name, Address: "street, city", Latitude, Longitude }] } }` → branches. */
+export function parseHaziHinamBranches(json: string): Branch[] {
+  let data: { Results?: { Branches?: { Code?: number | string; Name?: string; Address?: string; Latitude?: number; Longitude?: number; IsActive?: boolean }[] } };
+  try { data = JSON.parse(json) as typeof data; } catch { return []; }
+  return (data.Results?.Branches ?? []).filter((b) => b.Code !== undefined && b.IsActive !== false).map((b) => {
+    const address = (b.Address ?? '').trim();
+    const parts = address.split(',').map((x) => x.trim()).filter(Boolean);
+    // "הרקון 2, הוד השרון" → city after the comma; without one the whole address is left for the city match.
+    const city = parts.length > 1 ? parts[parts.length - 1]! : address;
+    return { chainId: '7290700100008', subChainId: '000', storeId: String(b.Code), name: b.Name ?? '', address: parts.length > 1 ? parts.slice(0, -1).join(', ') : address, city, ...(typeof b.Latitude === 'number' && typeof b.Longitude === 'number' ? { lat: b.Latitude, lng: b.Longitude } : {}) };
+  });
+}
+
 export function haziHinamPortal(fetchImpl: typeof fetch = fetch): Portal {
   const page = async () => (await getBytes('https://shop.hazi-hinam.co.il/Prices', fetchImpl)).toString('utf8');
   return {
     chain: 'hazi-hinam', brand: 'חצי חינם',
     async stores() {
-      const html = await page();
-      const url = [...html.matchAll(/href="(https:\/\/[^"]+\/Stores[^"]+)"/g)].map((m) => m[1]!)[0];
-      return url ? parseStores(decodeXml(await getBytes(url, fetchImpl))) : [];
+      // No Stores file on the portal; the shop's own branch API has every branch with coordinates.
+      const raw = (await getBytes('https://shop.hazi-hinam.co.il/proxy/api/Branches', fetchImpl, { accept: 'application/json', referer: 'https://shop.hazi-hinam.co.il/' })).toString('utf8');
+      return parseHaziHinamBranches(raw);
     },
     async priceFile(storeId) {
       const html = await page();
