@@ -104,8 +104,9 @@ export function optimize(input: OptimizeInput): OptimizeResult {
   // --- Baseline: the cheapest COMPLETE single delivered basket. A store missing a line is an
   // option, but its total leaves that item out, so it can never be the baseline while a
   // complete basket exists - a partial total is not a cheaper one (promise 4).
-  const complete = (q: StorefrontQuote) => q.pricedLines >= q.requestedLines;
-  const singles = [...delivery].sort((a, b) => Number(complete(b)) - Number(complete(a)) || a.deliveredTotal - b.deliveredTotal);
+  const priced = (q: StorefrontQuote) => new Set(q.lines.map((l) => l.lineId));
+  const completed = (q: StorefrontQuote): number => { const est = missingEstimate(requestedLineIds.filter((id) => !priced(q).has(id)), quotes); return est === undefined ? Number.MAX_SAFE_INTEGER : q.deliveredTotal + est; };
+  const singles = [...delivery].sort((a, b) => completed(a) - completed(b) || a.deliveredTotal - b.deliveredTotal);
   const best = singles[0];
   if (best === undefined) {
     return { options: [], rejected, warnings };
@@ -172,7 +173,8 @@ export function optimize(input: OptimizeInput): OptimizeResult {
     if (opt !== undefined) options.push(opt);
   }
 
-  return { options: rank(options, constants, best), rejected, warnings };
+  const withEstimates = options.map((o) => { const est = missingEstimate(o.unpricedLineIds, quotes); return est === undefined ? o : { ...o, missingEstimate: est }; });
+  return { options: rank(withEstimates, constants, best), rejected, warnings };
 }
 
 // ---------------------------------------------------------------------------
@@ -237,6 +239,10 @@ function bestSplit(
       if (rival !== undefined && rival.lineTotal < line.lineTotal) moved.push(rival);
       else kept.push(line);
     }
+    // What the anchor lacks and the other store has completes the basket: the top-up as a real second cart.
+    const anchorHas = new Set(anchor.lines.map((l) => l.lineId));
+    const completing = other.lines.filter((l) => !anchorHas.has(l.lineId) && requestedLineIds.includes(l.lineId));
+    moved.push(...completing);
     if (moved.length === 0 || kept.length === 0) continue;
 
     const keptSubtotal = addAgorot(...kept.map((l) => l.lineTotal));
@@ -247,8 +253,11 @@ function bestSplit(
     if (anchor.minimumOrder !== undefined && keptSubtotal < anchor.minimumOrder) continue;
 
     const total = addAgorot(keptSubtotal, anchor.deliveryFee, movedSubtotal, other.deliveryFee);
-    const saving = subAgorot(anchor.deliveredTotal, total);
-    if (saving <= bestSaving) continue;
+    // Against the anchor as the family would really pay for it: with its missing lines topped up.
+    const anchorCompleted = (anchor.deliveredTotal + (missingEstimate(requestedLineIds.filter((id) => !anchorHas.has(id)), [anchor, other]) ?? 0)) as Agorot;
+    const saving = subAgorot(anchorCompleted, total);
+    // A split that completes the basket is worth offering at any saving; one that only shaves must beat the threshold.
+    if (completing.length ? saving < 0 : saving <= bestSaving) continue;
 
     bestSaving = saving;
     const legs: OptionLeg[] = [
@@ -339,6 +348,26 @@ function driveOption(
   };
 }
 
+/**
+ * The cheapest price, anywhere, of each line an option leaves out. A basket missing the salmon
+ * is compared as basket + the cheapest salmon around, so "cheapest" never means "smallest".
+ */
+function missingEstimate(unpriced: readonly string[], quotes: readonly StorefrontQuote[]): Agorot | undefined {
+  if (unpriced.length === 0) return 0 as Agorot;
+  let sum = 0;
+  const fees: number[] = [];
+  for (const id of unpriced) {
+    const have = quotes.filter((q) => q.lines.some((l) => l.lineId === id && !l.substituted));
+    if (have.length === 0) return undefined;
+    sum += Math.min(...have.map((q) => q.lines.find((l) => l.lineId === id)!.lineTotal));
+    fees.push(Math.min(...have.map((q) => q.deliveryFee)));
+  }
+  // The missing items do not arrive by themselves: one top-up delivery, at the cheapest fee among the stores that have them.
+  return (sum + Math.max(...fees)) as Agorot;
+}
+// A line priced nowhere has no estimate: such an option sorts after every priced one (a finite sentinel, so the sort arithmetic stays sane).
+const comparable = (o: PurchaseOption): number => (o.missingEstimate === undefined ? Number.MAX_SAFE_INTEGER : o.cashCost + o.missingEstimate);
+
 /** Flags lines whose price varies implausibly across chains — a resolution bug. */
 function detectSuspiciousLines(quotes: readonly StorefrontQuote[]): string[] {
   const byLine = new Map<string, { query: string; prices: number[] }>();
@@ -368,9 +397,11 @@ function rank(
   _constants: HouseholdConstants,
   _baseline: StorefrontQuote,
 ): readonly PurchaseOption[] {
-  // Complete options first: an option that leaves a line out is not cheaper, it is smaller.
+  // By what the family would end up paying: an option that leaves a line out carries the
+  // cheapest price of that line on top, so it is never "cheaper" for being smaller.
   return [...options].sort(
     (a, b) =>
+      comparable(a) - comparable(b) ||
       a.unpricedLineIds.length - b.unpricedLineIds.length ||
       a.cashCost - b.cashCost ||
       a.legs.length - b.legs.length ||
