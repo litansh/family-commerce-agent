@@ -50,7 +50,18 @@ export interface StoreDef {
   readonly signup: { readonly url: string; readonly asks: readonly SignupField[] };
   /** Cookie / token names that make up a signed-in session on this store, for the phone to capture after sign-in. */
   readonly sessionKeys?: readonly string[];
+  /**
+   * Ordering on the phone (ADR 0008 amendment): JS run inside the store's own
+   * page, in the person's own session, that puts `lines` into the store's cart
+   * through the store's own endpoints and posts
+   * `cart:{results:[{gtin,status:'added'|'missing'|'error',detail?}],cartUrl?}`.
+   * The page then shows the store's cart/checkout for the one approval.
+   */
+  readonly cartJs?: (lines: readonly CartLine[]) => string;
+  /** The store's cart page, shown after the recipe ran (or straight away when there is no recipe). */
+  readonly cartUrl?: string;
 }
+export interface CartLine { readonly gtin?: string; readonly name: string; readonly qty: number; readonly link?: string }
 export type SignupField = 'name' | 'id' | 'phone' | 'email' | 'birthdate' | 'password' | 'address' | 'code';
 
 const setInput = (selector: string, value: string) =>
@@ -96,6 +107,36 @@ export const STORES: Record<string, StoreDef> = {
     // `/api/v2/site/auth/login` answers 422 "recaptcha" without a widget token — phone only.
     signup: { url: 'https://www.rami-levy.co.il/he', asks: ['email', 'code'] },
     sessionKeys: ['auth._token.local', 'auth._refresh_token.local'],
+    cartUrl: 'https://www.rami-levy.co.il/he/cart',
+    // From the site's own bundle: POST www-api…/api/v2/cart {store,isClub,supplyAt,items:{[itemId]:qty},meta}
+    // with the session's EcomToken; item ids come from /api/catalog?itemsBy=barcode. Runs in the page,
+    // so it is the person's own session and the store sees its own app at work.
+    cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
+  const n=window.$nuxt;const st=(n&&n.$store)?n.$store:null;
+  // The site's own anonymous (or signed-in) bearer, read off its axios defaults.
+  let auth='';try{const hc=n&&n.$axios&&n.$axios.defaults&&n.$axios.defaults.headers&&n.$axios.defaults.headers.common;auth=(hc&&(hc.Authorization||hc.authorization))||'';}catch(e){}
+  auth=String(auth||'');if(auth&&!/^Bearer/i.test(auth))auth='Bearer '+auth;
+  // Signed in? then the club/EcomToken comes from the user; a guest sends EcomToken:0.
+  let ecom=0,isClub=0;try{const u=st&&st.getters&&st.getters['authuser/loggedInUser'];if(u&&u.token){ecom=u.token;isClub=st.getters['authuser/isClub']?1:0;}}catch(e){}
+  const store=(st&&st.getters&&st.getters['cart/getStoreId'])||331;
+  const codes=L.filter(l=>l.gtin).map(l=>l.gtin);
+  const byBarcode={};
+  if(codes.length){const r=await fetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify({store,items:codes.join(','),itemsBy:'barcode',size:codes.length})});const j=await r.json().catch(()=>({}));const arr=(j&&(j.data||j.items||j.products))||[];for(const it of (Array.isArray(arr)?arr:[])){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(bc&&id!=null)byBarcode[bc]={id,name:it.name||it.Name||''};}}
+  const qty={};for(const l of L){const hit=l.gtin&&byBarcode[l.gtin];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing'});}
+  const items=Object.keys(qty).map(id=>({C:isNaN(+id)?id:+id,Quantity:qty[id]}));
+  let cartStatus=0,via='';
+  if(items.length){
+    const body={store,isClub,supplyAt:null,items,meta:null};
+    // Prefer the site's own axios: its request interceptor carries the (anonymous or signed-in) bearer.
+    try{if(n&&n.$axios&&n.$axios.post){const rr=await n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,{headers:{EcomToken:String(ecom)}});cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
+    if(cartStatus!==200){
+      const h={'content-type':'application/json',accept:'application/json'};if(auth)h.Authorization=auth;h.EcomToken=String(ecom);
+      const r=await fetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)});cartStatus=r.status;via=via+'+fetch';
+    }
+    if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
+  }
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,found:Object.keys(byBarcode).length,cartStatus,via}}));
+}catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
   wolt: {
@@ -145,6 +186,18 @@ export const STORES: Record<string, StoreDef> = {
     // (verified from a Lambda, 2026-09-10), so there is no cloud rung: phone only.
     signup: { url: 'https://www.shufersal.co.il/online/he/register', asks: ['name', 'id', 'phone', 'email', 'birthdate', 'password'] },
     sessionKeys: ['JSESSIONID', 'XSRF-TOKEN', 'miglogstorefrontRememberMe'],
+    cartUrl: 'https://www.shufersal.co.il/online/he/cart',
+    // Hybris: POST /online/he/cart/add (productCodePost, qty, CSRFToken from the page). Product codes are
+    // P_<barcode>; when that misses, the site's own search finds the code for the barcode.
+    cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
+  const csrf=(document.querySelector('meta[name="_csrf"]')||{}).content||((document.querySelector('input[name="CSRFToken"]')||{}).value)||'';
+  const add=async(code,qty)=>{const b=new URLSearchParams({productCodePost:code,qty:String(qty),CSRFToken:csrf});const r=await fetch('/online/he/cart/add',{method:'POST',credentials:'include',headers:{'content-type':'application/x-www-form-urlencoded','x-requested-with':'XMLHttpRequest',accept:'application/json','csrftoken':csrf},body:b.toString()});const t=await r.text();let j=null;try{j=JSON.parse(t)}catch(e){}return {ok:r.ok&&r.url.indexOf('/login')<0&&!(j&&j.error),status:r.status,j};};
+  for(const l of L){if(!l.gtin){out.push({gtin:l.gtin,status:'missing'});continue;}
+    let res=await add('P_'+l.gtin,l.qty||1);
+    if(!res.ok){try{const s=await fetch('/online/he/search/autocomplete?term='+encodeURIComponent(l.gtin),{credentials:'include',headers:{accept:'application/json','x-requested-with':'XMLHttpRequest'}});const sj=await s.json().catch(()=>null);const cand=sj&&(sj.products||sj.suggestions||[]);const code=cand&&cand[0]&&(cand[0].code||cand[0].productCode);if(code)res=await add(code,l.qty||1);}catch(e){}}
+    out.push({gtin:l.gtin,status:res.ok?'added':(res.status>=500?'error':'missing'),detail:String(res.status)});}
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.shufersal.co.il/online/he/cart',diag:{csrf:!!csrf}}));
+}catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
   carrefour: platform('carrefour', 'קרפור / ביתן', 'www.ybitan.co.il', /carrefour|ybitan|quik/i, false),
   'keshet-teamim': platform('keshet-teamim', 'קשת טעמים', 'www.keshet-teamim.co.il', /keshet/i, false),

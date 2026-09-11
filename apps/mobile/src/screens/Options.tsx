@@ -10,7 +10,9 @@ import { money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
 import { getMode, setMode } from '../lib/prefs';
 import { StoreLink } from './StoreLink';
-import { storeForStorefront } from '../lib/stores';
+import { storeForStorefront, type CartLine } from '../lib/stores';
+import { OrderOnDevice } from './OrderOnDevice';
+import { Platform } from 'react-native';
 
 const LETTERS = 'אבגדה';
 
@@ -19,6 +21,14 @@ const LETTERS = 'אבגדה';
  * separately and never merged. Anything a storefront cannot supply is named.
  */
 const retailerOf = (storefrontId: string) => storeForStorefront(storefrontId)?.id;
+/** What goes into the store's cart for one leg: barcode, name, quantity, and the deep link as the fallback. */
+function cartLinesFor(leg: PurchaseOption['legs'][number], quote: QuoteResult): CartLine[] {
+  return leg.lineIds.flatMap((id) => {
+    const l = quote.lines.find((x) => x.id === id); const ql = quote.quotedLines[id];
+    if (!l) return [];
+    return [{ ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), name: ql?.productName ?? l.query, qty: Math.max(1, Math.round(l.packQty ?? 1)), ...(ql?.link ? { link: ql.link } : {}) }];
+  });
+}
 
 /** Build order legs from an option: every leg the worker can drive. */
 function legsFor(option: PurchaseOption, quote: QuoteResult) {
@@ -37,9 +47,23 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // moment you first order from it — never up front.
   const linked = useLinked();
   const [needLink, setNeedLink] = useState<{ retailer: string; best: PurchaseOption; q: QuoteResult } | null>(null);
+  // On the phone the order runs here, in the store's own site, one store at a time (ADR 0008).
+  const [onDevice, setOnDevice] = useState<{ storeId: string; lines: CartLine[]; rest: { storeId: string; lines: CartLine[] }[]; best: PurchaseOption; q: QuoteResult } | null>(null);
+  const onDeviceDone = async (added: readonly CartLine[]) => {
+    const cur = onDevice; if (!cur) return;
+    // Teach the memory what went into the cart, then the next store if the basket is split.
+    const bought = added.filter((l) => l.gtin).map((l) => ({ phrase: l.name, gtin: l.gtin!, productName: l.name, packQty: l.qty }));
+    if (bought.length) await api.recordShop(household.id, bought).catch(() => null);
+    if (cur.rest.length) setOnDevice({ ...cur.rest[0]!, rest: cur.rest.slice(1), best: cur.best, q: cur.q });
+    else { setOnDevice(null); onChoose(cur.best, cur.q); }
+  };
   const orderBest = async (best: PurchaseOption, q: QuoteResult) => {
     const legs = legsFor(best, q);
     if (legs.length === 0) { onChoose(best, q); return; }
+    if (Platform.OS !== 'web') {
+      const plan = best.legs.map((leg) => ({ storeId: retailerOf(leg.storefrontId) ?? '', lines: cartLinesFor(leg, q) })).filter((x) => x.storeId && x.lines.length);
+      if (plan.length) { setOnDevice({ ...plan[0]!, rest: plan.slice(1), best, q }); return; }
+    }
     const missing = legs.find((l) => !linked.includes(l.retailer));
     if (missing) { setNeedLink({ retailer: missing.retailer, best, q }); return; }
     setOrdering(true);
@@ -199,11 +223,12 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     </ScrollView>
     {chosen ? (
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
-        <Button title={tr('orderNow', { x: money(chosen.cashCost) })} onPress={() => orderBest(chosen, q)} disabled={ordering} />
+        <Button testID="order-now" title={tr('orderNow', { x: money(chosen.cashCost) })} onPress={() => orderBest(chosen, q)} disabled={ordering} />
         <Pressable onPress={() => onChoose(chosen, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
       </View>
     ) : null}
-    {needLink ? (
+    {onDevice ? <OrderOnDevice storeId={onDevice.storeId} lines={onDevice.lines} api={api} householdId={household.id} onClose={() => setOnDevice(null)} onDone={(a) => void onDeviceDone(a)} /> : null}
+      {needLink ? (
       <StoreLink storeId={needLink.retailer} api={api} householdId={household.id} onClose={() => setNeedLink(null)}
         onLinked={(id) => { markLinked(id); const { best: b, q: qq } = needLink; setNeedLink(null); void orderBest(b, qq); }} />
     ) : null}

@@ -1,0 +1,185 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import type { Api } from '../lib/api';
+import { STORES, type CartLine } from '../lib/stores';
+import { isRTL, t as tr } from '../lib/i18n';
+import { Button, Chip, S, t } from '../ui';
+import { BUILD } from '../lib/config';
+
+/**
+ * Ordering on the phone (ADR 0008 amendment): the store's own site, in the
+ * person's own session, inside Kaniti. Nobody can block it - the store sees
+ * exactly what it sees when the person shops.
+ *
+ * 1. The store's page loads in the WebView (signed in if the person connected
+ *    it; otherwise the store's guest cart, which its checkout turns into a
+ *    sign-in at the end - the store's own flow).
+ * 2. The store's recipe runs inside the page: its own catalogue lookup, its own
+ *    add-to-cart calls. Each line reports added / missing.
+ * 3. The store's cart page is shown. The person checks it and pays on the
+ *    store's own checkout - Kaniti never completes a payment (ADR 0006).
+ * 4. "Done" teaches the family memory what was bought.
+ *
+ * Stores without a recipe yet get the honest version: each line's deep link,
+ * one tap per item, in the same WebView.
+ */
+export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDone }: {
+  storeId: string; lines: readonly CartLine[]; api: Api; householdId: string; onClose: () => void; onDone: (added: readonly CartLine[]) => void;
+}) {
+  const s = S();
+  const rtl = isRTL();
+  const store = STORES[storeId];
+  const WebView = Platform.OS === 'web' ? null : (() => { try { return require('react-native-webview').WebView as typeof import('react-native-webview').WebView; } catch { return null; } })();
+  const webref = useRef<import('react-native-webview').WebView | null>(null);
+  const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js); };
+
+  type Phase = 'loading' | 'filling' | 'signin' | 'cart' | 'links';
+  const [phase, setPhase] = useState<Phase>('loading');
+  const [results, setResults] = useState<Record<string, 'added' | 'missing' | 'error'>>({});
+  const [diag, setDiag] = useState<string | null>(null);
+  const [linkIdx, setLinkIdx] = useState(0);
+  const ran = useRef(false);
+  const [uri, setUri] = useState<string>(store?.cartJs ? store.loginUrl : (lines.find((l) => l.link)?.link ?? store?.loginUrl ?? 'about:blank'));
+
+  if (!store) return null;
+  const hasRecipe = !!store.cartJs;
+  const added = lines.filter((l) => l.gtin && results[l.gtin] === 'added');
+  const count = (st: 'added' | 'missing' | 'error') => Object.values(results).filter((v) => v === st).length;
+
+  // Deep-link mode: one line at a time, in the same WebView.
+  const linkLines = lines.filter((l) => l.link);
+  const nextLink = () => { const i = linkIdx + 1; if (i < linkLines.length) { setLinkIdx(i); setUri(linkLines[i]!.link!); } else { setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); } };
+
+  useEffect(() => { if (!hasRecipe) setPhase('links'); }, [hasRecipe]);
+
+  const runRecipe = () => { ran.current = true; setPhase('filling'); setTimeout(() => inject(store.cartJs!(lines)), 1200); };
+  const onLoadEnd = () => {
+    if (!hasRecipe || ran.current) return;
+    // Signed in already (a store the family connected)? fill now. Otherwise the
+    // store's own login is on screen; we wait for the person to sign in, then fill.
+    inject(`(async()=>{try{const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`);
+    if (phase === 'loading') { setTimeout(() => { if (!ran.current) runRecipe(); }, 1500); } // guest stores (Rami Levy) fill without waiting
+  };
+  // While waiting for a sign-in, keep asking the store's page whether it is in yet.
+  useEffect(() => {
+    if (!hasRecipe) return;
+    const id = setInterval(() => inject(`(async()=>{try{const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`), 2500);
+    return () => clearInterval(id);
+  }, [hasRecipe, store]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const signedInOnce = useRef(false);
+  const onMessage = (e: { nativeEvent: { data: string } }) => {
+    const d = e.nativeEvent.data;
+    if (d.startsWith('signedin:')) {
+      const yes = d.endsWith('1');
+      if (yes && !signedInOnce.current) {
+        signedInOnce.current = true;
+        // The person just signed in (or was already): fill the cart now, replacing any guest attempt.
+        if (count('added') === 0) { setResults({}); runRecipe(); }
+      }
+      return;
+    }
+    if (!d.startsWith('cart:')) return;
+    try {
+      const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'error' }[]; cartUrl?: string; diag?: unknown };
+      const r: Record<string, 'added' | 'missing' | 'error'> = {};
+      for (const x of j.results ?? []) if (x.gtin) r[x.gtin] = x.status;
+      setResults(r);
+      setDiag(j.diag ? JSON.stringify(j.diag) : null);
+      // The report reaches the server log too, so a wrong shape is fixable without a phone in hand.
+      void api.importHistory(householdId, storeId, [], { build: BUILD, cart: { results: j.results, diag: j.diag } }).catch(() => null);
+      const anyAdded = (j.results ?? []).some((x) => x.status === 'added');
+      if (!anyAdded) {
+        if (!signedInOnce.current) {
+          // The store needs a sign-in it does not yet have. Its own login is on
+          // screen; say so plainly and keep polling - a sign-in re-runs the fill.
+          setPhase('signin');
+          return;
+        }
+        if (linkLines.length > 0) { setPhase('links'); setLinkIdx(0); setUri(linkLines[0]!.link!); return; }
+      }
+      setPhase('cart');
+      setUri(j.cartUrl ?? store.cartUrl ?? store.loginUrl);
+    } catch (err) { setDiag(String(err)); setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); }
+  };
+
+  const title = phase === 'cart' ? tr('cartReady', { s: store.name }) : phase === 'signin' ? tr('cartSignin', { s: store.name }) : phase === 'links' ? tr('cartLinks', { s: store.name, i: linkIdx + 1, n: linkLines.length }) : tr('cartFilling', { s: store.name });
+  const sub = phase === 'cart' ? tr('cartReadySub') : phase === 'signin' ? tr('cartSigninSub', { s: store.name }) : phase === 'links' ? tr('cartLinksSub') : tr('cartFillingSub', { s: store.name });
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+      <View style={[s.screen, { paddingTop: 8 }]}>
+        <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]} testID="order-title">{title}</Text>
+            <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+          </View>
+          <Pressable onPress={onClose} hitSlop={16} testID="order-close" style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 20, color: t.ink, fontWeight: '700' }}>✕</Text>
+          </Pressable>
+        </View>
+
+        {/* Per-line status strip: what went in, what the store does not carry. */}
+        {hasRecipe && phase !== 'loading' ? (
+          <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 8 }}>
+            <View style={[s.rowStart, { gap: 8, flexWrap: 'wrap' }]}>
+              <Chip text={tr('cartAdded', { n: count('added') })} tone="good" />
+              {count('missing') > 0 ? <Chip text={tr('cartMissing', { n: count('missing') })} tone="warn" /> : null}
+              {count('error') > 0 ? <Chip text={tr('cartError', { n: count('error') })} tone="bad" /> : null}
+              {phase === 'filling' ? <Text style={[s.small, { color: t.accent }]}>{tr('cartWorking')}</Text> : null}
+            </View>
+          </View>
+        ) : null}
+
+        {!WebView ? (
+          <View style={[s.pad, { flex: 1, justifyContent: 'center' }]}>
+            <Text style={[s.body, { textAlign: 'center' }]}>{tr('linkNeedsApp')}</Text>
+            <Button title={tr('ok')} onPress={onClose} kind="secondary" />
+          </View>
+        ) : (
+          <View style={{ flex: 1, overflow: 'hidden' }}>
+            <WebView
+              ref={(r) => { webref.current = r; }}
+              source={{ uri }}
+              sharedCookiesEnabled
+              thirdPartyCookiesEnabled
+              domStorageEnabled
+              setSupportMultipleWindows={false}
+              originWhitelist={['*']}
+              userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+              onLoadEnd={onLoadEnd}
+              onMessage={onMessage}
+            />
+          </View>
+        )}
+
+        <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
+          {phase === 'links' ? (
+            <View style={[s.rowStart, { gap: 10 }]}>
+              <View style={{ flex: 1 }}><Button title={linkIdx + 1 < linkLines.length ? tr('cartNextItem') : tr('cartToCart')} onPress={nextLink} testID="order-next" /></View>
+            </View>
+          ) : phase === 'cart' ? (
+            <>
+              <Button title={tr('cartDone')} icon="check" onPress={() => onDone(hasRecipe ? added : lines)} testID="order-done" />
+              <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('payAtStore')}</Text>
+              {diag && count('added') === 0 ? <Text style={[s.faint, { marginTop: 4 }]} numberOfLines={2} selectable>{diag}</Text> : null}
+            </>
+          ) : (
+            <Text style={[s.faint, { textAlign: 'center' }]}>{tr('linkPrivacy')}</Text>
+          )}
+          {store.cartUrl && phase === 'cart' ? <Pressable onPress={() => void Linking.openURL(store.cartUrl!)} hitSlop={8} style={{ alignItems: 'center', marginTop: 8 }}><Text style={s.link}>{tr('openInBrowser')}</Text></Pressable> : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/** The scrollable summary shown on the checkout screen before ordering on the phone. */
+export function OrderPlan({ storeName, lines }: { storeName: string; lines: readonly CartLine[] }) {
+  const s = S();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 4 }}>
+      <Chip text={tr('cartPlan', { s: storeName, n: lines.length })} tone="good" />
+    </ScrollView>
+  );
+}

@@ -86,6 +86,13 @@ const he: Strings = {
   signupOpen: 'פתחו את ההרשמה ב{s}', signupThen: 'סיימתם? חזרו לכאן והתחברו.', copy: 'העתק', copiedShort: 'הועתק', notKnown: 'תמלאו בעצמכם',
   field_name: 'שם פרטי ומשפחה', field_id: 'תעודת זהות', field_phone: 'טלפון נייד', field_email: 'אימייל', field_birthdate: 'תאריך לידה', field_password: 'סיסמה חדשה', field_address: 'כתובת למשלוח', field_code: 'קוד שיגיע ב-SMS / במייל',
   phoneBadge: 'מהטלפון', cloudBadge: 'מהאתר', sessionSaved: 'החיבור נשמר גם בענן ✓', sessionNotSaved: 'החיבור נשמר בטלפון הזה',
+  // Ordering on the phone
+  orderOnPhone: 'הזמינו דרך קניתי · {x}', orderOnPhoneSub: 'הסל מתמלא באתר {s} כאן, בטלפון, בחשבון שלכם. אתם בודקים ומשלמים באתר הרשת.',
+  cartFilling: 'ממלאים את הסל ב{s}', cartFillingSub: 'האתר של {s} עובד כאן, בחשבון שלכם. רגע אחד.', cartWorking: 'ממשיכים…',
+  cartReady: 'הסל מוכן ב{s}', cartReadySub: 'בדקו את הסל ושלמו באתר הרשת. קניתי לא מבצעת תשלום.',
+  cartSignin: 'התחברו ל{s} כדי שנמלא את הסל', cartSigninSub: 'היכנסו לחשבון {s} כאן — קניתי תמלא את הסל מיד אחרי. בלי סיסמה אצלנו.',
+  cartLinks: 'פריט {i} מתוך {n} ב{s}', cartLinksSub: 'הוסיפו לסל בעמוד של הרשת, ואז ״הבא״.', cartNextItem: 'הפריט הבא', cartToCart: 'לסל של הרשת',
+  cartAdded: '{n} נוספו', cartMissing: '{n} לא נמצאו', cartError: '{n} נכשלו', cartDone: 'סיימתי — תזכרו את הקנייה', openInBrowser: 'פתחו בדפדפן', cartPlan: '{n} פריטים ל{s}',
   rej_partial: 'מספקת רק {a} מתוך {b} פריטים', rej_min: 'הסל מתחת למינימום ההזמנה',
 };
 
@@ -163,6 +170,13 @@ const en: Strings = {
   signupOpen: 'Open {s} sign-up', signupThen: 'Done? Come back here and sign in.', copy: 'Copy', copiedShort: 'Copied', notKnown: 'You fill this in',
   field_name: 'First and last name', field_id: 'ID number', field_phone: 'Mobile phone', field_email: 'Email', field_birthdate: 'Date of birth', field_password: 'New password', field_address: 'Delivery address', field_code: 'Code sent by SMS / email',
   phoneBadge: 'On the phone', cloudBadge: 'From the site', sessionSaved: 'Connection also saved to the cloud ✓', sessionNotSaved: 'Connection saved on this phone',
+  // Ordering on the phone
+  orderOnPhone: 'Order through Kaniti · {x}', orderOnPhoneSub: 'The cart fills on {s}’s site right here on your phone, in your account. You check and pay on the store’s site.',
+  cartFilling: 'Filling your {s} cart', cartFillingSub: '{s}’s site is working here, in your account. One moment.', cartWorking: 'Working…',
+  cartReady: 'Your {s} cart is ready', cartReadySub: 'Check the cart and pay on the store’s site. Kaniti never completes a payment.',
+  cartSignin: 'Sign in to {s} so we can fill your cart', cartSigninSub: 'Sign in to your {s} account here — Kaniti fills the cart right after. No password kept by us.',
+  cartLinks: 'Item {i} of {n} at {s}', cartLinksSub: 'Add it to the cart on the store’s page, then “Next”.', cartNextItem: 'Next item', cartToCart: 'To the store’s cart',
+  cartAdded: '{n} added', cartMissing: '{n} not found', cartError: '{n} failed', cartDone: 'Done — remember this shop', openInBrowser: 'Open in browser', cartPlan: '{n} items for {s}',
   rej_partial: 'supplies only {a} of {b} items', rej_min: 'basket is below the store minimum',
 };
 

@@ -12,6 +12,8 @@ const subs = new Set<(l: Line[]) => void>();
 
 async function ensureLoaded(): Promise<void> {
   if (loaded) return;
+  // Driven simulator runs start with an empty list.
+  if (process.env['EXPO_PUBLIC_E2E_RESET_LIST'] === '1') { try { await AsyncStorage.removeItem(KEY); } catch { /* ignore */ } lines = []; loaded = true; return; }
   try { const raw = await AsyncStorage.getItem(KEY); lines = raw ? (JSON.parse(raw) as Line[]) : []; } catch { lines = []; }
   loaded = true;
 }

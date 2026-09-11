@@ -125,7 +125,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={[s.rowStart, { backgroundColor: t.card, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5, borderColor: t.line }]}>
           <Icon name="search" size={19} color={t.faint} weight={2.2} />
-          <Input placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 8 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
+          <Input testID="list-input" placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 8 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
           {query ? <Pressable onPress={() => setQuery('')} hitSlop={10} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: t.inkSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: t.muted, fontSize: 13, fontWeight: '700' }}>✕</Text></Pressable> : null}
           {pricing ? <Pressable onPress={() => setScanning(true)} hitSlop={10} style={{ backgroundColor: t.accentSoft, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12, marginLeft: 4 }}><Text style={[s.link, { fontSize: 13 }]}>{tr('scan')}</Text></Pressable> : null}
         </View>
@@ -139,7 +139,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           }}
         />
       ) : null}
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
 
         {showSearch ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
@@ -273,7 +273,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
               <Icon name="sliders" size={16} color={t.ink} />
               <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14 }}>{tr(`mode_${mode}`)}</Text>
             </Pressable>
-            <Button title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} style={{ flex: 1 }} />
+            <Button testID="list-compare" title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} style={{ flex: 1 }} />
           </View>
         )}
       </View>
