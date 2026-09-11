@@ -1,6 +1,6 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, Text, View } from 'react-native';
+import { Linking, Modal, Platform, Text, View } from 'react-native';
 import { STORES, signupFillJs, type SignupKnown } from '../lib/stores';
 import { markUnlinked } from '../lib/linked';
 import { t as tr } from '../lib/i18n';
@@ -51,6 +51,14 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   };
   const webref = useRef<import('react-native-webview').WebView | null>(null);
 
+  // Cloudflare in front of a store (Victory) may put a "verify you are human" step, or a
+  // flat block page, where the login should be. The challenge is the person's to click:
+  // nothing is injected or clicked while it is on screen, and the app says what it is.
+  // A block page gets an "open in Safari" way out. Evaluates to 'challenge' | 'blocked' | ''.
+  const GUARD_TEST = `(()=>{try{const t=(document.title+' '+((document.body&&document.body.innerText)||'').slice(0,600));if(/Sorry, you have been blocked|Error 1020|Access denied|has been blocked/i.test(t))return 'blocked';if(document.querySelector('#challenge-form,#challenge-running,#challenge-stage,#challenge-error-text,.cf-turnstile,[id^="cf-chl"],iframe[src*="challenges.cloudflare.com"]')||/cdn-cgi\/challenge/.test(location.href)||/Just a moment|Attention Required|Verify you are human|Checking your browser|אימות אנושי/i.test(t))return 'challenge';}catch(e){}return '';})()`;
+  const [guard, setGuard] = useState<'' | 'challenge' | 'blocked'>('');
+  const guarded = (js: string) => `(()=>{const g=${GUARD_TEST};window.ReactNativeWebView.postMessage('guard:'+g);if(g)return;${js}})();true;`;
+
   // Native module: require lazily so the web build still loads.
   const WebView = Platform.OS === 'web' ? null : (() => { try { return require('react-native-webview').WebView as typeof import('react-native-webview').WebView; } catch { return null; } })();
 
@@ -62,7 +70,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       ticks.current += 1;
       // While a code box is on screen, do not run the signed-in check: Shufersal's
       // check fetches /my-account, which redirects and can disturb the OTP page.
-      const js = `(async()=>{try{if(document.querySelector('input[autocomplete="one-time-code"]')){window.ReactNativeWebView.postMessage('signedin:0');return;}const ok=await (${store!.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`;
+      const js = `(async()=>{try{const g=${GUARD_TEST};window.ReactNativeWebView.postMessage('guard:'+g);if(g)return;if(document.querySelector('input[autocomplete="one-time-code"]')){window.ReactNativeWebView.postMessage('signedin:0');return;}const ok=await (${store!.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`;
       (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js);
       // Once, after a few seconds: report what the check actually sees, so a
       // silent "connected but nothing happens" is debuggable from the server log.
@@ -86,7 +94,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       setKnown({ ...(fam ? { lastName: fam } : {}), ...(str('street') ? { street: str('street') } : {}), ...(str('number') ? { number: str('number') } : {}), ...(str('city') ? { city: str('city') } : {}), ...(str('apt') ? { apt: str('apt') } : {}), ...(str('floor') ? { floor: str('floor') } : {}), ...(str('entrance') ? { entrance: str('entrance') } : {}) });
     }).catch(() => null);
   }, [api, householdId]);
-  const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(js); };
+  const inject = (js?: string) => { if (js) (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(guarded(js)); };
   // The moment a store shows a "code" box, mark it as a one-time-code field
   // and focus it. iOS then offers the SMS code on the keyboard as it lands —
   // one tap, well inside the store's timer — instead of a race to type six
@@ -207,6 +215,17 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 <Pressable onPress={() => setSignup(true)} style={{ borderWidth: 1, borderColor: t.ink, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.ink, fontWeight: '700', fontSize: 13 }}>{tr('cloudNoAccount', { s: store.name })}</Text></Pressable>
               </View>
             </View>
+            {guard ? (
+              <View style={{ backgroundColor: guard === 'blocked' ? '#FDECEC' : '#FFF6DF', paddingHorizontal: 16, paddingVertical: 10 }} testID="link-guard">
+                <Text style={[s.small, { color: t.ink, fontWeight: '600' }]}>{guard === 'blocked' ? tr('guardBlocked', { s: store.name }) : tr('guardChallenge', { s: store.name })}</Text>
+                {guard === 'blocked' ? (
+                  <View style={[s.rowStart, { marginTop: 8, gap: 8 }]}>
+                    <Pressable onPress={() => { setGuard(''); retried.current = false; (webref.current as unknown as { reload?: () => void } | null)?.reload?.(); }} style={{ borderWidth: 1, borderColor: t.ink, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.ink, fontWeight: '700', fontSize: 13 }}>{tr('tryAgain')}</Text></Pressable>
+                    <Pressable onPress={() => { void Linking.openURL(store.loginUrl); }} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('guardOpenBrowser')}</Text></Pressable>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
             <View style={{ flex: 1, overflow: 'hidden' }}>
               <WebView
                 ref={(r) => { webref.current = r; }}
@@ -219,9 +238,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 // keep them in this same WebView instead of dropping them.
                 setSupportMultipleWindows={false}
                 originWhitelist={['*']}
-                // A real mobile Safari UA so the store serves its normal phone flow
-                // (and iOS offers the saved-password / SMS-code autofill).
-                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+                // The WebView's own user agent: it already says iPhone, so stores serve the phone
+                // flow; a WebView claiming to be Safari reads as spoofed to Cloudflare's checks
+                // and Victory answered 403 before the person could do anything.
                 onLoadEnd={settle}
                 onError={onLoadError}
                 onHttpError={(e: { nativeEvent: { statusCode?: number; url?: string } }) => { if ((e.nativeEvent.statusCode ?? 0) >= 400) void api.importHistory(householdId, storeId, [], { build: BUILD, httpError: e.nativeEvent }).catch(() => null); }}
@@ -235,6 +254,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 )}
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
+                  if (d.startsWith('guard:')) { const g = d.slice(6) as '' | 'challenge' | 'blocked'; setGuard((prev) => (prev === g ? prev : g)); return; }
                   if (d === 'signedin:0') {
                     // The store's own page says "not signed in". A stale "connected" flag on this
                     // phone (an earlier misread, an expired session) is cleared after a few looks,
