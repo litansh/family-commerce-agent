@@ -153,10 +153,14 @@ export const STORES: Record<string, StoreDef> = {
   let supplyAt=new Date().toISOString();try{const sd=st&&st.getters&&st.getters['checkout/getSupplyDay'];if(sd&&typeof sd.supplyAt==='string')supplyAt=sd.supplyAt;}catch(e){}
   let cartStatus=0,via='';
   if(Object.keys(items).length){
+    // First choice: the site's own add path ($ecomws.setItemsCart, what its plus button calls).
+    // It merges into the page's cart state and posts to the server the way the site does, so
+    // the basket page shows the lines for guests and signed-in people alike.
+    try{const ws=n&&n.$ecomws;if(ws&&typeof ws.setItemsCart==='function'){const merged={};for(const it of ((st&&st.state&&st.state.cart&&st.state.cart.items)||[])){const c=it&&(it.C!=null?it.C:it.id);if(c!=null)merged[c]=String(Number(it.Quantity||it.quantity||1)||1);}for(const id of Object.keys(items))merged[id]=String((Number(merged[id]||0)+Number(items[id])).toFixed(2));await Promise.race([ws.setItemsCart(merged,true),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),20000))]);cartStatus=200;via='ecomws';}}catch(e){cartStatus=-2;via='ecomws';}
     const body={store:isNaN(+store)?store:+store,isClub,supplyAt,items,meta:null};
     // Prefer the site's own axios: its request interceptor carries the (anonymous or signed-in) bearer.
     // Guests: the site's interceptor sends NO EcomToken header (config flag EcomToken:0 tells it to skip); a literal 'EcomToken: 0' header makes the backend hang. Signed in: the user's token.
-    try{if(n&&n.$axios&&n.$axios.post){const cfg=ecom?{headers:{EcomToken:String(ecom)}}:{EcomToken:0};const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,cfg),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
+    if(cartStatus!==200)try{if(n&&n.$axios&&n.$axios.post){const cfg=ecom?{headers:{EcomToken:String(ecom)}}:{EcomToken:0};const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,cfg),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
     if(cartStatus!==200){
       const h={'content-type':'application/json;charset=utf-8',accept:'application/json, text/plain, */*'};if(auth)h.Authorization=auth;if(ecom)h.EcomToken=String(ecom);
       const r=await tfetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)},15000);cartStatus=r.status;via=via+'+fetch';
