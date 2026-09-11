@@ -13,6 +13,23 @@ variable "github_repo" {
   default = "litansh/family-commerce-agent"
 }
 
+# GitHub signs this account's tokens with the immutable subject format:
+#   repo:litansh@<owner id>/family-commerce-agent@<repo id>:ref:refs/heads/main
+# (see `gh api repos/<repo>/actions/oidc/customization/sub`). Trust policies must match that,
+# not the plain "repo:owner/name" form, or every assume-role is "Not authorized".
+variable "github_owner_id" {
+  type    = string
+  default = "54744736"
+}
+variable "github_repo_id" {
+  type    = string
+  default = "1358500626"
+}
+locals {
+  github_sub_any  = "repo:*@${var.github_owner_id}/*@${var.github_repo_id}:*"
+  github_sub_main = "repo:*@${var.github_owner_id}/*@${var.github_repo_id}:ref:refs/heads/main"
+}
+
 resource "aws_iam_role" "github_deploy" {
   name = "${var.name}-github-deploy"
   assume_role_policy = jsonencode({
@@ -23,7 +40,7 @@ resource "aws_iam_role" "github_deploy" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub_main }
       }
     }]
   })
@@ -82,7 +99,7 @@ resource "aws_iam_role" "github_terraform" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub_any }
       }
     }]
   })
@@ -130,7 +147,7 @@ resource "aws_iam_role" "github_review" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub_any }
       }
     }]
   })
