@@ -114,8 +114,15 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
         // Nothing is clicked for the person: the page's confirm button is theirs to tap.
         i.addEventListener('input',()=>{fire(i);const v=(i.value||'').trim();if(v.length>=(i.maxLength>0?i.maxLength:6))report(i,'code complete: '+(submitOf(i)?'confirm button present':'no confirm button'));});}}};
     tune();new MutationObserver(()=>tune()).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});})();true;`;
+  // Cookie / consent sheets sit on top of many store logins (Wolt, Hatzi Hinam). Take the
+  // minimal choice for the person ("use only necessary" / "אישור" / close) so the login is reachable.
+  const CONSENT_JS = `(()=>{try{const vis=(e)=>e.getBoundingClientRect().width>0;const ctx=(e)=>{let n=e,d=0;while(n&&d<6){const t=((n.id||'')+' '+(n.className||'')+' '+(n.getAttribute&&n.getAttribute('aria-label')||'')).toLowerCase();if(/cookie|consent|gdpr|privacy|onetrust|cc-|banner/.test(t))return true;n=n.parentElement;d++;}return false;};
+    const btns=[...document.querySelectorAll('button,a,[role="button"]')].filter(vis);
+    const pick=btns.find(b=>/use only necessary|only necessary|necessary only|reject all|decline/i.test(b.textContent||''))||btns.find(b=>ctx(b)&&/^\\s*(accept|allow|agree|ok|got it|אישור|מאשר|הבנתי|סגור|אשר|קיבלתי)\\s*$/i.test(b.textContent||''));
+    if(pick){pick.click();window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({why:'consent dismissed',label:(pick.textContent||'').trim().slice(0,40)}));}}catch(e){}})();true;`;
   const settle = () => {
     inject(OTP_JS);
+    setTimeout(() => inject(CONSENT_JS), 900); setTimeout(() => inject(CONSENT_JS), 3500);
     // After a load: open the login dialog and fill the e-mail; SPAs need a second pass.
     inject(store?.openLoginJs);
     setTimeout(() => { inject(store?.openLoginJs); if (email) inject(store?.prefillEmailJs?.(email)); }, 1200);
