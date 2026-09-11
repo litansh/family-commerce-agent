@@ -18,7 +18,7 @@ Every agent starts at stage 0 on the ladder and earns its way up:
 | 1 | Recommend | proposes; a person or the app applies it (the compare screen's options) |
 | 2 | Shadow | computes what it would do and logs it next to what happened (purchase confirmation's match, before it resolves anything) |
 | 3 | Bounded act | acts inside hard limits with a way back (fills a cart, never checks out; re-connects, never signs in) |
-| 4 | Act | full autonomy inside guardrails (the ops repair agents: fix, prove, push) |
+| 4 | Act | full autonomy inside guardrails (the ops repair agents: fix, prove, open a pull request the owner merges) |
 
 ## The loops
 
@@ -34,6 +34,8 @@ Every agent starts at stage 0 on the ladder and earns its way up:
 | **Memory** | what to suggest and which brand to pick first | suggestions accepted; forgotten items caught | learns only from confirmed purchases, never from an abandoned cart | 3 |
 | **In-store prices** | which branches to index and how often | branches priced per household; index age | a thin price file (< 500 barcodes) is never shown | 3 |
 | **Ops orchestrator** | what is broken and which repair agent to send | checks green / checks run; hours from a store change to a fix | a repair pushes only after the same lab proves it; anything needing a person goes to NEEDS-HUMAN.md | 4 |
+| **Shopper** | whether the whole product still works for a real family's week | checks green of 13; the cheapest total, the split saving, the substitutes named | never orders; a failing check goes to the repair agents, never to the family | 0 |
+| **Store scout** | which storefronts exist for our addresses, which are new, which Kaniti cannot connect yet | storefronts connectable / storefronts delivering | never adds a store by itself; a mapping change is a pull request | 0 |
 | **Briefing** | the single next thing worth doing | the earliest broken funnel stage | never acts; sends every day; "could not look" is negative, never zero | 0 |
 
 Conflicts are real and stay visible: the optimizer wants the cheapest split, the order
