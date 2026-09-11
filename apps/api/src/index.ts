@@ -242,6 +242,8 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           .filter((c) => typeof c.name === 'string' && typeof c.value === 'string')
           .map((c) => ({ name: c.name!, value: c.value!, ...(c.domain ? { domain: c.domain } : {}), ...(c.path ? { path: c.path } : {}) }));
         const tokens = body['tokens'] && typeof body['tokens'] === 'object' ? Object.fromEntries(Object.entries(body['tokens'] as Record<string, unknown>).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, String(v)])) : undefined;
+        // Visible in the log: a phone that captured nothing is the difference between "connected" and "looked connected".
+        console.log(JSON.stringify({ event: 'store-session', hid, store, cookies: cookies.length, tokens: tokens ? Object.keys(tokens).length : 0 }));
         if (cookies.length === 0 && !tokens) throw new HttpError(400, 'no session in body');
         const session: StoreSession = { retailer: store, cookies, capturedAt: new Date().toISOString(), ...(typeof body['userAgent'] === 'string' ? { userAgent: body['userAgent'] } : {}), ...(tokens ? { tokens } : {}) };
         // The phone already ran the store's own signed-in check, and from AWS
