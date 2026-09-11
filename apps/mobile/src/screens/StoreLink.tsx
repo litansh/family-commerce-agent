@@ -67,7 +67,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   // one tap, well inside the store's timer — instead of a race to type six
   // digits from Messages. Runs continuously: code boxes appear after taps.
   const OTP_JS = `(()=>{if(window.__kanitiOtp)return;window.__kanitiOtp=1;
-    const isCode=(i)=>{const a=(i.getAttribute('autocomplete')||'')+' '+(i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')+' '+(i.getAttribute('aria-label')||'');if(/phone|tel|zip|מיקוד|טלפון|נייד|idNumber|תעודת/i.test(a)||i.type==='tel')return false;const ml=Number(i.getAttribute('maxlength')||0);return /one-time|otp|sms|code|קוד|verif|אימות/i.test(a)||(i.getAttribute('inputmode')==='numeric'&&ml>=4&&ml<=8&&i.type!=='password')||(/^\\\\d\\*$/.test(i.getAttribute('pattern')||'')&&ml>=4&&ml<=8);};
+    // Strict: a code box is a short field (4-8 chars) whose own name/id/autocomplete says so.
+    // Never a 20-char text field that merely mentions a word - rewriting those broke Shufersal's forms.
+    const isCode=(i)=>{if(i.type==='tel'||i.type==='password'||i.type==='email'||i.type==='search')return false;const n=(i.name||'')+' '+(i.id||'');const ac=i.getAttribute('autocomplete')||'';if(/phone|tel|zip|idNumber|birth/i.test(n))return false;const ml=Number(i.getAttribute('maxlength')||0);if(ac==='one-time-code')return true;if(ml<4||ml>8)return false;return /otp|sms.?code|smscode|one.?time|verif|code$|^code|_code|codeinput/i.test(n)||i.getAttribute('inputmode')==='numeric'||/^\\\\d\\*$/.test(i.getAttribute('pattern')||'');};
     const fire=(i)=>{for(const t of ['input','keydown','keyup','change'])try{i.dispatchEvent(t==='input'?new Event('input',{bubbles:true}):t==='change'?new Event('change',{bubbles:true}):new KeyboardEvent(t,{bubbles:true,key:'0'}));}catch(e){}};
     const submitOf=(i)=>{const f=i.closest('form');const c=f||document;
       // NEVER the "send/resend a code" button - clicking it invalidates the code the person just typed.
@@ -82,8 +84,9 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       if(!i.dataset.kanitiWired){i.dataset.kanitiWired='1';report(i,'code box seen');
         // A pasted / autofilled code arrives as one input event; sites that listen for keyup never see it.
         // Replay the key events, and when the code is complete, press the page's own continue button.
-        i.addEventListener('input',()=>{fire(i);const v=(i.value||'').trim();const want=i.maxLength>0?i.maxLength:6;if(v.length>=want&&/^\\\\d+$/.test(v)){setTimeout(()=>{const b=submitOf(i);report(i,b?'auto-submit':'complete, no button');if(b)b.click();},250);}});}
-      const r=i.getBoundingClientRect();if(r.width>0&&!i.value&&document.activeElement!==i&&!i.dataset.kanitiFocused){i.dataset.kanitiFocused='1';setTimeout(()=>{try{i.focus();}catch(e){}},150);}}};
+        // Replay the key events a paste / autofill skips, so the page's own validation runs.
+        // Nothing is clicked for the person: the page's confirm button is theirs to tap.
+        i.addEventListener('input',()=>{fire(i);const v=(i.value||'').trim();if(v.length>=(i.maxLength>0?i.maxLength:6))report(i,'code complete: '+(submitOf(i)?'confirm button present':'no confirm button'));});}}};
     tune();new MutationObserver(()=>tune()).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});})();true;`;
   const settle = () => {
     inject(OTP_JS);
