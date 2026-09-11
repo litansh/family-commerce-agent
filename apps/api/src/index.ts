@@ -39,7 +39,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback } from '@fca/shopping-agent';
-import type { CatalogProvider, Promotion } from '@fca/retailer-connectors';
+import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -515,8 +515,20 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const bestLines = res.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
       const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
       const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
+      // How soon each storefront can deliver, next to its price: Wolt venues answer live
+      // (minutes, from Wolt's own feed for the family's address); the chains deliver in
+      // windows, which the phone reads from each store once it is connected.
+      const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number };
+      const etas: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }> = {};
+      const wolt = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltEtasNear(ad.lat, ad.lng) : {};
+      for (const o of result.options) for (const leg of o.legs) {
+        if (etas[leg.storefrontId]) continue;
+        const w = etaForStorefront(leg.storefrontId, wolt);
+        etas[leg.storefrontId] = w && w.online && w.delivers ? { kind: 'live', minutes: w.minutes, ...(w.range ? { range: w.range } : {}), name: w.name } : { kind: 'slots' };
+      }
       return ok({
         currency: region.currency,
+        etas,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,

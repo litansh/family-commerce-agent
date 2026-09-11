@@ -93,6 +93,8 @@ const he: Strings = {
   cartSignin: 'התחברו ל{s} כדי שנמלא את הסל', cartSigninSub: 'היכנסו לחשבון {s} כאן — קניתי תמלא את הסל מיד אחרי. בלי סיסמה אצלנו.',
   cartLinks: 'פריט {i} מתוך {n} ב{s}', cartLinksSub: 'הוסיפו לסל בעמוד של הרשת, ואז ״הבא״.', cartNextItem: 'הפריט הבא', cartToCart: 'לסל של הרשת',
   cartAdded: '{n} נוספו', cartMissing: '{n} לא נמצאו', cartError: '{n} נכשלו', cartDone: 'סיימתי — תזכרו את הקנייה', openInBrowser: 'פתחו בדפדפן', cartPlan: '{n} פריטים ל{s}',
+  // Delivery time on compare
+  etaLive: 'וולט · ~{m} דק׳', etaLiveRange: 'וולט · {r} דק׳', etaSlots: 'משלוח בחלון', etaSlotsSub: 'הרשת מספקת בחלונות זמן — בוחרים בעמוד ההזמנה', fastBy: 'הכי מהר: {s} · ~{m} דק׳', etaWhy: 'הזמן: וולט מגיע תוך דקות; הרשתות בחלון משלוח, לפי היום והשעה.',
   rej_partial: 'מספקת רק {a} מתוך {b} פריטים', rej_min: 'הסל מתחת למינימום ההזמנה',
 };
 
@@ -177,6 +179,8 @@ const en: Strings = {
   cartSignin: 'Sign in to {s} so we can fill your cart', cartSigninSub: 'Sign in to your {s} account here — Kaniti fills the cart right after. No password kept by us.',
   cartLinks: 'Item {i} of {n} at {s}', cartLinksSub: 'Add it to the cart on the store’s page, then “Next”.', cartNextItem: 'Next item', cartToCart: 'To the store’s cart',
   cartAdded: '{n} added', cartMissing: '{n} not found', cartError: '{n} failed', cartDone: 'Done — remember this shop', openInBrowser: 'Open in browser', cartPlan: '{n} items for {s}',
+  // Delivery time on compare
+  etaLive: 'Wolt · ~{m} min', etaLiveRange: 'Wolt · {r} min', etaSlots: 'Window delivery', etaSlotsSub: 'The chain delivers in time windows — you pick one at checkout', fastBy: 'Fastest: {s} · ~{m} min', etaWhy: 'Time: Wolt arrives within minutes; the chains deliver in windows that shift by day and hour.',
   rej_partial: 'supplies only {a} of {b} items', rej_min: 'basket is below the store minimum',
 };
 
