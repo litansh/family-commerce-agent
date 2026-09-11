@@ -8,10 +8,14 @@ appId: com.litansh.kaniti
 - swipe: { direction: DOWN, duration: 300 }
 - swipe: { direction: DOWN, duration: 300 }
 - assertVisible: "החנויות המחוברות"
-- scrollUntilVisible:
-    element: { id: "connect-${STORE}" }
-    direction: DOWN
-    timeout: 10000
-    centerElement: true
-    visibilityPercentage: 50
+- runFlow:
+    when:
+      notVisible: { id: "connect-${STORE}" }
+    commands:
+      - scrollUntilVisible:
+          element: { id: "connect-${STORE}" }
+          direction: DOWN
+          timeout: 10000
+          centerElement: true
+          visibilityPercentage: 50
 - assertVisible: { id: "connect-${STORE}" }

@@ -6,9 +6,10 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 const root = path.resolve(__dirname, '../..');
 const config = getDefaultConfig(__dirname);
-// Watch the whole monorepo root so the root App.js shim and workspace
-// packages all resolve.
-config.watchFolders = [root];
+// Only what the app resolves outside its own tree: the hoisted node_modules and
+// the workspace packages. Watching the whole root (terraform state, api bundles,
+// price-file labs) overwhelms the watcher and edits under src/ go unnoticed.
+config.watchFolders = [path.resolve(root, 'node_modules'), path.resolve(root, 'packages'), path.resolve(root, 'services')];
 config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules'), path.resolve(root, 'node_modules')];
 config.resolver.disableHierarchicalLookup = true;
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];

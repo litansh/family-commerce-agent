@@ -15,12 +15,17 @@ appId: com.litansh.kaniti
 - assertVisible: "החנויות המחוברות"
 # From the top of the list, so the first rows are never left under the header.
 - swipe: { direction: DOWN, duration: 300 }
-- scrollUntilVisible:
-    element: { id: "connect-${STORE}" }
-    direction: DOWN
-    timeout: 20000
-    centerElement: true
-    visibilityPercentage: 50
+# Only scroll when the row is off screen: centring a row that is already visible overshoots under the header.
+- runFlow:
+    when:
+      notVisible: { id: "connect-${STORE}" }
+    commands:
+      - scrollUntilVisible:
+          element: { id: "connect-${STORE}" }
+          direction: DOWN
+          timeout: 20000
+          centerElement: true
+          visibilityPercentage: 50
 - tapOn: { id: "connect-${STORE}" }
 - extendedWaitUntil:
     visible: { text: "חיבור .*" }

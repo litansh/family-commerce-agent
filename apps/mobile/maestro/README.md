@@ -20,6 +20,11 @@ E2E env creds baked in), reloads the app, then drives: auto sign-in → create t
 (name + verified address) → walk List/Orders/Me tabs → connect a store (its own login opens in
 the WebView with the family's e-mail prefilled). Screenshots land in `maestro/shots/`.
 
+Metro for the simulator runs on port 8082 without `CI=1`: in CI mode Metro disables watch
+mode and keeps serving the bundle it built at start-up, so edits under `src/` never reach the
+app (the build stamp in the Me header tells you which bundle is running). `metro.config.js`
+watches only `node_modules`, `packages` and `services`, not the whole repo.
+
 Requirements installed on this Mac: Xcode 26 + iOS 26.5 simulator runtime, CocoaPods (brew),
 OpenJDK (brew, for Maestro), Maestro (~/.maestro). The test Cognito user is in `~/.kaniti/e2e.env`.
 No Apple Developer account is needed for the simulator.

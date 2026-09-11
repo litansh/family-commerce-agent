@@ -129,7 +129,8 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   const insets = useSafeAreaInsets();
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
-      <View style={[s.screen, { paddingTop: insets.top + 4 }]}>
+      {/* A full-screen modal starts under the clock; the app provider's top inset keeps the close bar below it. */}
+      <View style={[s.screen, { paddingTop: Math.max(insets.top, 20) + 4 }]}>
         <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]} testID="order-title">{title}</Text>
