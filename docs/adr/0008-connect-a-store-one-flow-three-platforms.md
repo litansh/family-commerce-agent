@@ -108,6 +108,32 @@ are the shape a future on-device relay would use), but the app offers no cloud s
 is for the list, the compare and the approval; connecting and ordering happen on the phone,
 where nobody can tell Kaniti from the person. Development effort goes to the phone app first.
 
+## Ordering on the phone (built 2026-09-11)
+
+The order runs where the connection lives: the store's own site, in the person's own session,
+inside Kaniti's WebView (`apps/mobile/src/screens/OrderOnDevice.tsx`). Each store carries a
+`cartJs` recipe (`apps/mobile/src/lib/stores.ts`) that, inside the store's page, looks products
+up by barcode through the store's own catalogue and adds them through the store's own cart API:
+
+- **Rami Levy** — `POST www.rami-levy.co.il/api/v2/cart` with `items:[{C,Quantity}]`, posted
+  through the page's own axios so its bearer rides along. Barcode match verified live
+  (`e2e/cart-recipe-lab.mjs`); the cart itself returns 504 for a guest with no branch/slot and
+  succeeds once the session carries an address, which a connected account has.
+- **Shufersal** — `POST /online/he/cart/add` (`productCodePost`, `qty`, CSRF), Hybris. Needs a
+  signed-in session; anonymous, its own login appears in the same WebView.
+
+Flow: order → the store's page loads → if signed in (a connected store), the cart fills and the
+store's cart page is shown for the one approval; if not, a clear "sign in to fill your cart"
+state shows the store's own login, and a sign-in re-runs the fill. Where a store can't take the
+cart but the quote has per-item deep links, Kaniti falls to the store's own product pages, one
+tap each. **Kaniti never completes the payment** (ADR 0006) — the person pays on the store's
+checkout. Every injected recipe is syntax-checked by `e2e/recipe-syntax.mjs` (a broken recipe
+fails silently in a WebView otherwise).
+
+**Needs a real connected store to verify end to end:** filling and paying a cart requires one
+store signed in (an SMS code or a password), which needs a real account — the one remaining
+manual step.
+
 ## Consequences
 
 - The web app can connect Shufersal and Hatzi Hinam without the phone. Rami Levy, Wolt and the
