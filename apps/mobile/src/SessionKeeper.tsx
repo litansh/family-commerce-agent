@@ -39,9 +39,10 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
     if (verdict === 'out') markNeedsRelink(storeId);
     onDone();
   };
-  useEffect(() => { const t = setTimeout(() => finish('timeout'), 45_000); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => finish('timeout'), 60_000); return () => clearTimeout(t); }, []);
   if (!store || !WebView) return null;
   const check = `(async()=>{try{const g=${GUARD};if(g){window.ReactNativeWebView.postMessage('keep:'+g);return;}const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('keep:'+(ok?'in':'out'));}catch(e){window.ReactNativeWebView.postMessage('keep:err');}})();true;`;
+  const promptCheck = `(()=>{try{const t=((document.body&&document.body.innerText)||'').replace(/\\s+/g,' ');const p=/(^|\\s)(כניסה|כניסת משתמש|התחברות|התחבר|כניסה לחשבון|הרשמה|log ?in|sign ?in)(\\s|$)/i.test(t)||!!document.querySelector('input[type="password"],input[type="tel"]');window.ReactNativeWebView.postMessage('keep:'+(p?'out-confirmed':'unclear'));}catch(e){window.ReactNativeWebView.postMessage('keep:unclear');}})();true;`;
   const capture = `(()=>{try{const keys=${JSON.stringify(store.sessionKeys ?? [])};const cookies=document.cookie.split(';').map(c=>c.trim()).filter(Boolean).map(c=>{const i=c.indexOf('=');return {name:c.slice(0,i),value:decodeURIComponent(c.slice(i+1)),domain:location.hostname}});const tokens={};try{for(const k of Object.keys(localStorage)){if(keys.includes(k)||/token/i.test(k)){const v=localStorage.getItem(k);if(v&&v.length>8&&v.length<4000)tokens[k]=v;}}}catch(e){}window.ReactNativeWebView.postMessage('keepsession:'+JSON.stringify({cookies,tokens,userAgent:navigator.userAgent}));}catch(e){}})();true;`;
   return (
     <View style={{ width: 1, height: 1, opacity: 0, position: 'absolute', left: -2, top: -2 }} pointerEvents="none">
@@ -49,7 +50,8 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
         ref={(r) => { ref.current = r; }}
         source={{ uri: store.loginUrl }}
         sharedCookiesEnabled thirdPartyCookiesEnabled domStorageEnabled
-        onLoadEnd={() => { setTimeout(() => ref.current?.injectJavaScript(check), 4000); setTimeout(() => ref.current?.injectJavaScript(check), 9000); }}
+        // Three looks, spread out: single-page stores restore their session a few seconds after load.
+        onLoadEnd={() => { for (const ms of [5000, 11000, 18000]) setTimeout(() => ref.current?.injectJavaScript(check), ms); }}
         onError={() => finish('load-error')}
         onMessage={(e: { nativeEvent: { data: string } }) => {
           const d = e.nativeEvent.data;
@@ -73,9 +75,13 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             const h = store.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
             if (h) { ref.current?.injectJavaScript(h); setTimeout(() => finish('in'), 12_000); } else finish('in');
           }
-          else if (v === 'out' && looks.current.filter((x) => x === 'out').length >= 2) finish('out');
+          // "Out" only when three looks agree AND the store is actually showing its sign-in: a page still
+          // booting reads as out too, and a wrong "needs re-connecting" costs the family trust.
+          else if (v === 'out' && looks.current.filter((x) => x === 'out').length >= 3) { ref.current?.injectJavaScript(promptCheck); }
+          else if (v === 'out-confirmed') finish('out');
+          else if (v === 'unclear') finish('unclear');
           else if (v === 'challenge' || v === 'blocked') finish(v);
-          else if (looks.current.length >= 2) finish(looks.current.join(','));
+          else if (looks.current.length >= 3) finish(looks.current.join(','));
         }}
       />
     </View>

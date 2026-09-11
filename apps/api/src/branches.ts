@@ -16,7 +16,7 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { allPortals, branchesInCity, decodeXml, fetchCbs, geocode, nearestBranches, parsePriceFull, priceAtBranch, type Branch, type GeoBranch, type NearbyBranch, type PriceIndex, type SettlementNames } from '@fca/branch-prices';
+import { allPortals, branchesInCity, decodeXml, fetchCbs, geocode, nearestBranches, parsePriceFull, priceAtBranch, reverseCity, type Branch, type GeoBranch, type NearbyBranch, type PriceIndex, type SettlementNames } from '@fca/branch-prices';
 import { DEFAULT_CONSTANTS, type Agorot } from '@fca/domain';
 import { HouseholdStore, type Household } from './households.ts';
 import { readRow, writeRow } from './orders.ts';
@@ -143,11 +143,21 @@ export class BranchPrices {
       const g = await geocode(h.address);
       if (g) {
         const ad: Record<string, unknown> = { ...((h.addressDetails ?? {}) as Record<string, unknown>), lat: g.lat, lng: g.lng };
-        if (typeof ad['city'] !== 'string' || !ad['city']) ad['city'] = (h.address.split(',').pop() ?? '').trim();
+        if (typeof ad['city'] !== 'string' || !ad['city']) ad['city'] = g.city ?? (h.address.split(',').pop() ?? '').trim();
         h = await new HouseholdStore(this.#table).update(hid, { addressDetails: ad });
       }
     }
-    const home = h ? homeOf(h) : undefined;
+    let home = h ? homeOf(h) : undefined;
+    // The chains name cities in Hebrew; an English or free-text city ("Ruppin 10 Kfar Saba") matches
+    // nothing. Ask the map for the Hebrew settlement at the coordinates and keep it.
+    if (h && home && !/[א-ת]/.test(home.city)) {
+      const city = await reverseCity(home);
+      if (city) {
+        const ad: Record<string, unknown> = { ...((h.addressDetails ?? {}) as Record<string, unknown>), city };
+        h = await new HouseholdStore(this.#table).update(hid, { addressDetails: ad });
+        home = { ...home, city };
+      }
+    }
     if (!home) {
       const row: BranchRow = { status: 'none', at: now, city: '', branches: [] };
       await writeRow(this.#table, hid, 'BRANCHES', { ...row });
