@@ -64,3 +64,7 @@ Every decision goes through the agent that owns it: presentation → app-designe
 ## A red check never reaches the owner
 
 `ops/pr.sh` opens the PR, then watches its checks. A red check is handed to the api-fixer agent on the same branch (the failing log verbatim, the workflow's own commands to reproduce), pushed, and watched again, up to three times. The Telegram post carries the final state; a PR is announced for approval only once its checks are green.
+
+## The backlog
+
+`docs/BACKLOG.md` is the orchestrator's worklist: every ask the owner made, the promise it serves, the owning agent, its state. One PR per line. `ops/pr-review.sh <n>` reviews a PR from this Mac with the local login (no key in GitHub needed); `ops/pr.sh` calls it after opening a PR and the daily run covers any open PR without a review.
