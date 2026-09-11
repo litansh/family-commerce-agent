@@ -521,11 +521,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number };
       const etas: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }> = {};
       const wolt = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltEtasNear(ad.lat, ad.lng) : {};
-      for (const o of result.options) for (const leg of o.legs) {
-        if (etas[leg.storefrontId]) continue;
-        const w = etaForStorefront(leg.storefrontId, wolt);
-        etas[leg.storefrontId] = w && w.online && w.delivers ? { kind: 'live', minutes: w.minutes, ...(w.range ? { range: w.range } : {}), name: w.name } : { kind: 'slots' };
-      }
+      const noteEta = (sid: string) => {
+        if (etas[sid]) return;
+        const w = etaForStorefront(sid, wolt);
+        etas[sid] = w && w.online && w.delivers ? { kind: 'live', minutes: w.minutes, ...(w.range ? { range: w.range } : {}), name: w.name } : { kind: 'slots' };
+      };
+      for (const o of result.options) for (const leg of o.legs) noteEta(leg.storefrontId);
+      // Rejected storefronts too: "Wolt in 40 minutes, but ₪60 short of its minimum" is a real choice.
+      for (const r of result.rejected) noteEta(r.storefrontId);
       return ok({
         currency: region.currency,
         etas,
