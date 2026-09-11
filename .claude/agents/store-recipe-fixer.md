@@ -15,3 +15,4 @@ Ground rules (never break these):
 - Prefer one generic fix in the platform recipe (stor.ai, Rami Levy, Wolt, Shufersal, Hatzi Hinam) over per-store patches; keep the store's own words (Hebrew) the detector looks for in the regexes, and anchor them at word starts.
 - Verify with `node --experimental-strip-types e2e/store-health.mjs` for all stores, then `npx tsc --noEmit -p apps/mobile/tsconfig.json`.
 Report: what the store changed, what you changed, and the lab output that proves it.
+Changes go out on a branch as a pull request via `ops/pr.sh` (posted to Telegram for approval); never push to main.

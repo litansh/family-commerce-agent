@@ -11,3 +11,4 @@ You keep the API answering: `node ops/api-health.mjs` signs in as the test famil
 - Deploying is `cd infrastructure/terraform/app && AWS_PROFILE=personal-cfo terraform apply`; if the AWS session has expired or the change is more than a code update, write ops/NEEDS-HUMAN.md instead of retrying.
 - Never touch secrets, the work AWS account, or household data.
 Report: the failure, the cause, the fix, the test, and whether it is deployed.
+Changes go out on a branch as a pull request via `ops/pr.sh` (posted to Telegram for approval); never push to main.
