@@ -36,6 +36,17 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const [imported, setImported] = useState<number | null>(null);
   const didImport = useRef(false);
   const notIn = useRef(0);
+  // A store page that fails to load (a cancelled redirect, a hiccup) retries once by
+  // itself and is reported; the person sees a plain "try again", never a raw error page.
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const retried = useRef(false);
+  const onLoadError = (e: { nativeEvent: { code?: number; description?: string; url?: string; domain?: string } }) => {
+    const ev = e.nativeEvent;
+    void api.importHistory(householdId, storeId, [], { build: BUILD, loadError: { code: ev.code, description: ev.description, url: ev.url, domain: ev.domain } }).catch(() => null);
+    if (ev.code === -999 && !retried.current) { retried.current = true; setTimeout(() => (webref.current as unknown as { reload?: () => void } | null)?.reload?.(), 800); return; } // cancelled: the store redirected mid-load
+    if (!retried.current) { retried.current = true; setTimeout(() => (webref.current as unknown as { reload?: () => void } | null)?.reload?.(), 1200); return; }
+    setLoadErr(ev.description ?? 'load error');
+  };
   const webref = useRef<import('react-native-webview').WebView | null>(null);
 
   // Native module: require lazily so the web build still loads.
@@ -140,7 +151,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
             <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]}>{tr('connectStore', { s: store.name })}</Text>
             {hint ? <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{hint}</Text> : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={16} style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }}>
+          <Pressable onPress={onClose} hitSlop={16} testID="link-close" style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }}>
             <Text style={{ fontSize: 20, color: t.ink, fontWeight: '700' }}>✕</Text>
           </Pressable>
         </View>
@@ -185,6 +196,16 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                 // (and iOS offers the saved-password / SMS-code autofill).
                 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
                 onLoadEnd={settle}
+                onError={onLoadError}
+                onHttpError={(e: { nativeEvent: { statusCode?: number; url?: string } }) => { if ((e.nativeEvent.statusCode ?? 0) >= 500) void api.importHistory(householdId, storeId, [], { build: BUILD, httpError: e.nativeEvent }).catch(() => null); }}
+                renderError={() => (
+                  <View style={[s.pad, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg }]}>
+                    <Text style={[s.body, { textAlign: 'center' }]}>{tr('storeLoadFailed', { s: store.name })}</Text>
+                    <View style={{ height: 12 }} />
+                    <Button title={tr('tryAgain')} kind="secondary" onPress={() => { setLoadErr(null); retried.current = false; (webref.current as unknown as { reload?: () => void } | null)?.reload?.(); }} />
+                    {loadErr ? <Text style={[s.faint, { marginTop: 8 }]} selectable>{loadErr}</Text> : null}
+                  </View>
+                )}
                 onMessage={(e: { nativeEvent: { data: string } }) => {
                   const d = e.nativeEvent.data;
                   if (d === 'signedin:0') {

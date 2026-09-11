@@ -85,6 +85,7 @@ const he: Strings = {
   forgotPwLink: 'שכחתם? צרו סיסמה ב{s}', signupTitle: 'חשבון חדש ב{s}', signupSub: 'הרשמה באתר של {s} לוקחת דקה. זה מה שהיא תבקש — מה שקניתי כבר יודעת מוכן להעתקה:',
   signupOpen: 'פתחו את ההרשמה ב{s}', signupThen: 'סיימתם? חזרו לכאן והתחברו.', copy: 'העתק', copiedShort: 'הועתק', notKnown: 'תמלאו בעצמכם',
   field_name: 'שם פרטי ומשפחה', field_id: 'תעודת זהות', field_phone: 'טלפון נייד', field_email: 'אימייל', field_birthdate: 'תאריך לידה', field_password: 'סיסמה חדשה', field_address: 'כתובת למשלוח', field_code: 'קוד שיגיע ב-SMS / במייל',
+  storeLoadFailed: 'האתר של {s} לא נטען כרגע.', tryAgain: 'נסו שוב',
   phoneBadge: 'מהטלפון', cloudBadge: 'מהאתר', sessionSaved: 'החיבור נשמר גם בענן ✓', sessionNotSaved: 'החיבור נשמר בטלפון הזה',
   // Ordering on the phone
   orderOnPhone: 'הזמינו דרך קניתי · {x}', orderOnPhoneSub: 'הסל מתמלא באתר {s} כאן, בטלפון, בחשבון שלכם. אתם בודקים ומשלמים באתר הרשת.',
@@ -171,6 +172,7 @@ const en: Strings = {
   forgotPwLink: 'Forgot? Create a password at {s}', signupTitle: 'New {s} account', signupSub: 'Signing up on {s}’s site takes a minute. This is what it asks for — what Kaniti already knows is ready to copy:',
   signupOpen: 'Open {s} sign-up', signupThen: 'Done? Come back here and sign in.', copy: 'Copy', copiedShort: 'Copied', notKnown: 'You fill this in',
   field_name: 'First and last name', field_id: 'ID number', field_phone: 'Mobile phone', field_email: 'Email', field_birthdate: 'Date of birth', field_password: 'New password', field_address: 'Delivery address', field_code: 'Code sent by SMS / email',
+  storeLoadFailed: '{s}’s site did not load just now.', tryAgain: 'Try again',
   phoneBadge: 'On the phone', cloudBadge: 'From the site', sessionSaved: 'Connection also saved to the cloud ✓', sessionNotSaved: 'Connection saved on this phone',
   // Ordering on the phone
   orderOnPhone: 'Order through Kaniti · {x}', orderOnPhoneSub: 'The cart fills on {s}’s site right here on your phone, in your account. You check and pay on the store’s site.',

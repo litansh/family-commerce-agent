@@ -62,7 +62,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
             // On the web, a store with no cloud rung connects on the phone; say so up front.
             const badge = on ? tr('linked', {}) : Platform.OS === 'web' ? (STORES[r]?.cloud ? tr('cloudBadge') : tr('phoneBadge')) : otp ? tr('otpBadge') : tr('pwBadge');
             return (
-              <View key={r} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
+              <View key={r} testID={`store-row-${r}`} style={[s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }]}>
                 <View style={[s.rowStart, { flexShrink: 1, flexWrap: 'wrap' }]}>
                   <Text style={s.body} numberOfLines={1}>{STORES[r]?.name ?? r}</Text>
                   <Chip text={badge} tone={on ? 'good' : otp || STORES[r]?.cloud ? 'good' : 'neutral'} />
@@ -72,7 +72,7 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
                       <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('sync')}</Text></Pressable>
                       <Pressable onPress={() => { markUnlinked(r); void api.disconnectStore(household.id, r).then(refreshCloud).catch(() => null); }} hitSlop={8}><Text style={[s.link, { color: t.muted }]}>{tr('disconnect')}</Text></Pressable>
                     </View>
-                  : <Pressable onPress={() => setLinking(r)} hitSlop={8}><Text style={s.link}>{tr('connect')}</Text></Pressable>}
+                  : <Pressable onPress={() => setLinking(r)} hitSlop={8} testID={`connect-${r}`}><Text style={s.link}>{tr('connect')}</Text></Pressable>}
               </View>
             );
           })}

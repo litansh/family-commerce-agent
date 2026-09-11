@@ -1,0 +1,12 @@
+# After a look at the store's sign-in: close it; the store must still read "not connected".
+appId: com.litansh.kaniti
+---
+- tapOn: { id: "link-close" }
+- extendedWaitUntil:
+    visible: { text: "החנויות המחוברות" }
+    timeout: 10000
+- scrollUntilVisible:
+    element: { id: "connect-${STORE}" }
+    direction: DOWN
+    timeout: 20000
+- assertVisible: { id: "connect-${STORE}" }
