@@ -36,11 +36,12 @@ const CHECKS = {
   api: () => run('api', 'node ops/api-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').pop() })),
   // The shopper agent: a five-person family's week (about 35 lines) through resolve → compare → cart lines; cheap, fast, split, substitutes, in-store.
   shopper: () => run('shopper', `node ops/test-cart.mjs --json ${homedir()}/.kaniti/health/test-cart.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the test cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
+  topup: () => run('topup', `node ops/test-cart.mjs --short --json ${homedir()}/.kaniti/health/test-cart-short.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the top-up cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
   sim: () => run('sim', './maestro/connect-all.sh && ./maestro/run.sh order', `${ROOT}/apps/mobile`, 2_400_000, (o) => { const rows = [...o.matchAll(/^([a-z-]+)\s+(yes|NO)\s+(yes|NO)/gm)]; const bad = rows.filter((r) => r[2] !== 'yes' || r[3] !== 'yes').map((r) => r[1]); const order = /Flow order[\s\S]*?(\d+)\/(\d+)/.exec(o); return { ok: rows.length === 9 && bad.length === 0, summary: `connect ${rows.length - bad.length}/${rows.length}${bad.length ? ` (bad: ${bad.join(',')})` : ''}${order ? `, order ${order[1]}/${order[2]}` : ''}` }; }),
 };
 
 mkdirSync(`${homedir()}/.kaniti/health`, { recursive: true });
-const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'shopper']).filter((n) => CHECKS[n]);
+const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'shopper', 'topup']).filter((n) => CHECKS[n]);
 if (withSim && !only) names.push('sim');
 // Browser checks share the network but not the simulator: everything but `sim` runs in parallel.
 const parallel = names.filter((n) => n !== 'sim');

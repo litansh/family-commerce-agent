@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { substituteMissing } from '../src/substitutes.ts';
+import { pickSubstitute, substituteMissing } from '../src/substitutes.ts';
 import type { StorefrontQuote, QuotedLine, ListLine } from '@fca/domain';
 
 const line = (id: string, name: string, price: number, over: Partial<QuotedLine> = {}): QuotedLine => ({ lineId: id, query: name, productName: name, qty: 1, unitPrice: price as never, lineTotal: price as never, substituted: false, clubOnly: false, resolutionSource: 'provider', ...over });
@@ -31,4 +31,14 @@ test('nothing missing, or too much missing, means no extra quote', async () => {
   const thin = quote('t', [line('a', 'חלב', 1)], 3); // 1 of 3 — below the partial-leg floor
   await substituteMissing(qp, catalog, { quotes: [thin], assumptions: [] } as never, lines, 'x');
   assert.equal(calls, 0);
+});
+
+test('a substitute is the same kind of product: no pickles for cucumbers, no smoked for fresh salmon, no can for fresh tomatoes', () => {
+  const c = (name: string, chains = 2) => ({ gtin: name, name, pricedAtChains: chains });
+  assert.equal(pickSubstitute('מלפפונים', [c('מלפפונים בחומץ קטנים'), c('מלפפונים במלח'), c('מלפפונים ישראלי ארוז', 1)])?.name, 'מלפפונים ישראלי ארוז');
+  assert.equal(pickSubstitute('פילה סלמון', [c('פילה סלמון מעושן 200 גרם', 3), c('פילה סלמון נורבגי טרי 500 גרם', 1)])?.name, 'פילה סלמון נורבגי טרי 500 גרם');
+  assert.equal(pickSubstitute('עגבניות', [c('עגבניות חתוכות דק פריניר'), c('רסק עגבניות'), c('עגבניות שרי מארז', 2)])?.name, 'עגבניות שרי מארז');
+  // Asked for smoked: smoked is fine. Nothing of the same kind: nothing.
+  assert.equal(pickSubstitute('סלמון מעושן', [c('פילה סלמון מעושן 200 גרם')])?.name, 'פילה סלמון מעושן 200 גרם');
+  assert.equal(pickSubstitute('ביצים L', [c('ביצים 12 יח גדול L', 0)]), undefined);
 });

@@ -26,6 +26,8 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   node ops/briefing.mjs 2>&1 | tee -a "$LOG"
   # The scout: who delivers to our families today, and which storefront is new or not yet connectable.
   node --experimental-strip-types ops/store-scout.mjs 2>&1 | grep -v Warning | tee -a "$LOG"
+  # The product review runs on green days too: a promise can be broken while every check passes.
+  ops/qa.sh
   exit 0
 fi
 
@@ -38,7 +40,7 @@ claude -p "$PROMPT" --permission-mode acceptEdits --max-turns 120 \
 
 echo "== recheck $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
-  notify "repaired" "checks pass after the repair run"; node ops/briefing.mjs 2>&1 | tee -a "$LOG"; exit 0
+  notify "repaired" "checks pass after the repair run"; node ops/briefing.mjs 2>&1 | tee -a "$LOG"; ops/qa.sh; exit 0
 fi
 notify "still unhealthy" "see $LOG"
 node ops/briefing.mjs 2>&1 | tee -a "$LOG"
