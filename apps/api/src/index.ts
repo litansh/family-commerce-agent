@@ -580,7 +580,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         return bestQuote && same > 0 ? { ...b, sameLines: { brand: bestQuote.brand, items: same, delivered: same + bestQuote.deliveryFee } } : b;
       }) };
       // One line per compare, so "why only one option?" is answerable from the log.
-      console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}`), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
+      console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => { const have = new Set(substituted.quotes.find((q) => q.storefrontId === r.storefrontId)?.lines.map((l) => l.lineId) ?? []); const miss = lines.filter((l) => !have.has(l.id)).map((l) => l.query).slice(0, 4); return `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}${miss.length ? ' missing ' + miss.join('|') : ''}`; }), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
       return ok({
         currency: region.currency,
         etas,
