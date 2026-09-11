@@ -196,7 +196,18 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                       <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{r.brand}</Text>
                       {(() => { const e = etaOf(r.sid); return e?.kind === 'live' && e.minutes ? <Chip text={e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes })} tone="good" /> : null; })()}
                     </View>
-                    <Text style={[s.faint, { fontSize: 11 }]}>{r.ok ? tr('tblCovers', { p: Math.round(r.coverage * 100) }) : r.short !== undefined ? tr('tblShort', { x: money(r.short) }) : tr('tblCovers', { p: Math.round(r.coverage * 100) })}</Text>
+                    {(() => {
+                      // Name what this store lacks and what it swapped, instead of a bare percentage.
+                      const sl = q.storefrontLines?.[r.sid] ?? {};
+                      const missing = q.lines.filter((l) => !sl[l.id]).map((l) => l.query);
+                      const swapped = Object.values(sl).filter((l) => l.substituted && l.reason).length;
+                      const parts = [
+                        !r.ok && r.short !== undefined ? tr('tblShort', { x: money(r.short) }) : null,
+                        missing.length ? tr('tblMissing', { x: missing.slice(0, 3).join(', ') + (missing.length > 3 ? '…' : '') }) : (r.ok ? null : tr('tblCovers', { p: Math.round(r.coverage * 100) })),
+                        swapped ? tr('subs', { n: swapped }) : null,
+                      ].filter(Boolean);
+                      return <Text style={[s.faint, { fontSize: 11 }]}>{parts.length ? parts.join(' · ') : tr('tblCovers', { p: Math.round(r.coverage * 100) })}</Text>;
+                    })()}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={[s.price, { fontSize: 18, color: r.ok && r.total === cheapest ? t.accent : t.ink }]}>{money(r.total)}</Text>
