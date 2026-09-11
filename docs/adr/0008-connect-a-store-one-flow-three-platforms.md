@@ -121,6 +121,11 @@ up by barcode through the store's own catalogue and adds them through the store'
   succeeds once the session carries an address, which a connected account has.
 - **Shufersal** — `POST /online/he/cart/add` (`productCodePost`, `qty`, CSRF), Hybris. Needs a
   signed-in session; anonymous, its own login appears in the same WebView.
+- **Hatzi Hinam** — `GET /proxy/item/getItemByBarkod/{barcode}` → `POST /proxy/item/addItemToCart`
+  ({ItemId, Quantity, Type, IsCalculateCart}). Signed-in session.
+- **Victory, Carrefour, Keshet, Mahsanei HaShuk, Tiv Taam (stor.ai), and Wolt** — no native cart
+  recipe yet; they use the per-item deep-link fallback (the store's own product pages, one tap
+  each), which was the MVP default in the retailer matrix and always works.
 
 Flow: order → the store's page loads → if signed in (a connected store), the cart fills and the
 store's cart page is shown for the one approval; if not, a clear "sign in to fill your cart"
