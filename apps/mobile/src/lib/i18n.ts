@@ -101,7 +101,7 @@ const he: Strings = {
   etaLive: 'וולט · ~{m} דק׳', etaLiveRange: 'וולט · {r} דק׳', etaSlots: 'משלוח בחלון', etaSlotsSub: 'הרשת מספקת בחלונות זמן — בוחרים בעמוד ההזמנה', fastBy: 'הכי מהר: {s} · ~{m} דק׳', etaWhy: 'הזמן: וולט מגיע תוך דקות; הרשתות בחלון משלוח, לפי היום והשעה.',
   driveTitle: 'ואם נוסעים לחנות?', driveSub: 'אותה רשימה במחירי המדף בסניפים הקרובים לבית, לפי קובצי המחירים שהרשתות מפרסמות.',
   driveRow: '{d} ק״מ · ~{m} דק׳ נסיעה · ≈{x} דלק', driveCovers: '{n} מתוך {t} פריטים', driveSaves: 'חוסך {x} לעומת המשלוח הזול', driveCosts: 'יקר ב-{x} מהמשלוח הזול',
-  drivePending: 'בודקים מחירים בסניפים הקרובים אליכם — יופיע בהשוואה הבאה.', driveNone: 'לא נמצאו סניפים עם מחירים ליד הכתובת שלכם.', driveMissing: 'לא נמצא בסניף: {x}', driveNote: 'הנסיעה מחושבת לפי מרחק; זמן הקנייה עצמה לא נספר.',
+  drivePending: 'בודקים מחירים בסניפים הקרובים אליכם — יופיע בהשוואה הבאה.', driveNoAddress: 'כדי לראות מחירים בסניפים צריך כתובת מדויקת — בחרו אותה מההצעות במסך משק הבית.', subsNamed: 'חלופה: {x}', driveNone: 'לא נמצאו סניפים עם מחירים ליד הכתובת שלכם.', driveMissing: 'לא נמצא בסניף: {x}', driveNote: 'הנסיעה מחושבת לפי מרחק; זמן הקנייה עצמה לא נספר.',
   rej_partial: 'מספקת רק {a} מתוך {b} פריטים', rej_min: 'הסל מתחת למינימום ההזמנה',
 };
 
@@ -194,7 +194,7 @@ const en: Strings = {
   etaLive: 'Wolt · ~{m} min', etaLiveRange: 'Wolt · {r} min', etaSlots: 'Window delivery', etaSlotsSub: 'The chain delivers in time windows — you pick one at checkout', fastBy: 'Fastest: {s} · ~{m} min', etaWhy: 'Time: Wolt arrives within minutes; the chains deliver in windows that shift by day and hour.',
   driveTitle: 'And if you drive there?', driveSub: 'The same list at shelf prices in the branches near home, from the price files the chains publish.',
   driveRow: '{d} km · ~{m} min drive · ≈{x} fuel', driveCovers: '{n} of {t} items', driveSaves: 'Saves {x} vs the cheapest delivery', driveCosts: '{x} more than the cheapest delivery',
-  drivePending: 'Checking prices at the branches near you — shows on the next compare.', driveNone: 'No branches with published prices near your address.', driveMissing: 'Not at this branch: {x}', driveNote: 'Driving is priced by distance; the shopping itself is not counted.',
+  drivePending: 'Checking prices at the branches near you — shows on the next compare.', driveNoAddress: 'In-store prices need an exact address — pick it from the suggestions on the Household screen.', subsNamed: 'Substitute: {x}', driveNone: 'No branches with published prices near your address.', driveMissing: 'Not at this branch: {x}', driveNote: 'Driving is priced by distance; the shopping itself is not counted.',
   rej_partial: 'supplies only {a} of {b} items', rej_min: 'basket is below the store minimum',
 };
 
