@@ -1,4 +1,5 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { confirmFromHistory } from '../lib/pending';
 import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Modal, Platform, Text, View } from 'react-native';
 import { STORES, signupFillJs, type SignupKnown } from '../lib/stores';
@@ -163,6 +164,8 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
       const env = Array.isArray(parsed) ? { orders: parsed, diag: undefined } : (parsed as { orders?: unknown[]; diag?: Record<string, unknown> });
       const orders = Array.isArray(env.orders) ? env.orders : [];
       if (env.diag) setDiag(JSON.stringify(env.diag));
+      // A cart Kaniti filled that the store now lists as an order is a confirmed purchase.
+      confirmFromHistory(storeId, orders as { at?: string; lines: { name: string; code?: string }[] }[]);
       // Always post, even with nothing: the diagnostic reaches the server log
       // so a wrong shape can be fixed without a phone in hand.
       const r = await api.importHistory(householdId, storeId, orders as never, env.diag);
@@ -315,7 +318,7 @@ const PROBE_JS = `(async()=>{try{
   window.ReactNativeWebView.postMessage('probe:'+JSON.stringify(out));
 }catch(e){window.ReactNativeWebView.postMessage('probe:'+JSON.stringify({error:String(e),href:location.href}));}})();true;`;
 
-const HISTORY_JS = `(async()=>{let diagHtml;try{
+export const HISTORY_JS = `(async()=>{let diagHtml;try{
   const H={accept:'application/json','x-requested-with':'XMLHttpRequest'};
   const j=async(u)=>{const r=await fetch(u,{credentials:'include',headers:H});const t=await r.text();try{return {s:r.status,d:JSON.parse(t)}}catch(e){return {s:r.status,d:null,h:t.slice(0,400)}}};
   const L=await j('/online/he/my-account/orders');

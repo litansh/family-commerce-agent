@@ -43,3 +43,28 @@ export function usePending(): PendingPurchase[] {
   useEffect(() => { let a = true; void ensure().then(() => a && setV([...pending])); const f = () => a && setV([...pending]); subs.add(f); return () => { a = false; subs.delete(f); }; }, []);
   return v;
 }
+
+const norm = (x: string) => x.toLowerCase().replace(/["'׳״%().,-]/g, ' ').replace(/\s+/g, ' ').trim();
+/** Do two product names mean the same thing? Same barcode, or the shorter name's words mostly inside the longer one. */
+export function sameProduct(a: { name: string; gtin?: string }, b: { name: string; code?: string }): boolean {
+  if (a.gtin && b.code && a.gtin === b.code) return true;
+  const wa = norm(a.name).split(' ').filter((w) => w.length > 1); const wb = norm(b.name).split(' ').filter((w) => w.length > 1);
+  if (!wa.length || !wb.length) return false;
+  const [short, long] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+  const hit = short.filter((w) => long.some((v) => v === w || (w.length > 3 && (v.startsWith(w) || w.startsWith(v))))).length;
+  return hit >= Math.max(1, Math.ceil(short.length * 0.6));
+}
+/**
+ * The store's own orders arrived: any cart Kaniti filled that shows up there (an order on or
+ * after the cart, with most of its lines) is a confirmed purchase - no question to the family.
+ */
+export function confirmFromHistory(storeId: string, orders: readonly { at?: string; lines: { name: string; code?: string }[] }[]): PendingPurchase[] {
+  const done: PendingPurchase[] = [];
+  for (const p of pending.filter((x) => x.storeId === storeId)) {
+    const day = p.at.slice(0, 10);
+    const hit = orders.find((o) => (!o.at || o.at >= day) && p.lines.filter((l) => o.lines.some((ol) => sameProduct(l, ol))).length >= Math.max(1, Math.ceil(p.lines.length * 0.5)));
+    if (hit) done.push(p);
+  }
+  if (done.length) { pending = pending.filter((x) => !done.includes(x)); emit(); }
+  return done;
+}

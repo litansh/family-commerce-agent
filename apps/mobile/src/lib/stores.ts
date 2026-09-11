@@ -131,6 +131,13 @@ const define = (platform: Platform, facts: StoreFacts): StoreDef => ({ ...platfo
 const storai = (otp: boolean): Platform => ({
   group: 'platform', loginKind: otp ? 'otp' : 'password',
   signedInCheck: genericSignedIn,
+  // Past orders through the app's own Angular service (Api resolves :rid/:uid from the session).
+  historyJs: `(async()=>{const D={};try{const inj=window.angular&&angular.element(document.body).injector();if(!inj)throw new Error('no angular');const Api=inj.get('Api');const r=await Api.request({method:'GET',url:'/v2/retailers/:rid/users/:uid/orders',params:{from:0,size:20,orderBy:[{id:'desc'}]}});const list=Array.isArray(r)?r:(r&&(r.orders||r.data||r.items))||[];D.okeys=list[0]?Object.keys(list[0]).slice(0,14):[];const out=[];
+  const nm=(p,x)=>String((p.names&&(p.names.he||p.names[2]))||p.name||x.name||x.text||'').slice(0,80);
+  for(const o of list.slice(0,20)){let lines=(o.lines||o.items||[]).map(x=>{const p=x.product||{};return {name:nm(p,x),code:String(p.barcode||(p.barcodes&&p.barcodes[0])||''),qty:Number(x.quantity||x.qty||1)||1};}).filter(l=>l.name);
+    if(!lines.length&&o.id){try{const d=await Api.request({method:'GET',url:'/v2/retailers/:rid/branches/:bid/users/:uid/orders/'+o.id});lines=(d.lines||[]).map(x=>{const p=x.product||{};return {name:nm(p,x),code:String(p.barcode||''),qty:Number(x.quantity||1)||1};}).filter(l=>l.name);}catch(e){}}
+    const at=String(o.timePlaced||o.shippingTimeFrom||o.created||o.date||'').slice(0,10);if(lines.length)out.push({at,lines,id:String(o.id||''),total:Number(o.totalAmount||o.total||0)||undefined});}
+  D.orders=out.length;window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag:D}));}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`,
   // If no login form is on screen yet, open it from the header ("כניסה" /
   // "התחברות" / "כניסה לחשבון"); then, where the chain offers it, prefer the
   // SMS tab so the person never meets a password field.
@@ -158,6 +165,16 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
 export const RAMI_LEVY: Platform = {
   group: 'code', loginKind: 'otp',
   searchUrl: (q) => `https://www.rami-levy.co.il/he/online/search?q=${encodeURIComponent(q)}`,
+  // Past orders, for the memory and to confirm a purchase Kaniti's cart led to. The site's own
+  // service ($ecomws.getOrders → www-api /api/v3/site/orders) with the person's token; the shape
+  // is reported in diag so a change at the store is visible in the log, not silent.
+  historyJs: `(async()=>{const D={};try{const n=window.$nuxt;const w=n&&n.$ecomws;const out=[];let raw=null;
+  for(const f of [0,1,'all']){try{const r=await (w&&w.getOrders?w.getOrders(1,f):n.$axios.get('https://www-api.rami-levy.co.il/api/v3/site/orders?page=1&activeFilter='+f));raw=r&&r.data!==undefined?r.data:r;if(raw&&(Array.isArray(raw)||raw.orders||raw.data||raw.items))break;}catch(e){D.err=String(e).slice(0,80);}}
+  const list=raw?(Array.isArray(raw)?raw:(raw.orders||raw.data||raw.items||raw.results||[])):[];D.keys=raw&&!Array.isArray(raw)?Object.keys(raw).slice(0,8):[];D.okeys=list[0]?Object.keys(list[0]).slice(0,14):[];
+  for(const o of list.slice(0,20)){const items=o.items||o.lines||o.products||o.order_items||[];const at=String(o.supply_at||o.supplyAt||o.created_at||o.createdAt||o.date||o.order_date||'').slice(0,10);
+    const lines=items.map(x=>{const p=x.product||x.item||x;return {name:String(p.name||p.title||x.name||'').slice(0,80),code:String(p.barcode||(p.barcodes&&p.barcodes[0])||x.barcode||''),qty:Number(x.quantity||x.qty||x.amount||1)||1};}).filter(l=>l.name);
+    if(lines.length)out.push({at,lines,id:String(o.id||o.order_id||''),total:Number(o.total||o.price||0)||undefined});}
+  D.orders=out.length;window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag:D}));}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`,
   signedInCheck: `(()=>{try{const n=window.$nuxt;if(n&&n.$auth&&typeof n.$auth.loggedIn==='boolean')return n.$auth.loggedIn;if(n&&n.$store&&n.$store.state&&n.$store.state.auth&&typeof n.$store.state.auth.loggedIn==='boolean')return n.$store.state.auth.loggedIn;}catch(e){}return ${genericSignedIn};})()`,
   // On the phone the trigger is a <div aria-label="התחברות">, not a button.
   openLoginJs: `(()=>{if(document.querySelector('input[type="email"]'))return;const b=document.querySelector('[aria-label="התחברות"],[aria-label="כניסה"]')||[...document.querySelectorAll('button,a,div,span')].find(x=>x.children.length<3&&/^\\s*(התחברות|כניסה)\\s*$/.test(x.textContent||''));if(b)b.click();})();true;`,
@@ -311,6 +328,12 @@ export const HAZI_HINAM: Platform = {
   group: 'other', loginKind: 'password',
   searchUrl: (q) => `https://shop.hazi-hinam.co.il/search/${encodeURIComponent(q)}`,
   signedInCheck: genericSignedIn,
+  // Past orders: the shop's own /proxy/api (order/history, then the items of each order).
+  historyJs: `(async()=>{const D={};try{const j=async(u)=>{const r=await fetch('https://shop.hazi-hinam.co.il/proxy/api/'+u,{credentials:'include',headers:{accept:'application/json'}});D.s=r.status;return r.json();};const h=await j('order/history');const list=(h&&h.Results&&(h.Results.Orders||h.Results.orders||h.Results))||h.Orders||[];const arr=Array.isArray(list)?list:[];D.okeys=arr[0]?Object.keys(arr[0]).slice(0,14):[];const out=[];
+  for(const o of arr.slice(0,15)){const id=o.Id||o.OrderId||o.id;let items=o.Items||o.items||[];if(!items.length&&id){try{const d=await j('item/getItemsByOrder/'+id);items=(d&&d.Results&&(d.Results.Items||d.Results))||d.Items||[];}catch(e){}}
+    const lines=(Array.isArray(items)?items:[]).map(x=>({name:String(x.Name||x.ItemName||x.name||'').slice(0,80),code:String(x.Barcode||x.Barkod||x.barcode||''),qty:Number(x.Quantity||x.Qty||x.quantity||1)||1})).filter(l=>l.name);
+    const at=String(o.Date||o.CreatedDate||o.OrderDate||o.date||'').slice(0,10);if(lines.length)out.push({at,lines,id:String(id||''),total:Number(o.Total||o.TotalPrice||0)||undefined});}
+  D.orders=out.length;window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag:D}));}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`,
   // Their "e-mail / ID" box is a plain text field above the password.
   prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,

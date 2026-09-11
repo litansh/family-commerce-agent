@@ -17,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Api } from './lib/api';
 import { STORES } from './lib/stores';
 import { markNeedsRelink, useLinked } from './lib/linked';
+import { confirmFromHistory } from './lib/pending';
+import { HISTORY_JS } from './screens/StoreLink';
 import { BUILD } from './lib/config';
 
 const EVERY_MS = 6 * 3600_000;
@@ -51,11 +53,26 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
         onError={() => finish('load-error')}
         onMessage={(e: { nativeEvent: { data: string } }) => {
           const d = e.nativeEvent.data;
+          if (d.startsWith('history:')) {
+            try {
+              const env = JSON.parse(d.slice(8)) as { orders?: { at?: string; lines: { name: string; code?: string; qty?: number }[] }[]; diag?: Record<string, unknown> };
+              const orders = (env.orders ?? []).map((o) => ({ at: o.at ?? '', lines: o.lines.map((l) => ({ name: l.name, ...(l.code ? { code: l.code } : {}), qty: l.qty ?? 1 })) }));
+              void api.importHistory(householdId, storeId, orders, { build: BUILD, keepalive: true, ...(env.diag ?? {}) }).catch(() => null);
+              confirmFromHistory(storeId, orders);
+            } catch { /* a malformed report is only a report */ }
+            finish('in'); return;
+          }
           if (d.startsWith('keepsession:')) { const got = JSON.parse(d.slice(12)) as { cookies: { name: string; value: string; domain?: string }[]; tokens: Record<string, string>; userAgent?: string }; void api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) }).catch(() => null); return; }
           if (!d.startsWith('keep:')) return;
           const v = d.slice(5); looks.current.push(v);
           // Two looks agree before a verdict; a challenge or block is neither "in" nor "out".
-          if (v === 'in') { ref.current?.injectJavaScript(capture); finish('in'); }
+          if (v === 'in') {
+            ref.current?.injectJavaScript(capture);
+            // Signed in: read the store's own orders too - the memory learns from what was really
+            // bought, and a cart Kaniti filled earlier is confirmed without asking anyone.
+            const h = store.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
+            if (h) { ref.current?.injectJavaScript(h); setTimeout(() => finish('in'), 12_000); } else finish('in');
+          }
           else if (v === 'out' && looks.current.filter((x) => x === 'out').length >= 2) finish('out');
           else if (v === 'challenge' || v === 'blocked') finish(v);
           else if (looks.current.length >= 2) finish(looks.current.join(','));

@@ -391,7 +391,25 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // have into a session that lives on the device.
       // One JSON line per report, so CloudWatch metric filters can count store errors seen by real phones.
       console.log(JSON.stringify({ event: 'import-history', hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
-      return ok(await importRawOrders(hid, catalog, raw));
+      const result = await importRawOrders(hid, catalog, raw);
+      // Keep the store's own orders (last 30, newest first) so the Orders tab shows what
+      // was really bought and the phone can confirm the cart it filled - no tap needed.
+      const retailer = typeof body['retailer'] === 'string' ? body['retailer'] : 'unknown';
+      if (raw.length) {
+        const prev = ((await readRow(TABLE, hid, `HISTORY#${retailer}`)) as { orders?: { id?: string; at?: string; lines?: unknown[] }[] } | undefined)?.orders ?? [];
+        const key = (o: { id?: string; at?: string; lines?: unknown[] }) => o.id || `${o.at}:${o.lines?.length ?? 0}`;
+        const seen = new Set<string>();
+        const merged = [...raw, ...prev].filter((o) => { const k = key(o as { id?: string; at?: string }); if (seen.has(k)) return false; seen.add(k); return true; }).sort((a, b) => String(b.at ?? '').localeCompare(String(a.at ?? ''))).slice(0, 30);
+        await writeRow(TABLE, hid, `HISTORY#${retailer}`, { retailer, at: new Date().toISOString(), orders: merged });
+      }
+      return ok(result);
+    }
+
+    // What the family really bought, per store, as imported from the stores' own accounts.
+    if (method === 'GET' && rest === 'history') {
+      const ids = ['rami-levy', 'victory', 'wolt', 'shufersal', 'carrefour', 'keshet-teamim', 'mahsanei-hashuk', 'tiv-taam', 'hazi-hinam'];
+      const rows = await Promise.all(ids.map(async (id) => [id, await readRow(TABLE, hid, `HISTORY#${id}`)] as const));
+      return ok({ stores: Object.fromEntries(rows.filter(([, r]) => r).map(([id, r]) => [id, { at: r!['at'], orders: r!['orders'] }])) });
     }
 
     // Pictures for a set of barcodes, resolved within a time budget so the
