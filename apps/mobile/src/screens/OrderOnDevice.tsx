@@ -47,7 +47,9 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   const count = (st: 'added' | 'missing' | 'error') => Object.values(results).filter((v) => v === st).length;
 
   // Deep-link mode: one line at a time, in the same WebView.
-  const linkLines = lines.filter((l) => l.link);
+  // Every line gets a page at this store: its deep link when the quote has one, else the
+  // store's own search for the product name - the universal last resort, any store.
+  const linkLines = lines.map((l) => (l.link ? l : store?.searchUrl ? { ...l, link: store.searchUrl(l.name) } : l)).filter((l) => l.link);
   const nextLink = () => { const i = linkIdx + 1; if (i < linkLines.length) { setLinkIdx(i); setUri(linkLines[i]!.link!); } else { setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); } };
 
   useEffect(() => { if (!hasRecipe) setPhase('links'); }, [hasRecipe]);

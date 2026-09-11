@@ -24,9 +24,12 @@ const retailerOf = (storefrontId: string) => storeForStorefront(storefrontId)?.i
 /** What goes into the store's cart for one leg: barcode, name, quantity, and the deep link as the fallback. */
 function cartLinesFor(leg: PurchaseOption['legs'][number], quote: QuoteResult): CartLine[] {
   return leg.lineIds.flatMap((id) => {
-    const l = quote.lines.find((x) => x.id === id); const ql = quote.quotedLines[id];
+    const l = quote.lines.find((x) => x.id === id);
     if (!l) return [];
-    return [{ ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), name: ql?.productName ?? l.query, qty: Math.max(1, Math.round(l.packQty ?? 1)), ...(ql?.link ? { link: ql.link } : {}) }];
+    // This store's own product and link for the line; the winner's resolution only as a fallback.
+    const sl = quote.storefrontLines?.[leg.storefrontId]?.[id]; const ql = quote.quotedLines[id];
+    const gtin = sl?.gtin ?? ql?.gtin ?? l.gtin; const link = sl?.link ?? (sl ? undefined : ql?.link);
+    return [{ ...(gtin ? { gtin } : {}), name: sl?.productName ?? ql?.productName ?? l.query, qty: Math.max(1, Math.round(l.packQty ?? 1)), ...(link ? { link } : {}) }];
   });
 }
 

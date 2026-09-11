@@ -16,6 +16,8 @@ export interface QuoteResult {
   currency?: string;
   /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
   etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
+  /** Each shown storefront's own product and deep link per line. */
+  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>>;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
