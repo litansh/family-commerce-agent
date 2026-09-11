@@ -389,7 +389,8 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const raw = arr<{ at?: string; lines?: { name?: string; code?: string; qty?: number }[] }>(body['orders'], 'orders');
       // The phone's diagnostic of what the store returned - the only window we
       // have into a session that lives on the device.
-      console.log('import-history', JSON.stringify({ hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
+      // One JSON line per report, so CloudWatch metric filters can count store errors seen by real phones.
+      console.log(JSON.stringify({ event: 'import-history', hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
       return ok(await importRawOrders(hid, catalog, raw));
     }
 
