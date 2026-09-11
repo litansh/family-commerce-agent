@@ -1,0 +1,47 @@
+# Promise 1 and 6: a store row opens THAT store. Tap a Wolt venue's row on the compare, "buy here",
+# and the order screen must name Wolt — never another store.
+appId: com.litansh.kaniti
+---
+- tapOn: { text: "Open", optional: true }
+- extendedWaitUntil:
+    visible: { text: "Continue|Close|המחלקות" }
+    timeout: 120000
+- tapOn: { text: "Continue", optional: true }
+- tapOn: { text: "Close", optional: true }
+- extendedWaitUntil:
+    visible: { text: "המחלקות" }
+    timeout: 45000
+- tapOn: ".*רשימה"
+- tapOn: { id: "list-input" }
+- inputText: "חלב 3%"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "list-input" }
+- inputText: "לחם אחיד"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "Done", optional: true }
+- scroll
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: { id: "list-compare" }
+    timeout: 10000
+- tapOn: { id: "list-compare" }
+- extendedWaitUntil:
+    visible: { id: "answer-card" }
+    timeout: 120000
+- scrollUntilVisible:
+    element: { text: ".*\\(וולט\\).*" }
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- tapOn: { text: ".*\\(וולט\\).*" }
+- scrollUntilVisible:
+    element: { text: "קנו כאן" }
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- tapOn: { text: "קנו כאן" }
+- extendedWaitUntil:
+    visible: { id: "order-title" }
+    timeout: 60000
+- assertVisible: { id: "order-title", text: ".*(וולט|Wolt).*" }
+- assertNotVisible: { text: ".*רמי לוי.*" }

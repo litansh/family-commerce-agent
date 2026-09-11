@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { PurchaseOption } from '@fca/domain';
 import type { Api, Household, QuoteResult } from '../lib/api';
-import type { Line } from '../lib/store';
-import { Button, Chip, Header, Loading, Rank, S, Skeleton, t } from '../ui';
+import { removeLine, type Line } from '../lib/store';
+import { Button, Chip, Header, Loading, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
-import { money, reasonT, t as tr } from '../lib/i18n';
+import { isRTL, money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
 import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
@@ -14,8 +14,6 @@ import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
 import { OrderOnDevice } from './OrderOnDevice';
 import { Platform } from 'react-native';
-
-const LETTERS = 'אבגדה';
 
 /**
  * The costed ways to buy the list. Cash is the headline; time cost is shown
@@ -43,6 +41,67 @@ function legsFor(option: PurchaseOption, quote: QuoteResult) {
   }));
 }
 
+/** One store on the compare, as one sentence: title · when · what it lacks, and its price. */
+type Row = { key: string; title: string; when: string | null; price: number; priceNote?: string; missing: string[]; swaps: string[]; short?: number; option?: PurchaseOption; sid: string };
+type StoreLines = NonNullable<QuoteResult['storefrontLines']>[string];
+/** Long product names, one line's worth. */
+const short = (x: string) => (x.length > 28 ? x.slice(0, 27) + '…' : x);
+
+/**
+ * The price column of a row: the number with its note wrapping under it. Bounded so the name column
+ * keeps its width; hugging the card's outer edge so the prices read as one column down the list.
+ */
+function PriceCol({ price, note, color, noteColor }: { price: string; note?: string; color?: string; noteColor?: string }) {
+  const s = S(); const rtl = isRTL();
+  const edge = rtl ? ('left' as const) : ('right' as const);
+  return (
+    <View style={{ maxWidth: '45%', alignItems: rtl ? 'flex-start' : 'flex-end' }}>
+      <Text style={[s.price, { fontSize: 18, color: color ?? t.ink, textAlign: edge }]}>{price}</Text>
+      {note ? <Text style={[s.faint, { fontSize: 11, textAlign: edge }, noteColor ? { color: noteColor } : null]}>{note}</Text> : null}
+    </View>
+  );
+}
+
+/**
+ * A store row (docs/design/compare-screen.md): the same shape for an option and a rejected store.
+ * Module-level on purpose: declared inside the screen it would be a new component type on every
+ * render, remounting mid-tap. Tapping unfolds the store's lines and "buy here".
+ */
+function StoreRow({ row, highlight, open, onToggle, lines, storeLines, onBuy }: {
+  row: Row; highlight?: boolean; open: boolean; onToggle: () => void; lines: QuoteResult['lines']; storeLines: StoreLines; onBuy: () => void;
+}) {
+  const s = S();
+  const second = [
+    row.short !== undefined ? tr('tblShort', { x: money(row.short) }) : null,
+    row.missing.length ? tr('tblMissing', { x: row.missing.slice(0, 3).join(', ') + (row.missing.length > 3 ? '…' : '') }) : null,
+    row.swaps.length ? tr('swapsLine', { x: row.swaps.slice(0, 2).join(' · ') + (row.swaps.length > 2 ? '…' : '') }) : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <Pressable onPress={onToggle} style={({ pressed }) => [{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, pressed ? { opacity: 0.7 } : null]} testID={`row-${row.sid}`}>
+      <View style={[s.row, { gap: 10 }]}>
+        <View style={{ flex: 1 }}>
+          <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
+            <Text style={[s.body, { fontSize: 15, fontWeight: highlight ? '800' : '600', flexShrink: 1 }]} numberOfLines={1}>{row.title}</Text>
+            {row.when ? <Chip text={row.when} tone={/דק|min/.test(row.when) ? 'good' : 'neutral'} /> : null}
+          </View>
+          {second ? <Text style={[s.faint, { fontSize: 11, marginTop: 2 }]}>{second}</Text> : null}
+        </View>
+        <PriceCol price={money(row.price)} {...(row.priceNote ? { note: row.priceNote } : {})} color={highlight ? t.accent : t.ink} />
+      </View>
+      {open ? (
+        <View style={{ marginTop: 8 }} testID={`row-${row.sid}-open`}>
+          {lines.map((l) => { const x = storeLines[l.id]; return (
+            <View key={l.id} style={[s.row, { paddingVertical: 3 }]}>
+              <Text style={[s.small, { flex: 1, color: x ? t.ink : t.red }]} numberOfLines={1}>{x ? (x.substituted ? (x.reason && x.reason.includes('→') ? x.reason : `${l.query} → ${x.productName}`) : x.productName) : `${l.query} — ${tr('missingHere')}`}</Text>
+            </View>
+          ); })}
+          <View style={{ marginTop: 8 }}><Button title={tr('buyHere')} kind="secondary" onPress={onBuy} testID={`buy-${row.sid}`} /></View>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
 export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder }: {
   api: Api; household: Household; lines: Line[]; onBack: () => void; onChoose: (opt: PurchaseOption, q: QuoteResult) => void; onOrder: (orderId: string) => void;
 }) {
@@ -61,10 +120,11 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     if (cur.rest.length) setOnDevice({ ...cur.rest[0]!, rest: cur.rest.slice(1), best: cur.best, q: cur.q });
     else { setOnDevice(null); onChoose(cur.best, cur.q); }
   };
-  const orderBest = async (bestIn: PurchaseOption, q: QuoteResult) => {
+  const orderBest = async (bestIn: PurchaseOption, q: QuoteResult, { pinnable = true } = {}) => {
     let best = bestIn;
-    // Driven simulator runs may pin the store to order from (EXPO_PUBLIC_E2E_ORDER_STORE); inert otherwise.
-    const pin = process.env['EXPO_PUBLIC_E2E_ORDER_STORE'];
+    // Driven simulator runs may pin the store the answer's order goes to (EXPO_PUBLIC_E2E_ORDER_STORE); inert
+    // otherwise, and never for "buy here" on a row — a row that names a store opens that store (promises 1, 6).
+    const pin = pinnable ? process.env['EXPO_PUBLIC_E2E_ORDER_STORE'] : undefined;
     if (pin) { const alt = q.options.find((o) => o.legs.length === 1 && retailerOf(o.legs[0]!.storefrontId) === pin); if (alt) best = alt; }
     const legs = legsFor(best, q);
     if (legs.length === 0) { onChoose(best, q); return; }
@@ -88,7 +148,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // it is within a few percent of the cheapest split, else the cheapest.
   const [strategy, setStrategyState] = useState<'cheap' | 'balanced' | 'fast'>(getMode());
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
-  const [whyNot, setWhyNot] = useState(false);
+  // Which row (or the answer's legs) is unfolded.
+  const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
   }, [api, household.id, lines]);
@@ -104,7 +165,6 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
 
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
-  const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
   const oneDelivery = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup' && o.kind !== 'drive');
   // "Fast" is measured, not assumed: Wolt venues carry a live estimate in minutes;
   // the chains deliver in windows, counted as a day until the phone reads real slots.
@@ -113,157 +173,128 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const fastest = [...oneDelivery].sort((a, b) => etaMinutes(a) - etaMinutes(b) || a.cashCost - b.cashCost)[0];
   const balanced = fastest && best && fastest.cashCost - best.cashCost <= best.cashCost * 0.05 ? fastest : best;
   const pick = { cheap: best, balanced, fast: fastest ?? best }[strategy];
-  const shown = pick ? [pick, ...q.options.filter((o) => o !== pick).slice(0, 2)] : [];
-  const chosen = shown[0] ?? best;
-  const fastExtra = fastest && best ? fastest.cashCost - best.cashCost : 0;
+
+  // --- The design (docs/design/compare-screen.md): one answer, then every store as the same sentence. ---
+  const brandsOf = (o: PurchaseOption) => o.legs.map((l) => l.brand).join(' + ');
+  const etaText = (sid: string): string | null => { const e = etaOf(sid); if (!e) return null; return e.kind === 'live' ? (e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes ?? 0 })) : tr('etaSlots'); };
+  const whenOf = (o: PurchaseOption) => [o.legs.length > 1 ? tr('twoDeliveries') : null, ...o.legs.map((l) => { const w = etaText(l.storefrontId); return w ? (o.legs.length > 1 ? `${l.brand}: ${w}` : w) : null; })].filter(Boolean).join(' · ');
+  const exceptionsOf = (sid: string, unpriced: readonly string[] = []) => {
+    const sl = q.storefrontLines?.[sid] ?? {};
+    const missing = (unpriced.length ? unpriced.map(nameOf) : q.lines.filter((l) => !sl[l.id]).map((l) => l.query)).map(short);
+    const swaps = Object.values(sl).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName));
+    return { missing, swaps };
+  };
+  const noneAnywhere = q.lines.filter((l) => !Object.values(q.storefrontLines ?? {}).some((m) => m[l.id]));
+  // Every store this list cannot be bought from as-is, as a row: what it prices, what it lacks, how short.
+  const answer = pick;
+  const otherOptions: Row[] = q.options.filter((o) => o !== answer && o.kind !== 'drive').map((o) => ({ key: `o-${brandsOf(o)}`, title: brandsOf(o), when: whenOf(o), price: o.cashCost, priceNote: answer && o.cashCost > answer.cashCost ? `+${money(o.cashCost - answer.cashCost)}` : undefined, ...exceptionsOf(o.legs[0]!.storefrontId, o.legs.length === 1 ? o.unpricedLineIds : []), ...(o.missingEstimate ? { priceNote: `${tr('toComplete', { x: money(o.missingEstimate) })}` } : {}), option: o, sid: o.legs[0]!.storefrontId }));
+  const rejectedRows: Row[] = q.rejected.map((r) => ({ key: `r-${r.storefrontId}`, title: r.brand, when: etaText(r.storefrontId), price: r.itemsSubtotal, priceNote: tr('itemsOnly'), ...exceptionsOf(r.storefrontId), ...(r.code === 'minimum' && r.amountToMinimum !== undefined ? { short: r.amountToMinimum } : {}), sid: r.storefrontId }));
+  const rows = [...otherOptions, ...rejectedRows];
+  const buyRow = (row: Row) => {
+    if (row.option) { void orderBest(row.option, q, { pinnable: false }); return; }
+    // A store the compare rejected is still a store the family may buy from: order what it has.
+    const sl = q.storefrontLines?.[row.sid] ?? {};
+    const ids = Object.keys(sl);
+    const pseudo = { kind: 'single_delivered', label: row.title, legs: [{ storefrontId: row.sid, brand: row.title, itemsSubtotal: row.price, deliveryFee: 0, lineIds: ids }], itemsSubtotal: row.price, fees: 0, cashCost: row.price, timeCost: 0, coverageRatio: q.lines.length ? ids.length / q.lines.length : 0, unpricedLineIds: q.lines.filter((l) => !sl[l.id]).map((l) => l.id), substitutedLineCount: Object.values(sl).filter((l) => l.substituted).length, explanation: { reason: '', savingVsBaseline: 0, baselineLabel: '', extraStores: 0, notes: [] } } as unknown as PurchaseOption;
+    void orderBest(pseudo, q, { pinnable: false });
+  };
 
   return (
     <View style={s.screen}>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }}>
-      <Header title={tr('howToBuy')} subtitle={tr('optionsSub', { n: q.lines.length, m: q.fromMemory.length }) + (spread > 0 ? tr('spread', { x: money(spread) }) : '')} onBack={onBack} />
+      <Header title={tr('howToBuy')} subtitle={tr('optionsSub', { n: q.lines.length, m: q.fromMemory.length })} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}>
-        {q.options.length === 0 && <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
+        {/* An item no store has today: named at the top, with the two things one can do about it. */}
+        {noneAnywhere.map((l) => (
+          <View key={l.id} style={[s.card, { backgroundColor: t.amberSoft }]} testID="none-anywhere">
+            <Text style={[s.body, { color: t.amber, fontWeight: '700' }]}>{tr('noneAnywhere', { x: l.query })}</Text>
+            <View style={[s.rowStart, { marginTop: 8, gap: 8 }]}>
+              <Pressable onPress={() => removeLine(l.id)} style={{ borderWidth: 1, borderColor: t.amber, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.amber, fontWeight: '700', fontSize: 13 }}>{tr('removeIt')}</Text></Pressable>
+              <Pressable onPress={onBack} style={{ backgroundColor: t.amber, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('replaceIt')}</Text></Pressable>
+            </View>
+          </View>
+        ))}
 
-        {/* The one control on this screen: cheap ↔ fast. */}
-        <View style={{ backgroundColor: t.inkSoft, borderRadius: 999, padding: 4, flexDirection: s.row.flexDirection, marginBottom: 8 }}>
+        {/* The one control: cheap ↔ fast. It re-orders; it never hides. */}
+        <View style={{ backgroundColor: t.inkSoft, borderRadius: 999, padding: 4, flexDirection: s.row.flexDirection, marginBottom: 12 }}>
           {(['cheap', 'balanced', 'fast'] as const).map((k) => (
             <Pressable key={k} onPress={() => setStrategy(k)} style={[{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 999 }, strategy === k && { backgroundColor: t.card, shadowColor: '#0E1512', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } }]}>
               <Text style={{ color: strategy === k ? t.ink : t.muted, fontWeight: strategy === k ? '800' : '600', fontSize: 14 }}>{tr(`mode_${k}`)}</Text>
             </Pressable>
           ))}
         </View>
-        <Text style={[s.small, { marginBottom: 12 }]}>
-          {strategy === 'fast'
-            ? (fastest ? ((() => { const e = etaOf(fastest.legs[0]!.storefrontId); const measured = e?.kind === 'live' && e.minutes ? `${tr('fastBy', { s: fastest.legs[0]!.brand, m: e.minutes })} · ` : ''; return measured + (fastExtra > 0 ? tr('modeFastCost', { x: money(fastExtra) }) : tr('modeFastFree')); })()) : tr('modeFastNone'))
-            : strategy === 'balanced' ? tr('modeBalancedSub') : (fastExtra > 0 && best && best.legs.length > 1 ? tr('modeCheapSub', { n: best.legs.length, x: money(fastExtra) }) : tr('modeCheapOne'))}
-        </Text>
-        {shown.length === 0 ? <View style={s.card}><Text style={s.body}>{tr('strat_none')}</Text></View> : null}
-        {shown.map((o, i) => {
-          const isBest = o === best;
-          const extra = best && !isBest ? o.cashCost - best.cashCost : 0;
+
+        {/* The answer: one number, one line of when, one line of why, the legs fold open. */}
+        {answer ? (() => {
+          const ex = answer.legs.length === 1 ? exceptionsOf(answer.legs[0]!.storefrontId, answer.unpricedLineIds) : { missing: answer.unpricedLineIds.map(nameOf), swaps: answer.legs.flatMap((l) => exceptionsOf(l.storefrontId).swaps) };
+          const saving = answer.explanation.savingVsBaseline;
+          const why = answer !== best && best ? tr('costsVs', { x: money(answer.cashCost - best.cashCost) }) : saving > 0 ? tr('savesVs', { x: money(saving), b: answer.explanation.baselineLabel }) : reasonT(answer.explanation.reason);
+          const [legsOpen, tag] = [open === 'answer', strategy === 'cheap' ? tr('mode_cheap') : strategy === 'fast' ? tr('mode_fast') : tr('mode_balanced')];
           return (
-            <Pressable key={i} onPress={() => onChoose(o, q)} style={({ pressed }) => [s.card, isBest && { borderWidth: 2, borderColor: t.accent }, pressed && { opacity: 0.85 }]}>
+            <Pressable onPress={() => setOpen(legsOpen ? null : 'answer')} style={[s.card, { borderWidth: 2, borderColor: t.accent }]} testID="answer-card">
               <View style={s.row}>
-                <View style={[s.rowStart, { flex: 1 }]}>
-                  <Rank letter={LETTERS[i] ?? '?'} best={isBest} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.title, { fontSize: 18 }]} numberOfLines={1}>{o.label}</Text>
-                    <Text style={s.small}>{reasonT(o.explanation.reason)}</Text>
-                  </View>
+                <View style={[s.rowStart, { flex: 1, gap: 8, flexWrap: 'wrap' }]}>
+                  <Chip text={tag} tone="good" />
+                  <Text style={[s.title, { fontSize: 18, flexShrink: 1 }]} numberOfLines={2}>{brandsOf(answer)}</Text>
                 </View>
+                <Text style={s.priceBig}>{money(answer.cashCost)}</Text>
               </View>
-              <View style={[s.row, { marginTop: 12, alignItems: 'flex-end' }]}>
-                <Text style={s.priceBig}>{money(o.cashCost)}</Text>
-                {isBest ? <Chip text={tr('best')} tone="good" /> : extra > 0 ? <Text style={[s.small, { color: t.amber }]}>+{money(extra)}</Text> : null}
-              </View>
-              <View style={s.hair} />
-              {o.legs.map((leg) => (
+              {whenOf(answer) ? <Text style={[s.small, { marginTop: 6 }]}>{whenOf(answer)}</Text> : null}
+              <Text style={[s.small, { color: t.accent, marginTop: 2 }]}>{why}</Text>
+              {ex.missing.length ? <Text style={[s.small, { color: t.red, marginTop: 6 }]}>{tr('unavailable', { x: ex.missing.join(', ') })}{answer.missingEstimate ? ` · ${tr('toComplete', { x: money(answer.missingEstimate) })}` : ''}</Text> : null}
+              {ex.swaps.length ? <Text style={[s.small, { color: t.amber, marginTop: 4 }]}>{tr('swapsLine', { x: ex.swaps.join(' · ') })}</Text> : null}
+              <Text style={[s.small, { marginTop: 8 }]}>{legsOpen ? '▾' : '▸'} {answer.legs.map((l) => tr('legsLine', { n: l.lineIds.length, b: l.brand })).join(' · ')}</Text>
+              {legsOpen ? answer.legs.map((leg) => (
                 <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>
-                  <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
-                    <Text style={s.small}>{leg.brand} · {leg.lineIds.length} {tr('items')}</Text>
-                    {(() => { const e = etaOf(leg.storefrontId); if (!e) return null; return e.kind === 'live' ? <Chip text={e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes ?? 0 })} tone="good" /> : <Chip text={tr('etaSlots')} tone="neutral" />; })()}
-                  </View>
+                  <Text style={s.small}>{leg.brand}</Text>
                   <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
                 </View>
-              ))}
-              {/* A line this store lacks, priced with its closest product: named, so the family decides. */}
-              {(() => { const subs = o.legs.flatMap((leg) => Object.values(q.storefrontLines?.[leg.storefrontId] ?? {}).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName))); return subs.length ? <Text style={[s.small, { color: t.amber, marginTop: 6 }]}>{tr('subsNamed', { x: subs.join(' · ') })}</Text> : null; })()}
-              {o.timeCost > 0 && <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(o.timeCost)}</Text></View>}
-              {o.unpricedLineIds.length > 0 && <Text style={[s.small, { color: t.red, marginTop: 8 }]}>{tr('unavailable', { x: o.unpricedLineIds.map(nameOf).join(', ') })}{o.missingEstimate ? ` · ${tr('toComplete', { x: money(o.missingEstimate) })}` : ''}</Text>}
-              <View style={[s.rowStart, { marginTop: 10 }]}>
-                <Chip text={tr('coverage', { p: Math.round(o.coverageRatio * 100) })} tone={o.coverageRatio >= 0.99 ? 'good' : 'neutral'} />
-                {(() => { const cs = o.legs.reduce((sum, leg) => sum + (q.couponSavings?.[leg.storefrontId] ?? 0), 0); return cs > 0 ? <Chip text={tr('couponChip', { x: money(cs) })} tone="good" /> : null; })()}
-                {o.substitutedLineCount > 0 && <Chip text={tr('subs', { n: o.substitutedLineCount })} tone="warn" />}
-              </View>
+              )) : null}
+              {legsOpen && answer.timeCost > 0 ? <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(answer.timeCost)}</Text></View> : null}
             </Pressable>
           );
-        })}
+        })() : <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
-        {/* Every store, one line each: what this basket costs there, or why it cannot be bought there. */}
-        {(() => {
-          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup' && o.kind !== 'drive').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const, sid: o.legs[0]!.storefrontId }));
-          const rej = q.rejected.map((r) => ({ brand: r.brand, total: r.itemsSubtotal, coverage: r.requestedLines ? r.pricedLines / r.requestedLines : 0, ok: false as const, short: r.code === 'minimum' ? r.amountToMinimum : undefined, sid: r.storefrontId }));
-          const rows = [...singles, ...rej].sort((a, b) => Number(b.ok) - Number(a.ok) || a.total - b.total);
-          if (rows.length === 0) return null;
-          const cheapest = singles.length ? Math.min(...singles.map((x) => x.total)) : 0;
-          return (
-            <View style={[s.card, { paddingVertical: 6 }]}>
-              <Text style={[s.title, { fontSize: 16, paddingVertical: 8 }]}>{tr('tblStores')}</Text>
-              {rows.map((r, i) => (
-                <View key={`${r.brand}-${i}`} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line, opacity: r.ok ? 1 : 0.6 }]}>
-                  <View style={{ flex: 1 }}>
-                    <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
-                      <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{r.brand}</Text>
-                      {(() => { const e = etaOf(r.sid); return e?.kind === 'live' && e.minutes ? <Chip text={e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes })} tone="good" /> : null; })()}
-                    </View>
-                    {(() => {
-                      // Name what this store lacks and what it swapped, instead of a bare percentage.
-                      const sl = q.storefrontLines?.[r.sid] ?? {};
-                      const missing = q.lines.filter((l) => !sl[l.id]).map((l) => l.query);
-                      const swapped = Object.values(sl).filter((l) => l.substituted && l.reason).length;
-                      const parts = [
-                        !r.ok && r.short !== undefined ? tr('tblShort', { x: money(r.short) }) : null,
-                        missing.length ? tr('tblMissing', { x: missing.slice(0, 3).join(', ') + (missing.length > 3 ? '…' : '') }) : (r.ok ? null : tr('tblCovers', { p: Math.round(r.coverage * 100) })),
-                        swapped ? tr('subs', { n: swapped }) : null,
-                      ].filter(Boolean);
-                      return <Text style={[s.faint, { fontSize: 11 }]}>{parts.length ? parts.join(' · ') : tr('tblCovers', { p: Math.round(r.coverage * 100) })}</Text>;
-                    })()}
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[s.price, { fontSize: 18, color: r.ok && r.total === cheapest ? t.accent : t.ink }]}>{money(r.total)}</Text>
-                    {r.ok && r.total > cheapest ? <Text style={[s.faint, { fontSize: 11 }]}>+{money(r.total - cheapest)}</Text> : null}
-                  </View>
-                </View>
-              ))}
-            </View>
-          );
-        })()}
-        {/* In-store: what the list costs at the branches near home if the family drives. Cash and driving side by side, never one number. */}
+        {/* Every other store, the same sentence: price · when · what it lacks. Tap for its lines and "buy here". */}
+        {rows.length ? (
+          <View style={[s.card, { paddingVertical: 6 }]}>
+            <Text style={[s.title, { fontSize: 16, paddingVertical: 8 }]}>{tr('altTitle')}</Text>
+            {rows.sort((a, b) => Number(!!b.option) - Number(!!a.option) || a.price - b.price).map((row) => (
+              <StoreRow key={row.key} row={row} open={open === row.key} onToggle={() => setOpen(open === row.key ? null : row.key)} lines={q.lines} storeLines={q.storefrontLines?.[row.sid] ?? {}} onBuy={() => buyRow(row)} />
+            ))}
+          </View>
+        ) : null}
+
+        {/* Driving there: the branches near home, same shape, compared like with like. */}
         {q.drive ? (
           <View style={[s.card, { paddingVertical: 6 }]} testID="drive-card">
             <Text style={[s.title, { fontSize: 16, paddingTop: 8 }]}>{tr('driveTitle')}</Text>
             <Text style={[s.faint, { fontSize: 11, paddingBottom: 6 }]}>{tr('driveSub')}</Text>
             {q.drive.status === 'pending' || q.drive.branches.length === 0
               ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : q.drive.status === 'none' ? tr('driveNoAddress') : tr('driveNone')}</Text>
-              : (() => {
-                return q.drive.branches.map((b) => {
-                  // Like with like: the same lines at the winning delivered store. A branch that prices only
-                  // part of the list is never compared against the whole delivered cart.
-                  const full = b.coveredLines === b.totalLines;
-                  const ref = b.sameLines ? (full ? b.sameLines.delivered : b.sameLines.items) : 0;
-                  const diff = ref > 0 ? ref - (b.itemsSubtotal + (full ? b.driveCost : 0)) : 0;
-                  return (
-                    <View key={b.storefrontId} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{b.brand} · {b.branchName}</Text>
-                        <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveRow', { d: b.distanceKm, m: b.minutes, x: money(b.driveCost) })}</Text>
-                        <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveCovers', { n: b.coveredLines, t: b.totalLines })}{b.missingLineIds.length > 0 && b.missingLineIds.length <= 3 ? ` · ${tr('driveMissing', { x: b.missingLineIds.map(nameOf).join(', ') })}` : ''}</Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={[s.price, { fontSize: 18, color: diff > 0 ? t.accent : t.ink }]}>{money(b.itemsSubtotal)}</Text>
-                        {ref > 0 ? <Text style={[s.faint, { fontSize: 11, color: diff > 0 ? t.accent : t.amber }]}>{full ? (diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })) : tr('driveSameLines', { n: b.coveredLines, s: b.sameLines!.brand, x: money(ref) })}</Text> : null}
-                      </View>
+              : q.drive.branches.map((b) => {
+                const full = b.coveredLines === b.totalLines;
+                const ref = b.sameLines ? (full ? b.sameLines.delivered : b.sameLines.items) : 0;
+                const diff = ref > 0 ? ref - (b.itemsSubtotal + (full ? b.driveCost : 0)) : 0;
+                // A full basket is compared delivered-vs-driven and may claim a saving (or a cost). A partial one is only
+                // set beside the same lines at the winning store — like for like, no saving claimed, so no colour either.
+                const note = ref <= 0 ? undefined : full ? (diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })) : tr(b.coveredLines === 1 ? 'driveSameLine1' : 'driveSameLines', { n: b.coveredLines, s: b.sameLines!.brand, x: money(ref) });
+                const noteColor = ref <= 0 || !full ? t.muted : diff > 0 ? t.accent : t.amber;
+                return (
+                  <View key={b.storefrontId} style={[s.row, { gap: 10, paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{b.brand} · {b.branchName}</Text>
+                      <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveRow', { d: b.distanceKm, m: b.minutes, x: money(b.driveCost) })}</Text>
+                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={2}>{full ? tr('driveAll', { n: b.totalLines }) : tr('driveCovers', { n: b.coveredLines, t: b.totalLines })}{b.missingLineIds.length > 0 && b.missingLineIds.length <= 3 ? ` · ${tr('tblMissing', { x: b.missingLineIds.map((id) => short(nameOf(id))).join(', ') })}` : ''}</Text>
                     </View>
-                  );
-                });
-              })()}
+                    <PriceCol price={money(b.itemsSubtotal)} {...(note ? { note } : {})} color={full && diff > 0 ? t.accent : t.ink} noteColor={noteColor} />
+                  </View>
+                );
+              })}
             {q.drive.status === 'ready' && q.drive.branches.length > 0 ? <Text style={[s.faint, { fontSize: 11, paddingVertical: 6 }]}>{tr('driveNote')}</Text> : null}
           </View>
         ) : null}
-        {q.rejected.length > 0 ? (
-          <Pressable onPress={() => setWhyNot((v) => !v)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('whyNot')} ({q.rejected.length}) {whyNot ? '▴' : '▾'}</Text></Pressable>
-        ) : null}
-        {whyNot ? (
-          <View style={[s.card, { paddingVertical: 8 }]}>
-            {[...q.rejected].sort((a, b) => (a.amountToMinimum ?? 1e9) - (b.amountToMinimum ?? 1e9)).map((r) => (
-              <Text key={r.storefrontId} style={[s.small, { paddingVertical: 6, borderTopWidth: 1, borderColor: t.line }]}>
-                {r.code === 'minimum' && r.minimumOrder !== undefined
-                  ? tr('minShort', { b: r.brand, p: money(r.itemsSubtotal), x: money(r.amountToMinimum ?? 0), m: money(r.minimumOrder) })
-                  : tr('covShort', { b: r.brand, a: r.pricedLines, c: r.requestedLines })}
-              </Text>
-            ))}
-          </View>
-        ) : null}
+
         {q.warnings.length > 0 && (
           <View style={[s.card, { backgroundColor: t.amberSoft }]}>
             <Text style={[s.title, { color: t.amber, fontSize: 17 }]}>{tr('confirmOnce')}</Text>
@@ -280,14 +311,12 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
           </View>
         )}
         {fixing ? <ConfirmSheet api={api} household={household} phrase={fixing} onClose={() => setFixing(null)} onConfirmed={() => { setFixing(null); setQ(null); api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch(() => null); }} /> : null}
-
-
       </View>
     </ScrollView>
-    {chosen ? (
+    {answer ? (
       <View style={{ padding: 16, paddingBottom: 20, backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: -4 } }}>
-        <Button testID="order-now" title={tr('orderNow', { x: money(chosen.cashCost) })} onPress={() => orderBest(chosen, q)} disabled={ordering} />
-        <Pressable onPress={() => onChoose(chosen, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
+        <Button testID="order-now" title={tr('orderNow', { x: money(answer.cashCost) })} onPress={() => orderBest(answer, q)} disabled={ordering} />
+        <Pressable onPress={() => onChoose(answer, q)} style={{ paddingTop: 10, alignItems: 'center' }}><Text style={s.link}>{tr('linksInstead')}</Text></Pressable>
       </View>
     ) : null}
     {onDevice ? <OrderOnDevice storeId={onDevice.storeId} lines={onDevice.lines} api={api} householdId={household.id} onClose={() => setOnDevice(null)} onDone={(a) => void onDeviceDone(a)} /> : null}

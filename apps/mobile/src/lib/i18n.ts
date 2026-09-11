@@ -68,7 +68,7 @@ const he: Strings = {
   comparing: 'משווים…', comparingSub: '{n} פריטים בכל הרשתות שמגיעות ל{addr}', about20s: 'בערך 20 שניות', wentWrong: 'משהו השתבש',
   howToBuy: 'איך לקנות?', optionsSub: '{n} פריטים · {m} זוהו מהזיכרון המשפחתי', spread: ' · פער של {x} בין הרשתות',
   noneCover: 'אף רשת לא מצליחה לספק מספיק מהרשימה. נסו לשנות פריטים.', best: 'הכי משתלם', items: 'פריטים', delivery: 'משלוח', timeSeparate: 'זמן (מוצג בנפרד)',
-  unavailable: 'לא זמין: {x}', tblMissing: 'חסר: {x}', toComplete: 'להשלמה במקום אחר ≈{x} כולל משלוח', coverage: 'כיסוי {p}%', subs: '{n} תחליפים', confirmOnce: 'כדאי לאשר פעם אחת',
+  unavailable: 'לא זמין: {x}', twoDeliveries: 'שני משלוחים', savesVs: 'חוסך {x} לעומת הכל ב{b}', costsVs: 'עוד {x} לעומת הכי זול', legsLine: '{n} פריטים ב{b}', altTitle: 'עוד דרכים לקנות', buyHere: 'קנו כאן', itemsOnly: 'לפריטים שיש', swapsLine: 'חלופה: {x}', missingHere: 'אין כאן', noneAnywhere: 'אין {x} באף חנות היום', removeIt: 'הסירו מהרשימה', replaceIt: 'החליפו', driveAll: 'כל {n} הפריטים', tblMissing: 'חסר: {x}', toComplete: 'להשלמה במקום אחר ≈{x} כולל משלוח', coverage: 'כיסוי {p}%', subs: '{n} תחליפים', confirmOnce: 'כדאי לאשר פעם אחת',
   confirmOnceSub: 'המחיר של הפריטים האלה משתנה מאוד בין רשתות — כנראה זוהו כמוצרים שונים. אישור ברקוד אחד מתקן את זה לתמיד.',
   notOffered: 'לא הוצעו — לא מספקות מספיק מהרשימה', estTotal: 'סה״כ משוער', payAtStore: 'התשלום נעשה באתר הרשת. אנחנו מכינים — אתם מאשרים.',
   open: 'פתח ›', done: 'סיימתי — תזכרו את הקנייה הזו', learnsOnly: 'הזיכרון לומד רק מקנייה שהושלמה.', back: '‹ חזרה', loadingHousehold: 'טוענים את משק הבית…',
@@ -101,7 +101,7 @@ const he: Strings = {
   etaLive: 'וולט · ~{m} דק׳', etaLiveRange: 'וולט · {r} דק׳', etaSlots: 'משלוח בחלון', etaSlotsSub: 'הרשת מספקת בחלונות זמן — בוחרים בעמוד ההזמנה', fastBy: 'הכי מהר: {s} · ~{m} דק׳', etaWhy: 'הזמן: וולט מגיע תוך דקות; הרשתות בחלון משלוח, לפי היום והשעה.',
   driveTitle: 'ואם נוסעים לחנות?', driveSub: 'אותה רשימה במחירי המדף בסניפים הקרובים לבית, לפי קובצי המחירים שהרשתות מפרסמות.',
   driveRow: '{d} ק״מ · ~{m} דק׳ נסיעה · ≈{x} דלק', driveCovers: '{n} מתוך {t} פריטים', driveSaves: 'חוסך {x} לעומת המשלוח הזול', driveCosts: 'יקר ב-{x} מהמשלוח הזול',
-  drivePending: 'בודקים מחירים בסניפים הקרובים אליכם — יופיע בהשוואה הבאה.', driveNoAddress: 'כדי לראות מחירים בסניפים צריך כתובת מדויקת — בחרו אותה מההצעות במסך משק הבית.', driveSameLines: 'אותם {n} פריטים ב{s}: {x} (בלי משלוח)', subsNamed: 'חלופה: {x}', driveNone: 'לא נמצאו סניפים עם מחירים ליד הכתובת שלכם.', driveMissing: 'לא נמצא בסניף: {x}', driveNote: 'הנסיעה מחושבת לפי מרחק; זמן הקנייה עצמה לא נספר.',
+  drivePending: 'בודקים מחירים בסניפים הקרובים אליכם — יופיע בהשוואה הבאה.', driveNoAddress: 'כדי לראות מחירים בסניפים צריך כתובת מדויקת — בחרו אותה מההצעות במסך משק הבית.', driveSameLines: 'אותם {n} פריטים ב{s}: {x} בלי משלוח', driveSameLine1: 'אותו פריט ב{s}: {x} בלי משלוח', subsNamed: 'חלופה: {x}', driveNone: 'לא נמצאו סניפים עם מחירים ליד הכתובת שלכם.', driveMissing: 'לא נמצא בסניף: {x}', driveNote: 'הנסיעה מחושבת לפי מרחק; זמן הקנייה עצמה לא נספר.',
   rej_partial: 'מספקת רק {a} מתוך {b} פריטים', rej_min: 'הסל מתחת למינימום ההזמנה',
 };
 
@@ -161,7 +161,7 @@ const en: Strings = {
   comparing: 'Comparing…', comparingSub: '{n} items across every store delivering to {addr}', about20s: 'About 20 seconds', wentWrong: 'Something went wrong',
   howToBuy: 'How to buy?', optionsSub: '{n} items · {m} resolved from family memory', spread: ' · {x} spread between stores',
   noneCover: 'No store can supply enough of this list. Try changing items.', best: 'Best value', items: 'items', delivery: 'delivery', timeSeparate: 'Time (shown separately)',
-  unavailable: 'Unavailable: {x}', tblMissing: 'Missing: {x}', toComplete: 'to complete elsewhere ≈{x} incl. delivery', coverage: '{p}% coverage', subs: '{n} substitutions', confirmOnce: 'Worth confirming once',
+  unavailable: 'Unavailable: {x}', twoDeliveries: 'Two deliveries', savesVs: 'Saves {x} vs everything at {b}', costsVs: '{x} more than the cheapest', legsLine: '{n} items at {b}', altTitle: 'Other ways to buy', buyHere: 'Buy here', itemsOnly: 'for the items it has', swapsLine: 'Substitute: {x}', missingHere: 'not here', noneAnywhere: 'No store has {x} today', removeIt: 'Remove from list', replaceIt: 'Replace', driveAll: 'All {n} items', tblMissing: 'Missing: {x}', toComplete: 'to complete elsewhere ≈{x} incl. delivery', coverage: '{p}% coverage', subs: '{n} substitutions', confirmOnce: 'Worth confirming once',
   confirmOnceSub: 'These items vary a lot in price between stores — probably matched to different products. Confirming a barcode once fixes it for good.',
   notOffered: 'Not offered — cannot supply enough of the list', estTotal: 'Estimated total', payAtStore: 'Payment happens on the store’s site. We prepare — you approve.',
   open: 'Open ›', done: 'Done — remember this shop', learnsOnly: 'Memory learns only from completed shops.', back: '‹ Back', loadingHousehold: 'Loading your household…',
@@ -194,7 +194,7 @@ const en: Strings = {
   etaLive: 'Wolt · ~{m} min', etaLiveRange: 'Wolt · {r} min', etaSlots: 'Window delivery', etaSlotsSub: 'The chain delivers in time windows — you pick one at checkout', fastBy: 'Fastest: {s} · ~{m} min', etaWhy: 'Time: Wolt arrives within minutes; the chains deliver in windows that shift by day and hour.',
   driveTitle: 'And if you drive there?', driveSub: 'The same list at shelf prices in the branches near home, from the price files the chains publish.',
   driveRow: '{d} km · ~{m} min drive · ≈{x} fuel', driveCovers: '{n} of {t} items', driveSaves: 'Saves {x} vs the cheapest delivery', driveCosts: '{x} more than the cheapest delivery',
-  drivePending: 'Checking prices at the branches near you — shows on the next compare.', driveNoAddress: 'In-store prices need an exact address — pick it from the suggestions on the Household screen.', driveSameLines: 'The same {n} items at {s}: {x} (items only)', subsNamed: 'Substitute: {x}', driveNone: 'No branches with published prices near your address.', driveMissing: 'Not at this branch: {x}', driveNote: 'Driving is priced by distance; the shopping itself is not counted.',
+  drivePending: 'Checking prices at the branches near you — shows on the next compare.', driveNoAddress: 'In-store prices need an exact address — pick it from the suggestions on the Household screen.', driveSameLines: 'Same {n} items at {s}: {x} without delivery', driveSameLine1: 'The same item at {s}: {x} without delivery', subsNamed: 'Substitute: {x}', driveNone: 'No branches with published prices near your address.', driveMissing: 'Not at this branch: {x}', driveNote: 'Driving is priced by distance; the shopping itself is not counted.',
   rej_partial: 'supplies only {a} of {b} items', rej_min: 'basket is below the store minimum',
 };
 
