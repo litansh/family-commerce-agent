@@ -51,7 +51,7 @@ families is known the same hour, not the next morning.
 CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and the app typecheck; then builds the API, updates `fca-api`, `fca-branch-prices` and `fca-alerts` through the GitHub OIDC role (`fca-github-deploy`, in Terraform `ci.tf`), and proves production with `ops/api-health.mjs` and both shopper carts. The result is posted to the channel. Secrets in the repo: `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
 ## Agents on every pull request
 
-`.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. Needs the repository secret `ANTHROPIC_API_KEY`. Add `[skip-agents]` to a PR title to skip it (docs-only PRs).
+`.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. The key lives in AWS SSM as a SecureString (`/fca/anthropic-key`, put there once by `ops/secrets.sh`, prompted and never on a command line) and is read at run time through the `fca-github-review` OIDC role; a repository secret `ANTHROPIC_API_KEY` also works. Add `[skip-agents]` to a PR title to skip it (docs-only PRs).
 
 ## Who decides
 
