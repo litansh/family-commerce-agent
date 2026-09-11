@@ -119,8 +119,10 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
           qty: l.qty,
           unitPrice: shekels(l.unitPrice),
           lineTotal: shekels(l.lineTotal),
-          substituted: l.substituted === true,
-          ...(l.substitutionReason ? { substitutionReason: l.substitutionReason } : {}),
+          // The provider marks its own cross-chain resolution as "substituted: chain_equivalent" - that is
+          // the same product at this chain, not a swap. A swap is a different product (class_fallback etc.).
+          substituted: l.substituted === true && !/^chain_equivalent/i.test(l.substitutionReason ?? ''),
+          ...(l.substitutionReason && !/^chain_equivalent/i.test(l.substitutionReason) ? { substitutionReason: l.substitutionReason } : {}),
           clubOnly: l.clubOnly === true,
           resolutionSource: src?.gtin ? 'gtin' : 'provider',
           ...(l.link ? { link: l.link } : {}),

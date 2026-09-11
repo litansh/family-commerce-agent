@@ -405,6 +405,7 @@ export const CONNECT_GROUPS: { key: string; how: 'sms' | 'password' | 'link'; ca
 
 export const storeName = (id: string): string => STORES[id]?.name ?? id;
 /** Which store (if any) can place an order at this storefront. */
-export const storeForStorefront = (storefrontId: string): StoreDef | undefined => Object.values(STORES).find((s) => s.storefront.test(storefrontId));
+/** The store to open for a storefront id. A chain's Wolt venue (wolt-victory-rothschild) is bought on Wolt, not on the chain's own site. */
+export const storeForStorefront = (storefrontId: string): StoreDef | undefined => (/^wolt-/i.test(storefrontId) ? STORES['wolt'] : Object.values(STORES).find((s) => s.storefront.test(storefrontId)));
 /** One-tap stores first, then the rest, alphabetical within a group. */
 export const STORE_ORDER: string[] = Object.values(STORES).sort((a, b) => Number(b.loginKind === 'otp') - Number(a.loginKind === 'otp')).map((s) => s.id);
