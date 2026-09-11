@@ -27,7 +27,7 @@ export interface QuoteResult {
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
   drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
   /** Each shown storefront's own product and deep link per line. */
-  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>>;
+  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string }>>;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
