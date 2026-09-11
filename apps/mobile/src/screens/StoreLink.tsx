@@ -37,6 +37,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
   const [imported, setImported] = useState<number | null>(null);
   const didImport = useRef(false);
   const notIn = useRef(0);
+  const seenIn = useRef(0);
   // A store page that fails to load (a cancelled redirect, a hiccup) retries once by
   // itself and is reported; the person sees a plain "try again", never a raw error page.
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -238,10 +239,12 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
                     // The store's own page says "not signed in". A stale "connected" flag on this
                     // phone (an earlier misread, an expired session) is cleared after a few looks,
                     // so Me never keeps showing a store as connected that is not.
-                    notIn.current += 1;
+                    notIn.current += 1; seenIn.current = 0;
                     if (notIn.current === 3) markUnlinked(storeId);
                   }
-                  if (d === 'signedin:1') {
+                  // "Signed in" must hold on two looks in a row: a page mid-transition once read as
+                  // signed in for a single poll and marked a store connected that was not.
+                  if (d === 'signedin:1' && ++seenIn.current >= 2) {
                     setSignedIn(true);
                     if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
                   }

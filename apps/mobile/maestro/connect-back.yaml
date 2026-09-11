@@ -10,7 +10,7 @@ appId: com.litansh.kaniti
 - assertVisible: "החנויות המחוברות"
 - runFlow:
     when:
-      notVisible: { id: "connect-${STORE}" }
+      true: ${SCROLL}
     commands:
       - scrollUntilVisible:
           element: { id: "connect-${STORE}" }
