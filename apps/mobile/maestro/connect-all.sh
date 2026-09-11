@@ -12,15 +12,15 @@ set -a; source "$HOME/.kaniti/e2e.env"; set +a
 if ! curl -s -o /dev/null http://localhost:8082/status; then (EXPO_PUBLIC_SKIP_INTRO=1 EXPO_PUBLIC_E2E_EMAIL="$KANITI_E2E_EMAIL" EXPO_PUBLIC_E2E_PASSWORD="$KANITI_E2E_PASSWORD" EXPO_PUBLIC_E2E_RESET_LIST=1 EXPO_PUBLIC_E2E_ORDER_STORE=rami-levy CI=1 npx expo start --port 8082 > /tmp/metro-sim.log 2>&1 &); until curl -s -o /dev/null http://localhost:8082/status; do sleep 2; done; fi
 # store id | words the store's sign-in shows (whole-string regex, Maestro style)
 STORES=(
-  "rami-levy|.*(קוד|SMS|דואר אלקטרוני|כניסה).*"
-  "victory|.*(קוד חד פעמי|טלפון|כניסת משתמש|כניסה|סיסמה).*"
-  "wolt|.*(אימייל|Email|מייל|התחבר|כניסה|Log in).*"
-  "shufersal|.*(סיסמה|כתובת מייל|התחברות|כניסה).*"
-  "carrefour|.*(סיסמה|דואר אלקטרוני|כניסת משתמש|כניסה).*"
-  "keshet-teamim|.*(סיסמה|דואר אלקטרוני|כניסת משתמש|כניסה).*"
-  "mahsanei-hashuk|.*(סיסמה|דואר אלקטרוני|כניסת משתמש|כניסה).*"
-  "tiv-taam|.*(סיסמה|דואר אלקטרוני|כניסת משתמש|כניסה).*"
-  "hazi-hinam|.*(סיסמה|דוא.ל|כניסה לחשבון).*"
+  "rami-levy|.*(בחר שיטת קבלת קוד|שלח קוד אימות|קריאה קולית).*"
+  "victory|.*(קוד חד פעמי|שלח קוד|הקלד את מספר הטלפון).*"
+  "wolt|.*(Use only necessary|Allow|Log in|התחבר|כניסה עם|Continue with).*"
+  "shufersal|.*(כתובת מייל|התחברות|שכחתי סיסמה).*"
+  "carrefour|.*(E-mail|Password|כניסת משתמש|דואר אלקטרוני).*"
+  "keshet-teamim|.*(E-mail|Password|כניסת משתמש|דואר אלקטרוני).*"
+  "mahsanei-hashuk|.*(E-mail|Password|כניסת משתמש|דואר אלקטרוני).*"
+  "tiv-taam|.*(E-mail|Password|כניסת משתמש|דואר אלקטרוני).*"
+  "hazi-hinam|.*(כניסה לחשבון שלי|אני לא רובוט|שכחתי את הסיסמה).*"
 )
 printf "%-16s %-16s %-16s\n" store "sign-in shown" "not connected"
 for entry in "${STORES[@]}"; do

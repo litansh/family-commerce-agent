@@ -3,9 +3,15 @@ appId: com.litansh.kaniti
 ---
 - tapOn: { id: "link-close" }
 - waitForAnimationToEnd
+# The list keeps its scroll position from the tap that opened the store: back to the top first.
+- swipe: { direction: DOWN, duration: 300 }
+- swipe: { direction: DOWN, duration: 300 }
+- swipe: { direction: DOWN, duration: 300 }
+- assertVisible: "החנויות המחוברות"
 - scrollUntilVisible:
     element: { id: "connect-${STORE}" }
     direction: DOWN
-    timeout: 20000
+    timeout: 10000
     centerElement: true
+    visibilityPercentage: 50
 - assertVisible: { id: "connect-${STORE}" }

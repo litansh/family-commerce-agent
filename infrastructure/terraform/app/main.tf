@@ -256,7 +256,10 @@ resource "aws_lambda_function" "api" {
       SESSION_KEY  = random_bytes.session_key.base64
       TABLE_NAME   = aws_dynamodb_table.main.name
       ORDERS_QUEUE = aws_sqs_queue.orders.url
-      NODE_OPTIONS = "--enable-source-maps"
+      # In-store prices: the branch indexes, and the refresher to ask for them.
+      BRANCH_BUCKET    = aws_s3_bucket.branch_prices.bucket
+      REFRESH_FUNCTION = "${var.name}-branch-prices"
+      NODE_OPTIONS     = "--enable-source-maps"
     }
   }
 

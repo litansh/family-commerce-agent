@@ -1,3 +1,4 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import type { Api } from '../lib/api';
@@ -125,9 +126,10 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   const title = phase === 'cart' ? tr('cartReady', { s: store.name }) : phase === 'signin' ? tr('cartSignin', { s: store.name }) : phase === 'links' ? tr('cartLinks', { s: store.name, i: linkIdx + 1, n: linkLines.length }) : tr('cartFilling', { s: store.name });
   const sub = phase === 'cart' ? tr('cartReadySub') : phase === 'signin' ? tr('cartSigninSub', { s: store.name }) : phase === 'links' ? tr('cartLinksSub') : tr('cartFillingSub', { s: store.name });
 
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
-      <View style={[s.screen, { paddingTop: 8 }]}>
+      <View style={[s.screen, { paddingTop: insets.top + 4 }]}>
         <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]} testID="order-title">{title}</Text>
