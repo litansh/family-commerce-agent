@@ -68,7 +68,13 @@ const setInput = (selector: string, value: string) =>
   `(()=>{const i=document.querySelector(${JSON.stringify(selector)});if(i&&!i.value){const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}})();true;`;
 
 /** Generic "am I in": a logout control or the person's account area, and no login prompt in the header. */
-const genericSignedIn = `(()=>{const h=((document.querySelector('header')||document.body).innerText||'').slice(0,800);if(!h)return false;const out=/התנתק|יציאה מהחשבון|החשבון שלי|שלום[, ]|logout/i.test(h)||!!document.querySelector('a[href*="logout" i],button[class*="logout" i]');const inn=/(^|\\s)(כניסה|התחברות|כניסה לחשבון)(\\s|$)/.test(h);return out&&!inn;})()`;
+const genericSignedIn = `(()=>{const t=(document.body.innerText||'').slice(0,4000);
+  // A login prompt anywhere on screen means not signed in - including the platform's "כניסת משתמש" and "הרשמה".
+  const prompt=/(^|\\s)(כניסה|כניסת משתמש|התחברות|התחבר|כניסה לחשבון|התחברות לחשבון|הרשמה|log ?in|sign ?in)(\\s|$)/i.test(t)||!!document.querySelector('input[type="password"]');
+  // Signed in only on hard evidence: a logout control, or a greeting with a name. "החשבון שלי" is a menu entry on every page.
+  const logout=!!document.querySelector('a[href*="logout" i],button[class*="logout" i],[class*="logout" i]')||/(^|\\s)(התנתק|התנתקות|יציאה מהחשבון|logout|log out)(\\s|$)/i.test(t);
+  const greet=/שלום,?\\s+[א-ת]{2,}/.test(t)||/היי,?\\s+[א-ת]{2,}/.test(t);
+  return (logout||greet)&&!prompt;})()`;
 
 /** The shared platform (Victory, Bitan, Keshet, MCK, Tiv Taam). */
 const platform = (id: string, name: string, host: string, storefront: RegExp, otp: boolean): StoreDef => ({
