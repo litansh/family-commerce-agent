@@ -25,6 +25,7 @@ STORES=(
 printf "%-16s %-16s %-16s\n" store "sign-in shown" "not connected"
 for entry in "${STORES[@]}"; do
   id="${entry%%|*}"; re="${entry#*|}"
+  if [ $# -gt 0 ] && ! printf "%s\n" "$@" | grep -qx "$id"; then continue; fi
   xcrun simctl terminate "$DEV" com.litansh.kaniti >/dev/null 2>&1 || true
   xcrun simctl openurl "$DEV" "com.litansh.kaniti://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082" >/dev/null 2>&1
   out=$(maestro --device "$DEV" test -e STORE="$id" -e LOGIN="$re" maestro/connect-one.yaml 2>&1)
