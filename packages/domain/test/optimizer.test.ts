@@ -241,6 +241,26 @@ test('a storefront missing a line still serves as the second leg of a split: the
   const sh = split!.legs.find((l) => l.storefrontId === 'shufersal')!;
   assert.deepEqual([...rl.lineIds].sort(), ['bread', 'eggs', 'milk', 'rice']);
   assert.deepEqual(sh.lineIds, ['salmon']);
-  // On its own, the partial store is still rejected for coverage.
-  assert.ok(r.rejected.some((x) => x.storefrontId === 'rami-levy' && x.code === 'coverage'));
+  // On its own, one missing line does not disqualify it: it is an option with the salmon named as missing.
+  const alone = r.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'rami-levy');
+  assert.ok(alone && alone.unpricedLineIds.length === 1 && alone.unpricedLineIds[0] === 'salmon');
+});
+
+test('one missing line never disqualifies a store, whatever the list length', () => {
+  const full = quote('a', 'A', [line('l0', 10), line('l1', 10), line('l2', 10), line('l3', 10), line('l4', 10), line('l5', 10), line('l6', 10), line('l7', 60)], 20, 8);
+  const oneShort = quote('b', 'B', [line('l0', 5), line('l1', 5), line('l2', 5), line('l3', 5), line('l4', 5), line('l5', 5), line('l6', 5)], 20, 8);
+  const twoShort = quote('c', 'C', [line('l0', 1), line('l1', 1), line('l2', 1), line('l3', 1), line('l4', 1), line('l5', 1)], 20, 8);
+  const r = optimize({ quotes: [full, oneShort, twoShort], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(8) });
+  assert.ok(r.options.some((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'b'), 'B (7 of 8) is an option, its missing line named');
+  assert.ok(r.rejected.some((x) => x.storefrontId === 'c' && x.code === 'coverage'), 'C (6 of 8) is still rejected');
+  const b = r.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'b')!;
+  assert.deepEqual(b.unpricedLineIds, ['l7']);
+});
+
+test('a store missing a line never ranks above a complete basket, however cheap its partial total', () => {
+  const full = quote('a', 'A', [line('l0', 10), line('l1', 10), line('l2', 60)], 20, 3);
+  const partial = quote('b', 'B', [line('l0', 1), line('l1', 1)], 20, 3);
+  const r = optimize({ quotes: [full, partial], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(3) });
+  assert.equal(r.options[0]!.legs[0]!.storefrontId, 'a');
+  assert.ok(r.options.some((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === 'b' && o.unpricedLineIds.length === 1));
 });
