@@ -17,6 +17,7 @@ appId: com.litansh.kaniti
     element: { id: "connect-${STORE}" }
     direction: DOWN
     timeout: 20000
+    centerElement: true
 - tapOn: { id: "connect-${STORE}" }
 - extendedWaitUntil:
     visible: { text: "חיבור .*" }
