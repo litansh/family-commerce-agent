@@ -52,7 +52,22 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
 
   useEffect(() => { if (!hasRecipe) setPhase('links'); }, [hasRecipe]);
 
-  const runRecipe = () => { ran.current = true; setPhase('filling'); setTimeout(() => inject(store.cartJs!(lines)), 1200); };
+  const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runRecipe = () => {
+    ran.current = true; setPhase('filling'); setTimeout(() => inject(store.cartJs!(lines)), 1200);
+    // Never stuck on "working": if the store's page does not answer, say so and move on.
+    if (watchdog.current) clearTimeout(watchdog.current);
+    watchdog.current = setTimeout(() => {
+      setPhase((ph) => {
+        if (ph !== 'filling') return ph;
+        void api.importHistory(householdId, storeId, [], { build: BUILD, cart: { timeout: true } }).catch(() => null);
+        setDiag('timeout');
+        if (linkLines.length > 0) { setLinkIdx(0); setUri(linkLines[0]!.link!); return 'links'; }
+        if (store.cartUrl) setUri(store.cartUrl);
+        return 'cart';
+      });
+    }, 45000);
+  };
   const onLoadEnd = () => {
     if (!hasRecipe || ran.current) return;
     // Signed in already (a store the family connected)? fill now. Otherwise the
@@ -70,6 +85,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   const signedInOnce = useRef(false);
   const onMessage = (e: { nativeEvent: { data: string } }) => {
     const d = e.nativeEvent.data;
+    if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { build: BUILD, probe: JSON.parse(d.slice(6)) as unknown }).catch(() => null); } catch { /* diagnostic only */ } return; }
     if (d.startsWith('signedin:')) {
       const yes = d.endsWith('1');
       if (yes && !signedInOnce.current) {
@@ -80,6 +96,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
       return;
     }
     if (!d.startsWith('cart:')) return;
+    if (watchdog.current) { clearTimeout(watchdog.current); watchdog.current = null; }
     try {
       const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'error' }[]; cartUrl?: string; diag?: unknown };
       const r: Record<string, 'added' | 'missing' | 'error'> = {};
