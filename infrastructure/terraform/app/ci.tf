@@ -15,6 +15,19 @@ variable "github_repo" {
 
 resource "aws_iam_role" "github_deploy" {
   name = "${var.name}-github-deploy"
+
+# The agents' key for pull-request reviews, the migration-agent way: an SSM SecureString whose
+# value is entered once by `ops/secrets.sh` (prompted, never on a command line, never in state),
+# read at run time by the review workflow through a second OIDC role that may read nothing else.
+resource "aws_ssm_parameter" "anthropic_key" {
+  name  = "/${var.name}/anthropic-key"
+  type  = "SecureString"
+  value = "placeholder-set-by-ops-secrets"
+  lifecycle { ignore_changes = [value] }
+}
+
+resource "aws_iam_role" "github_review" {
+  name = "${var.name}-github-review"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -24,6 +37,7 @@ resource "aws_iam_role" "github_deploy" {
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
         StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*" }
       }
     }]
   })
@@ -43,3 +57,13 @@ resource "aws_iam_role_policy" "github_deploy" {
 }
 
 output "github_deploy_role_arn" { value = aws_iam_role.github_deploy.arn }
+resource "aws_iam_role_policy" "github_review" {
+  name = "${var.name}-github-review"
+  role = aws_iam_role.github_review.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["ssm:GetParameter"], Resource = aws_ssm_parameter.anthropic_key.arn }]
+  })
+}
+
+output "github_review_role_arn" { value = aws_iam_role.github_review.arn }
