@@ -12,10 +12,18 @@ export interface Order {
   paymentMethod?: string; retailerOrderId?: string; error?: string;
 }
 
+export interface DriveBranch {
+  storefrontId: string; chain: string; brand: string; branchName: string; address: string;
+  distanceKm: number; minutes: number; itemsSubtotal: number; driveCost: number;
+  coveredLines: number; totalLines: number; missingLineIds: string[]; pricedAt: string;
+}
+
 export interface QuoteResult {
   currency?: string;
   /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
   etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
+  /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
+  drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
   /** Each shown storefront's own product and deep link per line. */
   storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>>;
   lines: ListLine[];

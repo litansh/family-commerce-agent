@@ -25,6 +25,9 @@
     },
     {
       "path": "../../services/cloud-connectors"
+    },
+    {
+      "path": "../../services/branch-prices"
     }
   ]
 }

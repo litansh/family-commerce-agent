@@ -109,7 +109,8 @@ const genericSignedIn = `(()=>{const t=(document.body.innerText||'').slice(0,400
   const prompt=/(^|\\s)(כניסה|כניסת משתמש|התחברות|התחבר|כניסה לחשבון|התחברות לחשבון|הרשמה|log ?in|sign ?in)(\\s|$)/i.test(t)||!!document.querySelector('input[type="password"]');
   // Signed in only on hard evidence: a logout control, or a greeting with a name. "החשבון שלי" is a menu entry on every page.
   const logout=!!document.querySelector('a[href*="logout" i],button[class*="logout" i],[class*="logout" i]')||/(^|\\s)(התנתק|התנתקות|יציאה מהחשבון|logout|log out)(\\s|$)/i.test(t);
-  const greet=/שלום,?\\s+[א-ת]{2,}/.test(t)||/היי,?\\s+[א-ת]{2,}/.test(t);
+  // A greeting counts only with a real name - never the platform's "שלום אורח" (hello, guest).
+  const greet=(()=>{const m=/(שלום|היי),?\\s+([א-ת]{2,})/.exec(t);return !!m&&!/^(אורח|אורחת|לקוח|לקוחה|משתמש)$/.test(m[2]);})();
   return (logout||greet)&&!prompt;})()`;
 
 /**

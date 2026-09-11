@@ -47,6 +47,7 @@ import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { StoreSessionStore } from './store-sessions.ts';
+import { BranchPrices } from './branches.ts';
 import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
@@ -127,6 +128,7 @@ const images = new ImageResolver(TABLE);
 const orders = new OrderStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
 const imports = new ImportStore(TABLE, process.env['ORDERS_QUEUE'] ?? '');
 const sessions = new StoreSessionStore(TABLE);
+const branchPrices = new BranchPrices(TABLE, process.env['BRANCH_BUCKET'] ?? '', process.env['REFRESH_FUNCTION'] ?? '');
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -534,9 +536,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
       const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string }>> = {};
       for (const q of res.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}) }]));
+      // In-store, if the family drives: the same list priced at the branches near home,
+      // from the chains' published price files. Never blocks the quote.
+      const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => ({ id: l.id, query: l.query, ...(l.gtin ? { gtin: l.gtin } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }))).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
       return ok({
         currency: region.currency,
         etas,
+        drive,
         storefrontLines,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),

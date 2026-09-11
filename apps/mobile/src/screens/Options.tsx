@@ -104,7 +104,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const best = q.options[0];
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
   const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
-  const oneDelivery = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup');
+  const oneDelivery = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup' && o.kind !== 'drive');
   // "Fast" is measured, not assumed: Wolt venues carry a live estimate in minutes;
   // the chains deliver in windows, counted as a day until the phone reads real slots.
   const etaOf = (sid: string) => q.etas?.[sid];
@@ -178,7 +178,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
 
         {/* Every store, one line each: what this basket costs there, or why it cannot be bought there. */}
         {(() => {
-          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const, sid: o.legs[0]!.storefrontId }));
+          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup' && o.kind !== 'drive').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const, sid: o.legs[0]!.storefrontId }));
           const rej = q.rejected.map((r) => ({ brand: r.brand, total: r.itemsSubtotal, coverage: r.requestedLines ? r.pricedLines / r.requestedLines : 0, ok: false as const, short: r.code === 'minimum' ? r.amountToMinimum : undefined, sid: r.storefrontId }));
           const rows = [...singles, ...rej].sort((a, b) => Number(b.ok) - Number(a.ok) || a.total - b.total);
           if (rows.length === 0) return null;
@@ -204,6 +204,35 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
             </View>
           );
         })()}
+        {/* In-store: what the list costs at the branches near home if the family drives. Cash and driving side by side, never one number. */}
+        {q.drive && q.drive.status !== 'none' ? (
+          <View style={[s.card, { paddingVertical: 6 }]} testID="drive-card">
+            <Text style={[s.title, { fontSize: 16, paddingTop: 8 }]}>{tr('driveTitle')}</Text>
+            <Text style={[s.faint, { fontSize: 11, paddingBottom: 6 }]}>{tr('driveSub')}</Text>
+            {q.drive.status === 'pending' || q.drive.branches.length === 0
+              ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : tr('driveNone')}</Text>
+              : (() => {
+                const cheapest = best ? best.cashCost : 0;
+                return q.drive.branches.map((b) => {
+                  const diff = cheapest > 0 ? cheapest - (b.itemsSubtotal + b.driveCost) : 0;
+                  return (
+                    <View key={b.storefrontId} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{b.brand} · {b.branchName}</Text>
+                        <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveRow', { d: b.distanceKm, m: b.minutes, x: money(b.driveCost) })}</Text>
+                        <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveCovers', { n: b.coveredLines, t: b.totalLines })}{b.missingLineIds.length > 0 && b.missingLineIds.length <= 3 ? ` · ${tr('driveMissing', { x: b.missingLineIds.map(nameOf).join(', ') })}` : ''}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[s.price, { fontSize: 18, color: diff > 0 ? t.accent : t.ink }]}>{money(b.itemsSubtotal)}</Text>
+                        {cheapest > 0 ? <Text style={[s.faint, { fontSize: 11, color: diff > 0 ? t.accent : t.amber }]}>{diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })}</Text> : null}
+                      </View>
+                    </View>
+                  );
+                });
+              })()}
+            {q.drive.status === 'ready' && q.drive.branches.length > 0 ? <Text style={[s.faint, { fontSize: 11, paddingVertical: 6 }]}>{tr('driveNote')}</Text> : null}
+          </View>
+        ) : null}
         {q.rejected.length > 0 ? (
           <Pressable onPress={() => setWhyNot((v) => !v)} style={{ paddingVertical: 8, alignItems: 'center' }}><Text style={s.link}>{tr('whyNot')} ({q.rejected.length}) {whyNot ? '▴' : '▾'}</Text></Pressable>
         ) : null}
