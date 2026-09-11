@@ -118,7 +118,11 @@ export const STORES: Record<string, StoreDef> = {
   auth=String(auth||'');if(auth&&!/^Bearer/i.test(auth))auth='Bearer '+auth;
   // Signed in? then the club/EcomToken comes from the user; a guest sends EcomToken:0.
   let ecom=0,isClub=0;try{const u=st&&st.getters&&st.getters['authuser/loggedInUser'];if(u&&u.token){ecom=u.token;isClub=st.getters['authuser/isClub']?1:0;}}catch(e){}
-  const store=(st&&st.getters&&st.getters['cart/getStoreId'])||331;
+  // The branch: the site sets it from the chosen delivery address (cart/setStoreId(address.store_id)).
+  // A fresh session still sits on the default 331, which stocks a different range - so read the
+  // person's own addresses and use the selected one's branch, telling the site's cart the same.
+  let store=(st&&st.getters&&st.getters['cart/getStoreId'])||331,branchFrom='default';
+  try{const au=st&&st.state&&st.state.authuser;let list=(au&&(au.addresses||au.allAddresses))||(st&&st.getters&&(st.getters['authuser/getAddresses']||st.getters['authuser/addresses']))||[];list=Array.isArray(list)?list:Object.values(list||{});const selId=st&&st.getters&&st.getters['checkout/getAddressSelect'];const a=list.find(x=>x&&selId&&String(x.id)===String(selId))||list[0];if(a&&(a.store_id||a.storeId)){store=a.store_id||a.storeId;branchFrom='address';try{st.commit('cart/setStoreIdNoneUpdateCart',store);}catch(e){}}}catch(e){}
   const codes=L.filter(l=>l.gtin).map(l=>l.gtin);
   const byBarcode={};
   // The catalogue answer has shipped as data[], data.items[], items[] - read all of them, and note the shape for the log.
@@ -143,7 +147,7 @@ export const STORES: Record<string, StoreDef> = {
     }
     if(cartStatus!==200&&cartStatus!==201){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/cart',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
   },
   victory: platform('victory', 'ויקטורי', 'www.victoryonline.co.il', /victory/i, true),
