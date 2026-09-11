@@ -29,10 +29,12 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   const nearly = res.quotes.filter((q) => q.serviceType === 'delivery' && q.requestedLines > 0 && q.pricedLines < q.requestedLines && q.pricedLines / q.requestedLines >= PARTIAL_LEG_MIN_COVERAGE);
   const missing = new Map<string, ListLine>();
   for (const q of nearly) { const have = new Set(q.lines.map((l) => l.lineId)); for (const l of lines) if (!have.has(l.id)) missing.set(l.id, l); }
-  if (missing.size === 0 || missing.size > 6) return res;
+  if (missing.size === 0) return res;
+  // One catalogue search per distinct missing line, at most twelve: a ten-line list with four near-complete
+  // stores must not bail out because their gaps differ - that left every alternative unpriced.
   // The closest catalogue product for each missing line: same words, a different product.
   const picks = new Map<string, { gtin: string; name: string }>();
-  await Promise.all([...missing.values()].map(async (l) => {
+  await Promise.all([...missing.values()].slice(0, 12).map(async (l) => {
     const found = await catalog.searchProducts({ query: l.query, limit: 8, location: address }).catch(() => []);
     const alt = pickSubstitute(l.query, found.filter((c) => c.gtin !== l.gtin));
     if (alt?.gtin) picks.set(l.id, { gtin: alt.gtin, name: alt.name });
