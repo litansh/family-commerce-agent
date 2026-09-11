@@ -102,7 +102,11 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const nameOf = (id: string) => q.lines.find((l) => l.id === id)?.query ?? id;
   const spread = q.options.length > 1 ? q.options[q.options.length - 1]!.cashCost - best!.cashCost : 0;
   const oneDelivery = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup');
-  const fastest = oneDelivery[0];
+  // "Fast" is measured, not assumed: Wolt venues carry a live estimate in minutes;
+  // the chains deliver in windows, counted as a day until the phone reads real slots.
+  const etaOf = (sid: string) => q.etas?.[sid];
+  const etaMinutes = (o: PurchaseOption) => Math.max(...o.legs.map((l) => { const e = etaOf(l.storefrontId); return e?.kind === 'live' && e.minutes ? e.minutes : 24 * 60; }));
+  const fastest = [...oneDelivery].sort((a, b) => etaMinutes(a) - etaMinutes(b) || a.cashCost - b.cashCost)[0];
   const balanced = fastest && best && fastest.cashCost - best.cashCost <= best.cashCost * 0.05 ? fastest : best;
   const pick = { cheap: best, balanced, fast: fastest ?? best }[strategy];
   const shown = pick ? [pick, ...q.options.filter((o) => o !== pick).slice(0, 2)] : [];
@@ -126,7 +130,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
         </View>
         <Text style={[s.small, { marginBottom: 12 }]}>
           {strategy === 'fast'
-            ? (fastest ? (fastExtra > 0 ? tr('modeFastCost', { x: money(fastExtra) }) : tr('modeFastFree')) : tr('modeFastNone'))
+            ? (fastest ? ((() => { const e = etaOf(fastest.legs[0]!.storefrontId); const measured = e?.kind === 'live' && e.minutes ? `${tr('fastBy', { s: fastest.legs[0]!.brand, m: e.minutes })} · ` : ''; return measured + (fastExtra > 0 ? tr('modeFastCost', { x: money(fastExtra) }) : tr('modeFastFree')); })()) : tr('modeFastNone'))
             : strategy === 'balanced' ? tr('modeBalancedSub') : (fastExtra > 0 && best && best.legs.length > 1 ? tr('modeCheapSub', { n: best.legs.length, x: money(fastExtra) }) : tr('modeCheapOne'))}
         </Text>
         {shown.length === 0 ? <View style={s.card}><Text style={s.body}>{tr('strat_none')}</Text></View> : null}
@@ -151,7 +155,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               <View style={s.hair} />
               {o.legs.map((leg) => (
                 <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>
-                  <Text style={s.small}>{leg.brand} · {leg.lineIds.length} {tr('items')}</Text>
+                  <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
+                    <Text style={s.small}>{leg.brand} · {leg.lineIds.length} {tr('items')}</Text>
+                    {(() => { const e = etaOf(leg.storefrontId); if (!e) return null; return e.kind === 'live' ? <Chip text={e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes ?? 0 })} tone="good" /> : <Chip text={tr('etaSlots')} tone="neutral" />; })()}
+                  </View>
                   <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
                 </View>
               ))}

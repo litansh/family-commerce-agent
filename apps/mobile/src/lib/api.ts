@@ -14,6 +14,8 @@ export interface Order {
 
 export interface QuoteResult {
   currency?: string;
+  /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
+  etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
