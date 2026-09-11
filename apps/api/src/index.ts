@@ -557,7 +557,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       for (const q of res.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}) }]));
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
-      const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => ({ id: l.id, query: l.query, ...(l.gtin ? { gtin: l.gtin } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }))).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
+      // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
+      // branch index is keyed by barcode - so borrow the first barcode any storefront resolved the line to.
+      const gtinOf = (id: string, own?: string) => own ?? res.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? res.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
+      const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => { const g = gtinOf(l.id, l.gtin); return { id: l.id, query: l.query, ...(g ? { gtin: g } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }; })).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
       return ok({
         currency: region.currency,
         etas,

@@ -161,14 +161,32 @@ export function parseHaziHinamBranches(json: string): Branch[] {
   });
 }
 
+const hz = (storeId: string, name: string, address: string, city: string, lat: number, lng: number): Branch => ({ chainId: '7290700100008', subChainId: '000', storeId, name, address, city, lat, lng });
+export const HAZI_HINAM_BRANCHES: Branch[] = [
+  hz('100', 'שרונים', 'הרקון 2', 'הוד השרון', 32.132791, 34.901797),
+  hz('101', 'אם המושבות', 'ראשון לציון 1', 'פתח תקווה', 32.100134, 34.875234),
+  hz('102', 'המרכבה', 'המרכבה 31', 'חולון', 32.010676, 34.808097),
+  hz('103', 'הכישור', 'הכישור 22', 'חולון', 32.004699, 34.803763),
+  hz('105', 'הלח"י', 'הלח"י 16', 'ראשון לציון', 31.989214, 34.762468),
+  hz('106', 'הכשרת היישוב', 'הכשרת היישוב 3', 'ראשון לציון', 31.99036, 34.768398),
+  hz('107', 'שוק משה לוי', 'משה לוי 8', 'ראשון לציון', 31.986406, 34.772592),
+  hz('108', 'רחובות', 'דרך הים 1', 'רחובות', 31.894985, 34.79339),
+];
+
 export function haziHinamPortal(fetchImpl: typeof fetch = fetch): Portal {
   const page = async () => (await getBytes('https://shop.hazi-hinam.co.il/Prices', fetchImpl)).toString('utf8');
   return {
     chain: 'hazi-hinam', brand: 'חצי חינם',
     async stores() {
-      // No Stores file on the portal; the shop's own branch API has every branch with coordinates.
-      const raw = (await getBytes('https://shop.hazi-hinam.co.il/proxy/api/Branches', fetchImpl, { accept: 'application/json', referer: 'https://shop.hazi-hinam.co.il/' })).toString('utf8');
-      return parseHaziHinamBranches(raw);
+      // No Stores file on the portal; the shop's own branch API has every branch with coordinates -
+      // but it answers 403 to datacenters, so from AWS the list below (read from that API on
+      // 2026-09-11; the chain has eight branches and opens one every few years) stands in.
+      try {
+        const raw = (await getBytes('https://shop.hazi-hinam.co.il/proxy/api/Branches', fetchImpl, { accept: 'application/json', referer: 'https://shop.hazi-hinam.co.il/' })).toString('utf8');
+        const live = parseHaziHinamBranches(raw);
+        if (live.length) return live;
+      } catch { /* fall through to the known list */ }
+      return HAZI_HINAM_BRANCHES;
     },
     async priceFile(storeId) {
       const html = await page();

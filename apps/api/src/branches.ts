@@ -18,7 +18,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { allPortals, branchesInCity, decodeXml, fetchCbs, geocode, nearestBranches, parsePriceFull, priceAtBranch, type Branch, type GeoBranch, type NearbyBranch, type PriceIndex, type SettlementNames } from '@fca/branch-prices';
 import { DEFAULT_CONSTANTS, type Agorot } from '@fca/domain';
-import type { Household } from './households.ts';
+import { HouseholdStore, type Household } from './households.ts';
 import { readRow, writeRow } from './orders.ts';
 
 const DAY = 24 * 3600_000;
@@ -85,7 +85,7 @@ export class BranchPrices {
   /** The in-store view for a quote. Kicks the refresher when the household has none yet or it is a day old. */
   async driveQuotes(hid: string, household: Household, lines: readonly { id: string; query: string; gtin?: string; qty: number }[]): Promise<{ status: BranchRow['status']; branches: DriveView[] }> {
     if (!this.enabled) return { status: 'none', branches: [] };
-    const home = homeOf(household);
+    const home = homeOf(household) ?? (household.address ? { lat: NaN, lng: NaN, city: (household.address.split(',').pop() ?? '').trim() } : undefined);
     if (!home) return { status: 'none', branches: [] };
     const row = (await readRow(this.#table, hid, 'BRANCHES')) as BranchRow | undefined;
     const stale = !row || Date.now() - Date.parse(row.at) > DAY + 2 * 3600_000;
@@ -135,9 +135,19 @@ export class BranchPrices {
 
   /** Find, geocode and index the branches near one household. */
   async refreshHousehold(hid: string, household?: Household): Promise<BranchRow> {
-    const h = household ?? ((await readRow(this.#table, hid, 'META')) as unknown as Household | undefined);
-    const home = h ? homeOf(h) : undefined;
+    let h = household ?? ((await readRow(this.#table, hid, 'META')) as unknown as Household | undefined);
     const now = new Date().toISOString();
+    // A household whose address was typed before the address picker existed has no coordinates:
+    // geocode the address once and keep it, so the branches (and Wolt's live ETA) can be found.
+    if (h && !homeOf(h) && h.address) {
+      const g = await geocode(h.address);
+      if (g) {
+        const ad: Record<string, unknown> = { ...((h.addressDetails ?? {}) as Record<string, unknown>), lat: g.lat, lng: g.lng };
+        if (typeof ad['city'] !== 'string' || !ad['city']) ad['city'] = (h.address.split(',').pop() ?? '').trim();
+        h = await new HouseholdStore(this.#table).update(hid, { addressDetails: ad });
+      }
+    }
+    const home = h ? homeOf(h) : undefined;
     if (!home) {
       const row: BranchRow = { status: 'none', at: now, city: '', branches: [] };
       await writeRow(this.#table, hid, 'BRANCHES', { ...row });
