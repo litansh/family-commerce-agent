@@ -36,6 +36,7 @@ Every agent starts at stage 0 on the ladder and earns its way up:
 | **Ops orchestrator** | what is broken and which repair agent to send | checks green / checks run; hours from a store change to a fix | a repair pushes only after the same lab proves it; anything needing a person goes to NEEDS-HUMAN.md | 4 |
 | **Shopper** | whether the whole product still works for a real family's week | checks green of 13; the cheapest total, the split saving, the substitutes named | never orders; a failing check goes to the repair agents, never to the family | 0 |
 | **Store scout** | which storefronts exist for our addresses, which are new, which Kaniti cannot connect yet | storefronts connectable / storefronts delivering | never adds a store by itself; a mapping change is a pull request | 0 |
+| **App designer** | how a screen serves the one decision it exists for | seconds to a decision; reports of confusion = 0 | never drops a promise-keeping element; design is approved before code | 1 |
 | **Briefing** | the single next thing worth doing | the earliest broken funnel stage | never acts; sends every day; "could not look" is negative, never zero | 0 |
 
 Conflicts are real and stay visible: the optimizer wants the cheapest split, the order
