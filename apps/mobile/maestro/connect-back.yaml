@@ -2,9 +2,7 @@
 appId: com.litansh.kaniti
 ---
 - tapOn: { id: "link-close" }
-- extendedWaitUntil:
-    visible: { text: "החנויות המחוברות" }
-    timeout: 10000
+- waitForAnimationToEnd
 - scrollUntilVisible:
     element: { id: "connect-${STORE}" }
     direction: DOWN
