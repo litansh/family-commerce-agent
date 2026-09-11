@@ -175,8 +175,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
 
         {/* Every store, one line each: what this basket costs there, or why it cannot be bought there. */}
         {(() => {
-          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const }));
-          const rej = q.rejected.map((r) => ({ brand: r.brand, total: r.itemsSubtotal, coverage: r.requestedLines ? r.pricedLines / r.requestedLines : 0, ok: false as const, short: r.code === 'minimum' ? r.amountToMinimum : undefined }));
+          const singles = q.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup').map((o) => ({ brand: o.legs[0]!.brand, total: o.cashCost, coverage: o.coverageRatio, ok: true as const, sid: o.legs[0]!.storefrontId }));
+          const rej = q.rejected.map((r) => ({ brand: r.brand, total: r.itemsSubtotal, coverage: r.requestedLines ? r.pricedLines / r.requestedLines : 0, ok: false as const, short: r.code === 'minimum' ? r.amountToMinimum : undefined, sid: r.storefrontId }));
           const rows = [...singles, ...rej].sort((a, b) => Number(b.ok) - Number(a.ok) || a.total - b.total);
           if (rows.length === 0) return null;
           const cheapest = singles.length ? Math.min(...singles.map((x) => x.total)) : 0;
@@ -186,7 +186,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               {rows.map((r, i) => (
                 <View key={`${r.brand}-${i}`} style={[s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line, opacity: r.ok ? 1 : 0.6 }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{r.brand}</Text>
+                    <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
+                      <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{r.brand}</Text>
+                      {(() => { const e = etaOf(r.sid); return e?.kind === 'live' && e.minutes ? <Chip text={e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes })} tone="good" /> : null; })()}
+                    </View>
                     <Text style={[s.faint, { fontSize: 11 }]}>{r.ok ? tr('tblCovers', { p: Math.round(r.coverage * 100) }) : r.short !== undefined ? tr('tblShort', { x: money(r.short) }) : tr('tblCovers', { p: Math.round(r.coverage * 100) })}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
