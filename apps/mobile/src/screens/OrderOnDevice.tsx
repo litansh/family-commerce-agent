@@ -71,7 +71,10 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
       });
     }, 45000);
   };
+  // On the store's cart page: ask the store how many lines IT holds, twice (its state hydrates late).
+  const [storeCount, setStoreCount] = useState<number | null>(null);
   const onLoadEnd = () => {
+    if (phase === 'cart' && store.basketCountJs) { for (const ms of [1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
     if (!hasRecipe || ran.current) return;
     // Signed in already (a store the family connected)? fill now. Otherwise the
     // store's own login is on screen; we wait for the person to sign in, then fill.
@@ -95,6 +98,15 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
         signedInOnce.current = true;
         // The person just signed in (or was already): fill the cart now, replacing any guest attempt.
         if (count('added') === 0) { setResults({}); runRecipe(); }
+      }
+      return;
+    }
+    if (d.startsWith('basket:')) {
+      const n = Number(d.slice(7));
+      if (Number.isFinite(n)) {
+        setStoreCount(n);
+        // The store's count next to ours, in the log and (a mismatch) in the channel: no discrepancy goes unseen.
+        void api.importHistory(householdId, storeId, [], { build: BUILD, basket: { store: n, added: count('added') } }).catch(() => null);
       }
       return;
     }
@@ -148,8 +160,10 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
               <Chip text={tr('cartAdded', { n: count('added') })} tone="good" />
               {count('missing') > 0 ? <Chip text={tr('cartMissing', { n: count('missing') })} tone="warn" /> : null}
               {count('error') > 0 ? <Chip text={tr('cartError', { n: count('error') })} tone="bad" /> : null}
+              {storeCount !== null && phase === 'cart' ? <Chip text={tr('storeBasket', { s: store.name, n: storeCount })} tone={storeCount >= count('added') ? 'good' : 'bad'} /> : null}
               {phase === 'filling' ? <Text style={[s.small, { color: t.accent }]}>{tr('cartWorking')}</Text> : null}
             </View>
+            {storeCount !== null && phase === 'cart' && storeCount < count('added') ? <Text style={[s.small, { color: t.red, marginTop: 6 }]}>{tr('storeBasketMismatch', { s: store.name })}</Text> : null}
           </View>
         ) : null}
 

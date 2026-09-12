@@ -60,6 +60,12 @@ export interface StoreDef {
   readonly cartJs?: (lines: readonly CartLine[]) => string;
   /** The store's cart page, shown after the recipe ran (or straight away when there is no recipe). */
   readonly cartUrl?: string;
+  /**
+   * Runs on the store's cart page and posts `basket:<n>` with the number of lines the STORE says
+   * are in the basket (or `basket:?`). What the family sees at the store is the truth Kaniti is
+   * measured against; a difference from what Kaniti claimed is shown, never hidden.
+   */
+  readonly basketCountJs?: string;
   /** The store's own product search for a free-text name: the universal last resort for any line, on any store. */
   readonly searchUrl?: (q: string) => string;
 }
@@ -117,7 +123,7 @@ const genericSignedIn = `(()=>{const t=(document.body.innerText||'').slice(0,400
  * A platform recipe: everything that depends on how a storefront is built,
  * not on which chain runs it. A store is one platform plus its own facts.
  */
-export type Platform = Pick<StoreDef, 'group' | 'loginKind' | 'signedInCheck' | 'openLoginJs' | 'prefillEmailJs' | 'forgotJs' | 'historyJs' | 'sessionKeys' | 'cartJs' | 'cartUrl' | 'cloud' | 'searchUrl'>;
+export type Platform = Pick<StoreDef, 'group' | 'loginKind' | 'signedInCheck' | 'basketCountJs' | 'openLoginJs' | 'prefillEmailJs' | 'forgotJs' | 'historyJs' | 'sessionKeys' | 'cartJs' | 'cartUrl' | 'cloud' | 'searchUrl'>;
 type StoreFacts = Pick<StoreDef, 'id' | 'name' | 'storefront' | 'loginUrl' | 'signup'> & Partial<Pick<StoreDef, 'loginKind' | 'cartUrl' | 'searchUrl'>>;
 const define = (platform: Platform, facts: StoreFacts): StoreDef => ({ ...platform, ...facts });
 
@@ -185,6 +191,8 @@ export const RAMI_LEVY: Platform = {
   // From the site's own bundle: POST www-api…/api/v2/cart {store,isClub,supplyAt,items:{[itemId]:qty},meta}
   // with the session's EcomToken; item ids come from /api/catalog?itemsBy=barcode. Runs in the page,
   // so it is the person's own session and the store sees its own app at work.
+  // The store's own count: its cart state (the plus buttons' source of truth), else the basket badge text.
+  basketCountJs: `(()=>{try{const st=window.$nuxt&&window.$nuxt.$store;const items=st&&st.state&&st.state.cart&&st.state.cart.items;if(Array.isArray(items)){window.ReactNativeWebView.postMessage('basket:'+items.length);return;}const t=(document.body&&document.body.innerText||'').replace(/\s+/g,' ');const m=t.match(/(\d+)\s*הסל שלי/);window.ReactNativeWebView.postMessage('basket:'+(m?m[1]:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
   cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
   const n=window.$nuxt;const st=(n&&n.$store)?n.$store:null;
   // The site's own anonymous (or signed-in) bearer, read off its axios defaults.

@@ -59,6 +59,14 @@ cold path (the daily agents) meets it; the phone keeps working.
 - *Tell:* the daily health checks are green; a red check becomes a pull request the same
   day; the briefing names the single next thing.
 
+## 9. What Kaniti says is what the store shows
+Every claim about a store - connected, added to the cart, bought - is verified against the
+store's own state before it is shown, and the store's own number is shown next to ours. A
+difference is said out loud, never hidden; the family is never sent to act on a guess.
+- *Tell:* after a cart fills, the screen shows the store's basket count beside "added" and they
+  agree; the cart lab fails when the store's basket does not show the lines; a connect is "connected"
+  only after the store's own signed-in check; a purchase is confirmed from the store's history.
+
 ## What to do when a promise is broken
 Reproduce it in a lab (the API, the browser labs, the simulator), name the promise
 number, fix the cause or the check, prove it with the same lab, open a pull request
