@@ -6,9 +6,12 @@
  *               Rami Levy, Keshet Teamim, Tiv Taam, Osher Ad, Yohananof
  *   hazi-hinam  a static page of blob links (no Stores file: branches come from elsewhere)
  *   carrefour   a page that embeds the day's file list as JSON
- *   laib        laibcatalog.co.il (Victory, Mahsanei HaShuk, H. Cohen): the ASP.NET form on
- *               its front page lists only H. Cohen's Stores file, but the page's newer UI
- *               (/mshuk/index.html) calls a JSON API that has every file of every chain
+ *   laib        laibcatalog.co.il (Victory, Mahsanei HaShuk, H. Cohen): the page's newer UI
+ *               (/mshuk/index.html) calls a JSON API (`/webapi/api/getfiles?edi=<chainId>`)
+ *               that is built to carry every file of every chain, and the classic ASP.NET
+ *               postback form on the front page is the same data by another route - but as of
+ *               2026-09-13 both answer zero files, for all three chains, every date, every file
+ *               type (ops/NEEDS-HUMAN.md): a vendor-side gap, not a request we have wrong.
  *
  * Everything here is a plain fetch: no browser, no account of ours.
  */
