@@ -50,18 +50,12 @@ import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
+import { isSlowError, withDeadline } from './deadline.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
 import { BranchPrices } from './branches.ts';
 import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
 
-/** Rejects with DeadlinePassed when `p` has not settled within `ms`. The work itself is not cancelled. */
-class DeadlinePassed extends Error { constructor(ms: number) { super(`deadline of ${ms} ms passed`); this.name = 'DeadlinePassed'; } }
-function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const clock = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new DeadlinePassed(ms)), ms); });
-  return Promise.race([p, clock]).finally(() => clearTimeout(timer));
-}
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 
@@ -599,7 +593,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
           res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory), budget.tryMs);
           break;
         } catch (e: unknown) {
-          const slow = e instanceof DeadlinePassed || (e instanceof Error && (e.name === 'AbortError' || /aborted|timeout|fetch failed|ECONNRESET/i.test(e.message)));
+          const slow = isSlowError(e);
           const left = budget.totalMs - (Date.now() - quoteStarted);
           console.warn(JSON.stringify({ event: 'quote-provider-slow', hid, attempt, ms: Date.now() - quoteStarted, leftMs: left, lines: lines.length, error: e instanceof Error ? e.message : String(e), slow }));
           if (slow && left > 8_000) continue;
@@ -613,7 +607,8 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // marked as a substitution the card shows ("סלמון → פילה סלמון"). One extra quote, not one per store.
       // API Gateway answers 503 after 30 s, so the extra quote for substitutes has a budget: past it the
       // compare goes out without substitutes rather than not at all (the log says which).
-      const budgetMs = 9000;
+      // One shared clock: on the sync route the substitutes get what is left of it (never more than 9 s).
+      const budgetMs = Math.max(0, Math.min(9_000, budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
       const substituted = await Promise.race([
         substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
         new Promise<typeof res>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs)),

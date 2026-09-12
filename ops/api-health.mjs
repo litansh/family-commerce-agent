@@ -17,7 +17,7 @@ if (!hid) { console.log('BAD  /me has no household', JSON.stringify(me).slice(0,
 const lines = [{ id: 'a', query: 'חלב 3%', gtin: '7290004131074', qty: 2 }, { id: 'b', query: 'אפונה יכין', gtin: '7290000208114', qty: 1 }, { id: 'c', query: 'ביצים L', qty: 1 }];
 // One gateway 5xx (a slow provider minute) is retried once: the check is about the product, not one bad minute.
 let res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
-if (res.status >= 500) { await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
+if (res.status >= 500) { console.log(`     quote answered ${res.status} first; retrying once after 8 s`); await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
 const q = await res.json().catch(() => ({}));
 const ok = res.status === 200 && Array.isArray(q.options) && q.options.length > 0;
 // The phone's path: the compare as a background job, collected when done. This is what a family

@@ -86,8 +86,8 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
   readonly #mcp: McpClient;
 
   // API Gateway cuts the API off at 30 s. A whole-basket quote takes ~15 s when the provider is
-  // well; when it is not, the family gets "the stores are slow, try again" in time rather than a
-  // gateway 503 after the Lambda sat for its full minute. The route retries nothing: the phone does.
+  // well; when it is not, the caller decides: the background compare job retries, the sync route
+  // (the ops checks) answers 'stores_slow' in time rather than a gateway 503 after a full minute.
   constructor(url: string = SUPERMCP_URL, timeoutMs = 22_000) {
     this.#mcp = new McpClient(url, timeoutMs);
   }
