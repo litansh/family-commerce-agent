@@ -88,8 +88,10 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
   // API Gateway cuts the API off at 30 s. A whole-basket quote takes ~15 s when the provider is
   // well; when it is not, the caller decides: the background compare job retries, the sync route
   // (the ops checks) answers 'stores_slow' in time rather than a gateway 503 after a full minute.
+  // One bounded retry on the vendor's own transient internal_error (docs/adr/0010) - a large basket
+  // hits this too, not only search.
   constructor(url: string = SUPERMCP_URL, timeoutMs = 22_000) {
-    this.#mcp = new McpClient(url, timeoutMs);
+    this.#mcp = new McpClient(url, timeoutMs, 1);
   }
 
   async quoteBasket(req: QuoteRequest): Promise<QuoteResponse> {
