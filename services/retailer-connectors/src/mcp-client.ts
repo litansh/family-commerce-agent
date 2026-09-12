@@ -30,7 +30,27 @@ export class McpClient {
     this.#timeoutMs = timeoutMs;
   }
 
+  /**
+   * The provider errs in short bursts: the same call that answered `internal_error` answers in
+   * 200 ms a second later (measured 2026-09-12: 'טופו' failed after 20.7 s, then five products in
+   * 468 ms). A transient error is therefore retried twice with a short backoff before it is anyone
+   * else's problem. A refusal that is not transient (a bad argument) is passed straight up.
+   */
   async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
+    let last: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt + Math.floor(Math.random() * 300)));
+      try { return await this.#callOnce<T>(name, args); } catch (e) {
+        last = e;
+        const transient = e instanceof McpCallError && /internal_error|internal server error|timeout|aborted|503|502|429/i.test(e.message);
+        if (!transient) throw e;
+        console.warn(JSON.stringify({ event: 'provider-retry', tool: name, attempt: attempt + 1, error: e.message.slice(0, 120) }));
+      }
+    }
+    throw last;
+  }
+
+  async #callOnce<T>(name: string, args: Record<string, unknown>): Promise<T> {
     const body = JSON.stringify({
       jsonrpc: '2.0',
       id: ++this.#id,
