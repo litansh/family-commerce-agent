@@ -31,8 +31,13 @@ for A in "${AGENTS[@]}"; do
   MODEL=$(sed -n '/^---$/,/^---$/p' "$CH" | awk -F': ' '/^model:/{print $2}'); [ "$MODEL" = inherit ] && MODEL=sonnet; MODEL=${MODEL:-sonnet}
   DAY=$(date +%Y-%m-%d); BR="$A/$DAY"; WT="/tmp/fca-fleet-$A"
   git fetch -q origin main
-  # An existing worktree (yesterday's run, a saved WIP branch) is continued, not replaced.
-  if [ -d "$WT" ]; then BR=$(git -C "$WT" rev-parse --abbrev-ref HEAD); else git worktree add -q -B "$BR" "$WT" origin/main 2>/dev/null || git worktree add -q "$WT" "$BR"; fi
+  # An existing worktree (yesterday's run, a saved WIP branch) is continued, not replaced - unless its
+  # branch is already merged, in which case a fresh branch starts from main. Either way main is merged
+  # in first, so the agent works on the product as it is (the rules, the context page, the last fixes).
+  if [ -d "$WT" ]; then
+    BR=$(git -C "$WT" rev-parse --abbrev-ref HEAD)
+    if git merge-base --is-ancestor "$(git -C "$WT" rev-parse HEAD)" origin/main; then BR="$A/$DAY"; git -C "$WT" checkout -q -B "$BR" origin/main; else git -C "$WT" merge -q --no-edit origin/main >/dev/null 2>&1 || git -C "$WT" merge --abort 2>/dev/null; fi
+  else git worktree add -q -B "$BR" "$WT" origin/main 2>/dev/null || git worktree add -q "$WT" "$BR"; fi
   ( cd "$WT" && [ -d node_modules ] || ln -s "$ROOT/node_modules" node_modules; [ -e apps/mobile/node_modules ] || ln -s "$ROOT/apps/mobile/node_modules" apps/mobile/node_modules ) 2>/dev/null
   SID=$(uuidgen | tr 'A-Z' 'a-z'); OUT="$LOGDIR/fleet-$A-$DAY.out"
   TASK="${FLEET_TASK:-Work the lines that name you in docs/BACKLOG.md and anything in docs/PRODUCT-REVIEW.md that is yours, one line at a time: reproduce in the smallest lab, fix, prove with the same lab, commit and push WIP as you go, and open one pull request per line with ops/pr.sh (it posts to Telegram for the owner). Stop after three pull requests or when nothing of yours is left; finish with a five-line report.}"
@@ -50,7 +55,7 @@ for A in "${AGENTS[@]}"; do
     break
   done
   # Whatever the agent left uncommitted is kept.
-  ( cd "$WT" && git add -A ':!node_modules' ':!apps/mobile/node_modules' >/dev/null 2>&1 && git commit -q -m "WIP: saved by the fleet runner" >/dev/null 2>&1 && git push -q -u origin "$BR" >/dev/null 2>&1 ) || true
+  ( cd "$WT" && git add -A ':!node_modules' ':!apps/mobile/node_modules' ':!**/tsconfig.tsbuildinfo' ':!apps/api/dist-types' >/dev/null 2>&1 && git commit -q -m "WIP: saved by the fleet runner" >/dev/null 2>&1 && git push -q -u origin "$BR" >/dev/null 2>&1 ) || true
   tail -c 1200 "$OUT" | tee -a "$LOG"; tg "🛒 fleet · $A done: $(tail -c 700 "$OUT")"
 done
 echo "== fleet done $(date)" | tee -a "$LOG"
