@@ -42,7 +42,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -685,17 +685,35 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
       // (minutes, from Wolt's own feed for the family's address); the chains deliver in
       // windows, which the phone reads from each store once it is connected.
-      const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number };
-      const etas: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }> = {};
+      const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number; city?: string; street?: string; number?: string };
+      type Eta = { kind: 'live'; minutes?: number; range?: string; name?: string } | { kind: 'closed'; nextOpen?: string; text?: string } | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
+      const etas: Record<string, Eta> = {};
       const wolt = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltEtasNear(ad.lat, ad.lng) : {};
-      const noteEta = (sid: string) => {
-        if (etas[sid]) return;
+      const shownStorefronts = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
+      // Base pass, no extra network: what the compare shows if the enrichment below misses its budget.
+      for (const sid of shownStorefronts) {
         const w = etaForStorefront(sid, wolt);
         etas[sid] = w && w.online && w.delivers ? { kind: 'live', minutes: w.minutes, ...(w.range ? { range: w.range } : {}), name: w.name } : { kind: 'slots' };
-      };
-      for (const o of result.options) for (const leg of o.legs) noteEta(leg.storefrontId);
-      // Rejected storefronts too: "Wolt in 40 minutes, but ₪60 short of its minimum" is a real choice.
-      for (const r of result.rejected) noteEta(r.storefrontId);
+      }
+      // Enrichment: a closed Wolt venue's reopen time, a chain's own published window — both public, no
+      // session, but each a live call to the store's own site, so bounded: a slow store cannot cost the
+      // quote its budget, and the base pass above already stands if this misses it.
+      const etaBudgetMs = 4000;
+      await Promise.race([
+        Promise.all(Array.from(shownStorefronts).map(async (sid) => {
+          if (sid.startsWith('wolt-')) {
+            const w = etaForStorefront(sid, wolt);
+            if (!w?.online || !w?.delivers) {
+              const open = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltNextOpen(sid.slice('wolt-'.length), ad.lat, ad.lng).catch(() => undefined) : undefined;
+              if (open && !open.isOpen) etas[sid] = { kind: 'closed', ...(open.nextOpen ? { nextOpen: open.nextOpen } : {}), ...(open.text ? { text: open.text } : {}) };
+            }
+          } else if (ad.city && ad.street) {
+            const w = await chainWindow(sid, { city: ad.city, street: ad.street, ...(ad.number ? { number: ad.number } : {}) }).catch(() => undefined);
+            if (w) etas[sid] = { kind: 'slots', earliest: w.earliest, until: w.until, windowHours: w.windowHours };
+          }
+        })).then(() => {}),
+        new Promise<void>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'etas-enrich-skipped', hid, budgetMs: etaBudgetMs })); resolve(); }, etaBudgetMs)),
+      ]);
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);

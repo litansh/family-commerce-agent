@@ -22,12 +22,21 @@ export interface DriveBranch {
   sameLines?: { brand: string; items: number; delivered: number };
 }
 
+export type StorefrontEta =
+  | { kind: 'live'; minutes?: number; range?: string; name?: string }
+  | { kind: 'closed'; nextOpen?: string; text?: string }
+  | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
+
 export interface QuoteResult {
   currency?: string;
   /** Lines a store's own branch for this family does not stock: the compare says so, before anyone shops. */
   branchStock?: Record<string, { branch: number; lineIds: string[] }>;
-  /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
-  etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
+  /**
+   * How soon each storefront delivers: live minutes (a Wolt venue open now); a Wolt venue closed now and,
+   * when Wolt says, the wall-clock time it reopens; or window delivery (the chains), with the chain's earliest
+   * orderable window (`earliest` local `YYYY-MM-DDTHH:mm`, `until` `HH:mm`) when the chain published it.
+   */
+  etas?: Record<string, StorefrontEta>;
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
   drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
   /** Each shown storefront's own product and deep link per line. */

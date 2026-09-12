@@ -71,3 +71,43 @@ export function etaForStorefront(storefrontId: string, etas: Record<string, Wolt
   if (!storefrontId.startsWith('wolt-')) return undefined;
   return etas[storefrontId.slice('wolt-'.length)];
 }
+
+export interface WoltOpenStatus {
+  readonly isOpen: boolean;
+  /** When a closed venue next opens, wall-clock `YYYY-MM-DDTHH:mm` as Wolt states it (the venue's own zone, never converted). */
+  readonly nextOpen?: string;
+  /** Wolt's own words, e.g. "נפתח ביום יום שני בשעה 07:00". */
+  readonly text?: string;
+}
+
+interface VenueDynamic { venue?: { delivery_open_status?: { is_open?: boolean; next_open?: string; value?: string } } }
+
+/** `2026-09-14T07:00:00+03:00` → `2026-09-14T07:00`. */
+const localMinute = (iso: string): string | undefined => (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(iso) ? iso.slice(0, 16) : undefined);
+
+/** Parse the venue page's open status. Undefined when the page does not say. */
+export function parseWoltVenueDynamic(page: VenueDynamic): WoltOpenStatus | undefined {
+  const s = page.venue?.delivery_open_status;
+  if (!s || typeof s.is_open !== 'boolean') return undefined;
+  const next = typeof s.next_open === 'string' ? localMinute(s.next_open) : undefined;
+  return { isOpen: s.is_open, ...(next ? { nextOpen: next } : {}), ...(s.value ? { text: s.value } : {}) };
+}
+
+const openCache = new Map<string, { at: number; status: WoltOpenStatus }>();
+
+/** When a closed Wolt venue reopens, from its venue page; cached an hour per slug. Undefined on any failure. */
+export async function woltNextOpen(slug: string, lat: number, lng: number, fetchImpl: typeof fetch = fetch): Promise<WoltOpenStatus | undefined> {
+  const hit = openCache.get(slug);
+  if (hit && Date.now() - hit.at < 60 * 60_000) return hit.status;
+  const status = await (async () => {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const res = await fetchImpl(`https://consumer-api.wolt.com/order-xp/web/v1/venue/slug/${encodeURIComponent(slug)}/dynamic/?lat=${lat}&lon=${lng}`, { headers: { accept: 'application/json', 'app-language': 'he', platform: 'Web' }, signal: ctl.signal }).finally(() => clearTimeout(t));
+      if (!res.ok) return undefined;
+      return parseWoltVenueDynamic((await res.json()) as VenueDynamic);
+    } catch { return undefined; }
+  })();
+  if (status) openCache.set(slug, { at: Date.now(), status });
+  return status;
+}
