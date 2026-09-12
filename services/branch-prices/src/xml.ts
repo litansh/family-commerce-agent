@@ -59,8 +59,9 @@ export function parseStores(xml: string): Branch[] {
   const groups = subs.length ? subs.map((m) => m[1]!) : [xml];
   for (const g of groups) {
     const subChainId = tag(g, 'SubChainID') || tag(g, 'SubChainId') || '0';
-    for (const s of g.matchAll(/<Store>([\s\S]*?)<\/Store>/gi)) {
-      const b = s[1]!;
+    // laibcatalog's older files wrap each branch in <Branch> instead of <Store>.
+    for (const s of g.matchAll(/<(Store|Branch)>([\s\S]*?)<\/\1>/gi)) {
+      const b = s[2]!;
       const storeId = tag(b, 'StoreID') || tag(b, 'StoreId');
       if (!storeId) continue;
       const zip = tag(b, 'ZIPCode') || tag(b, 'ZipCode');
@@ -91,3 +92,52 @@ export function parsePriceFull(xml: string): PriceFile {
 
 /** Store ids are zero-padded in file names ("001") and bare in Stores files ("1"). */
 export const sameStoreId = (a: string, b: string): boolean => a.replace(/^0+/, '') === b.replace(/^0+/, '');
+
+/** A club price (2ב13.90) or multi-buy (10ב30): `dealPrice` is the total for `minQty` units. */
+export interface PromoDeal { readonly minQty: number; readonly dealPrice: number; readonly clubOnly: boolean }
+/** One branch's live promotions: barcode → every deal that applies (the cheapest wins at pricing time). */
+export type PromoIndex = Record<string, PromoDeal[]>;
+
+/**
+ * A PromoFull file → barcode → deals. `RewardType 1` ("2 for 13.90") and `3` (a flat discounted
+ * price, `MinQty` 1) both give the price for `MinQty` units in `DiscountedPrice`; other reward
+ * types (gifts, unclear mechanics) are skipped rather than guessed at. `AdditionalIsCoupon` marks
+ * a deal that needs clipping to a card the family may never load, so it is never priced in
+ * automatically ("קופון חלב תנובה קרטון 1לי ב1שח" is not the shelf price). `ClubID` is "0" for
+ * everyone; anything else needs a club card or credit card the family may not hold.
+ */
+export function parsePromoFull(xml: string): PromoIndex {
+  const out: PromoIndex = {};
+  for (const p of xml.matchAll(/<Promotion>([\s\S]*?)<\/Promotion>/gi)) {
+    const promo = p[1]!;
+    if (tag(promo, 'AdditionalIsCoupon') === '1') continue;
+    const clubId = tag(promo, 'ClubID');
+    const clubOnly = clubId !== '' && clubId !== '0';
+    for (const it of promo.matchAll(/<PromotionItem>([\s\S]*?)<\/PromotionItem>/gi)) {
+      const item = it[1]!;
+      const code = tag(item, 'ItemCode');
+      if (!/^\d{8,14}$/.test(code)) continue;
+      if (tag(item, 'bIsWeighted') === '1') continue;
+      const rewardType = tag(item, 'RewardType');
+      if (rewardType !== '1' && rewardType !== '3') continue;
+      const minQty = Number(tag(item, 'MinQty')) || 1;
+      const dealPrice = Number(tag(item, 'DiscountedPrice'));
+      if (!(dealPrice > 0)) continue;
+      (out[code] ??= []).push({ minQty, dealPrice: Math.round(dealPrice * 100), clubOnly });
+    }
+  }
+  return out;
+}
+
+/** The cheapest way to buy `qty` units, mixing one promo's bundles with the regular price for the rest. */
+export function bestDealTotal(deals: readonly PromoDeal[] | undefined, qty: number, regularUnit: number): { total: number; clubOnly: boolean } {
+  let best = { total: regularUnit * qty, clubOnly: false };
+  for (const d of deals ?? []) {
+    if (qty < d.minQty || d.minQty <= 0) continue;
+    const bundles = Math.floor(qty / d.minQty);
+    const remainder = qty - bundles * d.minQty;
+    const total = bundles * d.dealPrice + remainder * regularUnit;
+    if (total < best.total) best = { total, clubOnly: d.clubOnly };
+  }
+  return best;
+}

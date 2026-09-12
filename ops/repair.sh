@@ -30,6 +30,8 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   for n in $(gh pr list --state open --json number --jq '.[].number' 2>/dev/null); do ops/pr-review.sh "$n" 2>&1 | tail -1 | tee -a "$LOG"; done
   # The product review runs on green days too: a promise can be broken while every check passes.
   ops/qa.sh
+  # Then the fleet works the backlog in two lanes; each lane is serial and resumes around a usage limit.
+  ops/lanes.sh --wait
   exit 0
 fi
 
@@ -42,7 +44,7 @@ claude -p "$PROMPT" --permission-mode acceptEdits --max-turns 120 \
 
 echo "== recheck $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
-  notify "repaired" "checks pass after the repair run"; node ops/briefing.mjs 2>&1 | tee -a "$LOG"; ops/qa.sh; exit 0
+  notify "repaired" "checks pass after the repair run"; node ops/briefing.mjs 2>&1 | tee -a "$LOG"; ops/qa.sh; ops/lanes.sh --wait; exit 0
 fi
 notify "still unhealthy" "see $LOG"
 node ops/briefing.mjs 2>&1 | tee -a "$LOG"

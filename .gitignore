@@ -20,3 +20,7 @@ memory/
 apps/mobile/e2e/results/
 apps/mobile/e2e/shots/
 !*.auto.tfvars
+
+# build artefacts
+**/tsconfig.tsbuildinfo
+apps/api/dist-types/

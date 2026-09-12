@@ -150,16 +150,22 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
   // Which row (or the answer's legs) is unfolded.
   const [open, setOpen] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  // Past half a minute the loading copy says why it is taking longer, so nobody thinks it is stuck.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => { setSlow(false); const timer = setTimeout(() => setSlow(true), 35_000); return () => clearTimeout(timer); }, [attempt, lines]);
   useEffect(() => {
+    setErr(null);
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
-  }, [api, household.id, lines]);
+  }, [api, household.id, lines, attempt]);
 
-  if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
+  // A slow minute at the stores, a gateway page, a dropped network: one sentence and a retry. Nothing internal reaches the screen.
+  if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{/stores_slow|Service Unavailable|Gateway|HTTP 5\d\d|internal error|compare failed|Network request failed/i.test(err) ? tr('storesSlow') : err}</Text><View style={s.pad}><Button title={tr('tryAgain')} onPress={() => setAttempt((n) => n + 1)} /></View></View>;
   if (!q) return (
     <View style={s.screen}>
       <Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}><Skeleton lines={4} /><Skeleton /><Skeleton /></View>
-      <Text style={[s.small, { textAlign: 'center' }]}>{tr('about20s')}</Text>
+      <Text style={[s.small, { textAlign: 'center' }]}>{slow ? tr('stillComparing') : tr('about20s')}</Text>
     </View>
   );
 
@@ -180,9 +186,26 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const whenOf = (o: PurchaseOption) => [o.legs.length > 1 ? tr('twoDeliveries') : null, ...o.legs.map((l) => { const w = etaText(l.storefrontId); return w ? (o.legs.length > 1 ? `${l.brand}: ${w}` : w) : null; })].filter(Boolean).join(' · ');
   const exceptionsOf = (sid: string, unpriced: readonly string[] = []) => {
     const sl = q.storefrontLines?.[sid] ?? {};
-    const missing = (unpriced.length ? unpriced.map(nameOf) : q.lines.filter((l) => !sl[l.id]).map((l) => l.query)).map(short);
+    // "Not in stock at your branch" is not "this store does not carry it": say which, here, not at the till.
+    const outOfStock = new Set(q.branchStock?.[sid]?.lineIds ?? []);
+    const missingIds = unpriced.length ? [...unpriced] : q.lines.filter((l) => !sl[l.id]).map((l) => l.id);
+    const missing = missingIds.map((id) => (outOfStock.has(id) ? tr('outOfStockAt', { x: short(nameOf(id)) }) : short(nameOf(id))));
     const swaps = Object.values(sl).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName));
     return { missing, swaps };
+  };
+  // "Out of stock at your branch" is a decision the family makes here, in Kaniti, not at the store's
+  // till: the line, what we put in its place (the compare already priced it), and a way to change it.
+  const outOfStockRows = (o: PurchaseOption | undefined) => {
+    if (!o) return [];
+    const rows: { lineId: string; asked: string; instead: string | null; sid: string }[] = [];
+    for (const leg of o.legs) {
+      for (const lineId of q.branchStock?.[leg.storefrontId]?.lineIds ?? []) {
+        if (!leg.lineIds.includes(lineId) && !o.unpricedLineIds.includes(lineId)) continue;
+        const sl = q.storefrontLines?.[leg.storefrontId]?.[lineId];
+        rows.push({ lineId, asked: nameOf(lineId), instead: sl?.substituted ? sl.productName : null, sid: leg.storefrontId });
+      }
+    }
+    return rows;
   };
   const noneAnywhere = q.lines.filter((l) => !Object.values(q.storefrontLines ?? {}).some((m) => m[l.id]));
   // A coupon is already inside a one-store option's cash (its delivered total is net of it); the price says so
@@ -254,6 +277,17 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               <Text style={[s.small, { color: t.accent, marginTop: 2 }]}>{why}</Text>
               {ex.missing.length ? <Text style={[s.small, { color: t.red, marginTop: 6 }]}>{tr('unavailable', { x: ex.missing.join(', ') })}{answer.missingEstimate ? ` · ${tr('toComplete', { x: money(answer.missingEstimate) })}` : ''}</Text> : null}
               {ex.swaps.length ? <Text style={[s.small, { color: t.amber, marginTop: 4 }]}>{tr('swapsLine', { x: ex.swaps.join(' · ') })}</Text> : null}
+              {/* Out of stock at the family's branch: said here, with the alternative, before anyone shops. */}
+              {outOfStockRows(answer).map((r) => (
+                <View key={`oos-${r.lineId}`} style={{ marginTop: 8, backgroundColor: t.amberSoft, borderRadius: 10, padding: 10 }} testID={`oos-${r.lineId}`}>
+                  <Text style={[s.small, { color: t.amber }]}>{tr('oosTitle', { x: r.asked })}</Text>
+                  <Text style={[s.body, { marginTop: 2 }]} numberOfLines={2}>{r.instead ? tr('oosInstead', { y: r.instead }) : tr('oosNone')}</Text>
+                  <View style={[s.rowStart, { gap: 14, marginTop: 6 }]}>
+                    <Pressable onPress={(e) => { e.stopPropagation?.(); setFixing(r.asked); }} hitSlop={8}><Text style={[s.small, { color: t.accent }]}>{tr('oosPickOther')}</Text></Pressable>
+                    <Pressable onPress={(e) => { e.stopPropagation?.(); removeLine(r.lineId); setQ(null); api.quote(household.id, lines.filter((l) => l.id !== r.lineId).map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch(() => null); }} hitSlop={8}><Text style={[s.small, { color: t.red }]}>{tr('oosDrop')}</Text></Pressable>
+                  </View>
+                </View>
+              ))}
               <Text style={[s.small, { marginTop: 8 }]}>{legsOpen ? '▾' : '▸'} {answer.legs.map((l) => tr('legsLine', { n: l.lineIds.length, b: l.brand })).join(' · ')}</Text>
               {legsOpen ? answer.legs.map((leg) => (
                 <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>

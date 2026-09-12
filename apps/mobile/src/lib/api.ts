@@ -24,6 +24,8 @@ export interface DriveBranch {
 
 export interface QuoteResult {
   currency?: string;
+  /** Lines a store's own branch for this family does not stock: the compare says so, before anyone shops. */
+  branchStock?: Record<string, { branch: number; lineIds: string[] }>;
   /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
   etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
@@ -121,7 +123,24 @@ export class Api {
   memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
   invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
   acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);
-  quote = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<QuoteResult>('POST', `/households/${hid}/quote`, { lines });
+  /**
+   * The compare runs as a job in the API: start it, then collect it when it is done. The family
+   * never waits on a gateway clock and never sees a timeout; a slow store is the job's problem
+   * (it retries). A poll that fails on the network is tried again; only the job's own failure ends it.
+   */
+  quote = async (hid: string, lines: Omit<ListLine, 'id'>[]): Promise<QuoteResult> => {
+    type Job = { id: string; status: 'pending' | 'done' | 'failed'; result?: QuoteResult; error?: string };
+    const started = await this.#call<Job>('POST', `/households/${hid}/compares`, { lines });
+    if (started.status === 'done' && started.result) return started.result;
+    let misses = 0;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 2000));
+      let job: Job;
+      try { job = await this.#call<Job>('GET', `/households/${hid}/compares/${started.id}`); misses = 0; } catch (e) { if (++misses >= 15 || (e instanceof Error && e.message === 'signed out')) throw e; continue; }
+      if (job.status === 'done' && job.result) return job.result;
+      if (job.status === 'failed') throw new Error(job.error ?? 'compare failed');
+    }
+  };
   resolve = (hid: string, lines: Omit<ListLine, 'id'>[]) =>
     this.#call<{ choices: Record<string, ProductChoice | null>; fromMemory: string[] }>('POST', `/households/${hid}/resolve`, { lines });
   suggest = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<{ suggestions: Suggestion[] }>('POST', `/households/${hid}/suggest`, { lines });
