@@ -17,7 +17,7 @@ for (const [label, js] of [['GUARD_JS', `(()=>{return (${GUARD_JS});})`], ['guar
 }
 for (const id of Object.keys(STORES)) {
   const st = STORES[id];
-  for (const [label, js] of [['cartJs', st.cartJs?.(sample)], ['openLoginJs', st.openLoginJs], ['prefillEmailJs', st.prefillEmailJs?.('a@b.c')], ['forgotJs', st.forgotJs], ['historyJs', st.historyJs], ['signedInCheck', st.signedInCheck && `(async()=>{return (${st.signedInCheck});})`], ['signedInPollJs', signedInPollJs(st)], ['captureSessionJs', captureSessionJs(st)], ['guarded openLoginJs', st.openLoginJs && guardedJs(st.openLoginJs)]]) {
+  for (const [label, js] of [['cartJs', st.cartJs?.(sample)], ['openLoginJs', st.openLoginJs], ['prefillEmailJs', st.prefillEmailJs?.('a@b.c')], ['forgotJs', st.forgotJs], ['historyJs', st.historyJs], ['basketCountJs', st.basketCountJs], ['signedInCheck', st.signedInCheck && `(async()=>{return (${st.signedInCheck});})`], ['signedInPollJs', signedInPollJs(st)], ['captureSessionJs', captureSessionJs(st)], ['guarded openLoginJs', st.openLoginJs && guardedJs(st.openLoginJs)]]) {
     if (!js) continue;
     try { new Function(js); } catch (e) { bad++; console.log(`${id}.${label}: ${String(e).slice(0, 90)}`); }
   }

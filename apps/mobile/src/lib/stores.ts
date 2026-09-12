@@ -383,6 +383,9 @@ export const HAZI_HINAM: Platform = {
     const lines=(Array.isArray(items)?items:[]).map(x=>({name:String(x.Name||x.ItemName||x.name||'').slice(0,80),code:String(x.Barcode||x.Barkod||x.barcode||''),qty:Number(x.Quantity||x.Qty||x.quantity||1)||1})).filter(l=>l.name);
     const at=String(o.Date||o.CreatedDate||o.OrderDate||o.date||'').slice(0,10);if(lines.length)out.push({at,lines,id:String(id||''),total:Number(o.Total||o.TotalPrice||0)||undefined});}
   D.orders=out.length;window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:out,diag:D}));}catch(e){window.ReactNativeWebView.postMessage('history:'+JSON.stringify({orders:[],diag:{error:String(e)}}));}})();true;`,
+  // The store's own count: the header cart button's aria-label ("העגלה שלי, יש לך N מוצרים בעגלה"),
+  // present guest or signed in (confirmed in a lab, 2026-09-12) - the same badge the person sees.
+  basketCountJs: `(()=>{try{const b=document.querySelector('#header-my-quick-cart-button');const al=(b&&b.getAttribute('aria-label'))||'';const m=/\\s(\\d+)\\s*מוצרים/.exec(al);if(m){window.ReactNativeWebView.postMessage('basket:'+m[1]);return;}const t=(document.querySelector('.cart-items')||{}).textContent||'';const n=(t.match(/\\d+/)||[])[0];window.ReactNativeWebView.postMessage('basket:'+(n!=null?n:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
   // Their "e-mail / ID" box is a plain text field above the password.
   prefillEmailJs: (email) => setInput('#userName,input[type="email"],input[name*="mail" i],input[name*="user" i],form input[type="text"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a,button')].find(x=>/שכחתי/.test(x.textContent||''));if(a)a.click();})();true;`,
