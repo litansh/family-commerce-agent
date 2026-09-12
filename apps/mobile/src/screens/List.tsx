@@ -32,6 +32,9 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const mode = useMode();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[] | null>(null);
+  // "We could not ask the stores" is not "the stores do not have it". A family told the second when
+  // the first is true stops trusting the list: they think Kaniti does not know what tofu is.
+  const [searchFailed, setSearchFailed] = useState(false);
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [memory, setMemory] = useState<HouseholdMemory | null>(null);
@@ -60,13 +63,13 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     const h = setTimeout(() => {
       api.search(household.id, q).then(async (r) => {
         if (mine !== seq.current) return;
-        setHits(r.products); setSearching(false);
+        setHits(r.products); setSearchFailed(false); setSearching(false);
         const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
         const unnamed = r.products.filter((h) => !h.imageUrl && !h.gtin).map((h) => h.name);
         if (missing.length === 0 && unnamed.length === 0) return;
         const im = await api.images(household.id, missing, unnamed).catch(() => null);
         if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; }));
-      }).catch(() => { if (mine === seq.current) { setHits([]); setSearching(false); } });
+      }).catch(() => { if (mine === seq.current) { setHits([]); setSearchFailed(true); setSearching(false); } });
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);
@@ -182,7 +185,12 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                 </View>
               </Pressable>
             ))}
-            {hits && hits.length === 0 ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('noResults')}</Text> : null}
+            {hits && hits.length === 0 && searchFailed ? (
+              <View style={{ paddingVertical: 10, gap: 8 }}>
+                <Text style={[s.small, { color: t.amber }]}>{tr('searchFailed')}</Text>
+                <Pressable onPress={() => { setSearchFailed(false); setQuery((q) => q + ' '); setTimeout(() => setQuery((q) => q.trimEnd()), 50); }} hitSlop={8}><Text style={s.link}>{tr('tryAgain')}</Text></Pressable>
+              </View>
+            ) : hits && hits.length === 0 ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('noResults')}</Text> : null}
             <Pressable onPress={addTyped} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }}><Text style={s.link}>{tr('addAsTyped', { q: query.trim() })}</Text></Pressable>
           </View>
         ) : null}
