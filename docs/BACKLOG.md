@@ -4,6 +4,20 @@ The orchestrator's worklist. Each line names the promise it serves (docs/WHAT-WE
 the agent that owns it, and its state. An agent picks a line, reproduces the gap in a lab,
 fixes it, proves it, and opens a pull request that names the line. Done lines stay, struck.
 
+## Reported by the owner, 13 September 2026 — the orchestrator's directive
+Everything below was seen by the owner using the app on a real phone, or measured against the
+provider from the ops Mac the same night. Each line names the agent that owns it. These come before
+anything else in this file: they are what a family meets.
+
+- [ ] **The provider fails on everyday items.** Measured: `search_products('טופו')` → `internal_error` after 20.7 s; `('שוקולד')` → 29.4 s; `('חלב')` → 4.8 s; a 3-line quote → 3.1 s. In production: `lines resolve to products 0/39`, the 39-line basket → HTTP 503 after 59 s. Build the ladder (ADR 0010): bounded retry on transient errors, the chains' own catalogues as the second rung (Rami Levy answers a name search in under 200 ms with barcode, name, brand, size, image and `available_in`), a per-line budget so one slow line never sinks a basket. *api-fixer*
+- [ ] **A daily `search` check**: everyday Hebrew items (טופו, שוקולד, חלב, לחם, ביצים, קוטג', סלמון, בננות) must resolve, red when any does not. *api-fixer, then product-qa owns the watching*
+- [ ] **Pictures for every line, proven daily**: a check that a household's usual list has a real photograph on every line, not the drawn glyph; extend the sources per chain (stor.ai and Shufersal by barcode) until it passes. *api-fixer + product-qa*
+- [ ] **Branch stock for every chain, not only Rami Levy**: an item the family's branch does not carry is missing in the compare. stor.ai exposes per-branch availability; Hatzi Hinam and Wolt venues too. *store-recipe-fixer*
+- [ ] **The store's basket count for every cart recipe** (`basketCountJs`): what Kaniti says is added must equal what the store holds, per store. *store-recipe-fixer*
+- [ ] **Simulator flows for the new list and compare**: a tap opens the item sheet, a swipe deletes, undo restores, and the compare's out-of-stock block appears with its alternative. *sim-flow-fixer*
+- [ ] **מבצעים from the chains' own promotion files** as a second rung when the provider's feed is thin or one-sided. *price-portal-fixer*
+- [ ] **The compare must be accurate and beautiful** ("איך לקנות must be accurately amazing"): every number named, every swap named, every store's own product shown, nothing that needs a second screen to understand. *app-designer*
+
 ## Connect and stay connected (promises 5, 8)
 - [ ] **Cloud copy of every store session.** The phone captures the store's cookies/tokens after sign-in and posts them; the log now shows what was captured (`store-session` events). No household has a sealed session yet — find out why the capture posts nothing for Rami Levy and fix it. *store-recipe-fixer*
 - [ ] **Session restore from the cloud.** When the phone's WebView lost a store session (reinstall, new phone) but the cloud has one, put the cookies and tokens back before asking anyone. *store-recipe-fixer + api-fixer*
