@@ -10,6 +10,7 @@ import { isRTL, money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
 import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
+import { productAt } from '../lib/quote';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
 import { OrderOnDevice } from './OrderOnDevice';
@@ -26,9 +27,9 @@ function cartLinesFor(leg: PurchaseOption['legs'][number], quote: QuoteResult): 
     const l = quote.lines.find((x) => x.id === id);
     if (!l) return [];
     // This store's own product and link for the line; the winner's resolution only as a fallback.
-    const sl = quote.storefrontLines?.[leg.storefrontId]?.[id]; const ql = quote.quotedLines[id];
-    const gtin = sl?.gtin ?? ql?.gtin ?? l.gtin; const link = sl?.link ?? (sl ? undefined : ql?.link);
-    return [{ ...(gtin ? { gtin } : {}), name: sl?.productName ?? ql?.productName ?? l.query, qty: Math.max(1, Math.round(l.packQty ?? 1)), ...(link ? { link } : {}) }];
+    const p = productAt(quote, leg.storefrontId, id);
+    const gtin = p.gtin ?? l.gtin;
+    return [{ ...(gtin ? { gtin } : {}), name: p.productName ?? l.query, qty: Math.max(1, Math.round(l.packQty ?? 1)), ...(p.link ? { link: p.link } : {}) }];
   });
 }
 
@@ -46,6 +47,37 @@ type Row = { key: string; title: string; when: string | null; price: number; pri
 type StoreLines = NonNullable<QuoteResult['storefrontLines']>[string];
 /** Long product names, one line's worth. */
 const short = (x: string) => (x.length > 28 ? x.slice(0, 27) + '…' : x);
+
+/**
+ * What a store actually priced, line by line (docs/design/item-identity.md): the family's own words
+ * first, then the product that store put behind them. A line asked as "כל מותג" resolves to a
+ * different product in every store — a 2 ℓ bottle here, a 1 ℓ bag there — and two totals are only
+ * comparable when the screen says which. The family's words stay in ink so the list is still their
+ * list; the store's product is the quiet half.
+ */
+function StoreLineList({ lines, storeLines, ids }: { lines: QuoteResult['lines']; storeLines: StoreLines; ids?: readonly string[] }) {
+  const s = S();
+  const shown = ids ? lines.filter((l) => ids.includes(l.id)) : lines;
+  return (
+    <>
+      {shown.map((l) => {
+        const x = storeLines[l.id];
+        if (!x) return (
+          <Text key={l.id} style={[s.small, { color: t.red, paddingVertical: 3 }]} numberOfLines={1}>{l.query} — {tr('missingHere')}</Text>
+        );
+        // A swap the store or Kaniti made is already a sentence with an arrow; it keeps its colour.
+        const swapped = x.substituted;
+        const said = swapped && x.reason && x.reason.includes('→') ? x.reason : x.productName;
+        return (
+          <Text key={l.id} style={[s.small, { paddingVertical: 3 }]} numberOfLines={2}>
+            <Text style={{ color: t.ink }}>{l.query}</Text>
+            <Text style={{ color: swapped ? t.amber : t.muted }}>{'  ·  '}{said}</Text>
+          </Text>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * The price column of a row: the number with its note wrapping under it. Bounded so the name column
@@ -90,11 +122,7 @@ function StoreRow({ row, highlight, open, onToggle, lines, storeLines, onBuy }: 
       </View>
       {open ? (
         <View style={{ marginTop: 8 }} testID={`row-${row.sid}-open`}>
-          {lines.map((l) => { const x = storeLines[l.id]; return (
-            <View key={l.id} style={[s.row, { paddingVertical: 3 }]}>
-              <Text style={[s.small, { flex: 1, color: x ? t.ink : t.red }]} numberOfLines={1}>{x ? (x.substituted ? (x.reason && x.reason.includes('→') ? x.reason : `${l.query} → ${x.productName}`) : x.productName) : `${l.query} — ${tr('missingHere')}`}</Text>
-            </View>
-          ); })}
+          <StoreLineList lines={lines} storeLines={storeLines} />
           <View style={{ marginTop: 8 }}><Button title={tr('buyHere')} kind="secondary" onPress={onBuy} testID={`buy-${row.sid}`} /></View>
         </View>
       ) : null}
@@ -289,10 +317,18 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                 </View>
               ))}
               <Text style={[s.small, { marginTop: 8 }]}>{legsOpen ? '▾' : '▸'} {answer.legs.map((l) => tr('legsLine', { n: l.lineIds.length, b: l.brand })).join(' · ')}</Text>
+              {/* Unfolded, the winner explains itself like every other store: each leg's money, then the
+                  products that leg priced. Without this a split is two brands and one number, and the
+                  family cannot see that one store's "חלב 3%" is a 2 ℓ bottle and the other's a 1 ℓ bag. */}
               {legsOpen ? answer.legs.map((leg) => (
-                <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>
-                  <Text style={s.small}>{leg.brand}</Text>
-                  <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
+                <View key={leg.storefrontId} style={{ marginTop: 4 }}>
+                  <View style={[s.row, { paddingVertical: 3 }]}>
+                    <Text style={s.small}>{leg.brand}</Text>
+                    <Text style={s.priceSmall}>{money(leg.itemsSubtotal)} + {money(leg.deliveryFee)} {tr('delivery')}</Text>
+                  </View>
+                  <View style={{ paddingHorizontal: 8 }} testID={`answer-lines-${leg.storefrontId}`}>
+                    <StoreLineList lines={q.lines} storeLines={q.storefrontLines?.[leg.storefrontId] ?? {}} ids={leg.lineIds} />
+                  </View>
                 </View>
               )) : null}
               {legsOpen && answer.timeCost > 0 ? <View style={[s.row, { paddingVertical: 3 }]}><Text style={s.small}>{tr('timeSeparate')}</Text><Text style={s.priceSmall}>{money(answer.timeCost)}</Text></View> : null}
@@ -389,10 +425,13 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
   const lineOf = (id: string) => quote.lines.find((l) => l.id === id);
   const done = async () => {
     setBusy(true);
-    const bought = option.legs.flatMap((leg) => leg.lineIds).flatMap((id) => {
-      const l = lineOf(id); const ql = quote.quotedLines[id];
-      if (!l || !ql?.gtin) return [];
-      return [{ phrase: l.query, gtin: ql.gtin, productName: ql.productName, ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined && l.unit ? { amount: l.amount, unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }];
+    // What the memory learns is what this store sold them — the product the screen named and the
+    // cart added, not the winner's resolution. A memory of a product they never bought is worse
+    // than no memory: it comes back as "the usual" next week.
+    const bought = option.legs.flatMap((leg) => leg.lineIds.map((id) => ({ id, sid: leg.storefrontId }))).flatMap(({ id, sid }) => {
+      const l = lineOf(id); const { gtin, productName } = productAt(quote, sid, id);
+      if (!l || !gtin || !productName) return [];
+      return [{ phrase: l.query, gtin, productName, ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined && l.unit ? { amount: l.amount, unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }];
     });
     try { await api.recordShop(household.id, bought); onDone(); } finally { setBusy(false); }
   };
@@ -419,16 +458,25 @@ export function CheckoutScreen({ api, household, option, quote, onDone, onBack, 
             <View style={s.row}><Text style={s.title}>{leg.brand}</Text><Text style={s.price}>{money(leg.itemsSubtotal)}</Text></View>
             {leg.lineIds.map((id, i) => {
               const l = lineOf(id); const ql = quote.quotedLines[id];
+              // This store's own product, exactly as `cartLinesFor` will add it; the winner's
+              // resolution only as a fallback. Naming the other store's product here is a promise
+              // broken twice over: the basket fills with something else, and a split reads as one.
+              const p = productAt(quote, leg.storefrontId, id);
+              const name = p.productName ?? '';
+              const link = p.link;
               return (
-                <Pressable key={id} onPress={() => ql?.link && Linking.openURL(ql.link)} style={[s.row, { paddingVertical: 10, borderTopWidth: i === 0 ? 0 : 1, borderColor: t.line, marginTop: i === 0 ? 8 : 0 }]}>
+                <Pressable key={id} onPress={() => link && Linking.openURL(link)} style={[s.row, { paddingVertical: 10, borderTopWidth: i === 0 ? 0 : 1, borderColor: t.line, marginTop: i === 0 ? 8 : 0 }]}>
                   <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
-                    <ProductImage url={ql?.imageUrl} gtin={ql?.gtin} name={ql?.productName ?? l?.query ?? ''} size={44} />
+                    {/* The shared resolution's photo only when it is the same barcode; otherwise the
+                        barcode's own picture, and the aisle glyph when there is none. Never another
+                        product's photo next to this product's name. */}
+                    <ProductImage url={p.gtin && p.gtin === ql?.gtin ? ql?.imageUrl : null} gtin={p.gtin} name={name || l?.query || ''} size={44} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.body}>{l?.query}</Text>
-                      <Text style={s.small} numberOfLines={1}>{ql?.productName ?? ''}</Text>
+                      <Text style={s.small} numberOfLines={2} testID={`checkout-name-${id}`}>{name}</Text>
                     </View>
                   </View>
-                  {ql?.link ? <Text style={s.link}>{tr('open')}</Text> : null}
+                  {link ? <Text style={s.link}>{tr('open')}</Text> : null}
                 </Pressable>
               );
             })}

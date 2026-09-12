@@ -31,15 +31,17 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **Variants in the domain**: `variantKey` / `groupIntoVariants` (size + the category's defining attribute; brand kept aside), tested on real Israeli names. *api-fixer*
 - [ ] **Search answers variants**: brand count and price range per variant, the flat list behind "הצגת כל המוצרים". *api-fixer*
 - [ ] **Variant cards and the brand chip**: the add flow shows variants; every list line carries the choice chip; the brand sheet writes memory. *app-designer*
-- [ ] **The compare names the product per store** for "כל מותג" lines, so a split is legible. *app-designer*
+- [x] ~~**The compare names the product per store** for "כל מותג" lines, so a split is legible.~~ The answer card unfolds into each leg's own products, the checkout names what that leg's cart will add (it named the winner's before), `apps/mobile/e2e/split-naming.mjs` proves it on a live compare (PR #54).
+- [ ] **A per-store price per line in the quote** (`storefrontLines[sid][lineId].price`): the compare can name each store's product but not what that store charges for it, so `רמי לוי ₪6.20 (תנובה 1 ל')` from the design is still half a sentence. *api-fixer*
+- [ ] **Ordering through Kaniti uses the leg's own barcode**: `legsFor` in `apps/mobile/src/screens/Options.tsx` still sends `quotedLines`' gtin, i.e. the winner's product, to every leg — the same mix-up the screens just stopped making, one layer down. *api-fixer*
 
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
 - [x] The compare screen to the approved design; store rows open their own store (PR #13).
 - [ ] **Delivery windows on the compare** (the chains' slots next to Wolt's live minutes): needs a saved address at the chain, or Kaniti filling the chain's address form once. *store-recipe-fixer + app-designer*
 - [ ] **"Fast" measured for every store**: Wolt is live; the chains count as a window. Read each chain's next slot from the phone once connected. *store-recipe-fixer*
-- [ ] **Copy on the in-store rows**: with a saving note the longest branch names truncate; shorten `driveSaves`/`driveCosts`. *app-designer*
-- [ ] **Coupons folded into the price** with a small "כולל קופון", per the design. *app-designer*
+- [x] ~~**Copy on the in-store rows**: with a saving note the longest branch names truncate; shorten `driveSaves`/`driveCosts`.~~ The comparison is the row's last line, full width, and the branch title drops the price file's code and the duplicated brand (PR #53).
+- [x] ~~**Coupons folded into the price** with a small "כולל קופון", per the design.~~ `couponSavings` reached no screen at all before; it is small print under a one-store option's cash now (PR #53).
 
 ## In-store prices (promise 1)
 - [x] Six chains' price files, nearest branches, honest like-for-like comparison (ADR 0009, PRs #5, #9).
@@ -50,7 +52,7 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 ## The list and the memory (promises 6, 7)
 - [x] Pack sizes on every item (PR #7); purchase confirmation from store history; pending carts as the fallback.
 - [ ] **Automatic confirmation verified end to end** on a real order at Rami Levy. *product-qa*
-- [ ] **The home screen still shows "connect Shufersal at the home computer" with a CLI command** — a leftover from before ADR 0008; remove it, the phone is the product. *app-designer*
+- [x] ~~**The home screen still shows "connect Shufersal at the home computer" with a CLI command** — a leftover from before ADR 0008; remove it, the phone is the product.~~ Gone from Home and from the list, replaced by one line pointing at "אני", where connecting happens (PR #53).
 - [ ] **Suggestions after a few cycles**: prove with the shopper that the memory changes the compare (brand preference, forgotten items). *product-qa*
 
 ## Stores (promise 1)

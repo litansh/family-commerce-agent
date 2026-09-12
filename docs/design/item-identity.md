@@ -69,6 +69,25 @@ suggestion "תמיד קונים טרה. לקבע?" — the family answers once, 
   the comparison stays one-to-one and legible: `רמי לוי ₪6.20 (תנובה 1 ל')  ·  שופרסל ₪5.90 (טרה 1 ל')`.
   Different brands, same variant, and the screen says so. This is the case where splitting a cart
   actually pays, and the family can see why.
+
+  Where that is said, exactly — one rule, three places, all reading `src/lib/quote.ts#productAt`
+  (this store's product; the compare's shared resolution only when the store named none):
+
+  ```
+  ▾ 3 פריטים ברמי לוי · 2 בשופרסל          ← the answer card, unfolded
+
+    רמי לוי                    ₪72.60 + ₪35.90 משלוח
+      חלב 3%   ·  חלב יטבתה 3% מועשר בסידן — בקבוק 2 ליטר
+      ביצים L  ·  ביצים 30 יח׳ ארוזות M פיקוח
+    שופרסל                     ₪48.10 + ₪0 משלוח
+      לחם אחיד פרוס  ·  לחם אחיד פרוס אנג׳ל 900 גרם
+  ```
+
+  The family's words stay in ink and keep the list theirs; the store's product is the quiet half of
+  the line; a swap keeps its amber. Every other store row unfolds into the same list, so the winner
+  explains itself exactly as the stores it beat do — and the checkout screen names, per leg, the
+  product that leg's cart recipe will add, never the winner's. `e2e/split-naming.mjs` holds the line.
+  A per-store *price* per line would say it even better; the quote does not carry one yet.
 - **מותג מקובע** — the same barcode everywhere. A store that lacks it shows the swap in the open
   ("תנובה → טרה"), and the sheet offers "לא להחליף את הפריט הזה", which makes the store simply miss
   the line instead (promise 3 then keeps the store as a split leg).
