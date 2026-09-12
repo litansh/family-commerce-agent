@@ -63,7 +63,8 @@ cold path (the daily agents) meets it; the phone keeps working.
 Every claim about a store - connected, added to the cart, bought - is verified against the
 store's own state before it is shown, and the store's own number is shown next to ours. A
 difference is said out loud, never hidden; the family is never sent to act on a guess.
-- *Tell:* after a cart fills, the screen shows the store's basket count beside "added" and they
+- *Tell:* a line the family's branch does not carry is missing in the compare (never "out of stock"
+  at the store's checkout); after a cart fills, the screen shows the store's basket count beside "added" and they
   agree; the cart lab fails when the store's basket does not show the lines; a connect is "connected"
   only after the store's own signed-in check; a purchase is confirmed from the store's history.
 

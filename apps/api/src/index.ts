@@ -42,7 +42,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse } from '@fca/retailer-connectors';
+import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -406,6 +406,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // family's hand right now: it goes to the Kaniti Telegram channel as it is, so the fixer sees
       // the store's actual answer without anyone reading a log. Never blocks the response.
       void tellTelegram(String(body['retailer'] ?? ''), body['diag']);
+      const cartDiag = ((body['diag'] as { cart?: { diag?: { store?: unknown; branchFrom?: unknown } } } | undefined)?.cart?.diag) ?? {};
+      if (cartDiag.branchFrom === 'address' && typeof cartDiag.store === 'number' && household.branches?.[String(body['retailer'])] !== cartDiag.store) {
+        await households.update(hid, { branches: { ...(household.branches ?? {}), [String(body['retailer'])]: cartDiag.store } }).catch(() => null);
+      }
       const result = await importRawOrders(hid, catalog, raw);
       // Keep the store's own orders (last 30, newest first) so the Orders tab shows what
       // was really bought and the phone can confirm the cart it filled - no tap needed.
@@ -606,6 +610,19 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
           throw e;
         }
       }
+      // Branch stock: an item Rami Levy's branch for this family does not carry is "out of stock" at
+      // its checkout, which for a family equals "does not exist" - so it is missing there already here,
+      // and the substitutes and the other stores take over. Unknown stock drops nothing.
+      const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
+      if (rl.length) {
+        try {
+          const branch = household.branches?.['rami-levy'] ?? branchForCity(await ramiLevyStock.branches(), (household.addressDetails as { city?: string } | undefined)?.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
+          const av = await ramiLevyStock.availableIn(rl.flatMap((q) => q.lines.map((l) => l.gtin ?? '')), branch);
+          const droppedNames: string[] = [];
+          for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); } }
+          if (droppedNames.length) console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, dropped: droppedNames }));
+        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
+      }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
@@ -705,6 +722,7 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
 
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
 const lambda = new LambdaClient({});
+const ramiLevyStock = new RamiLevyStock();
 const COMPARE_TTL_S = 3600;
 
 /** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */

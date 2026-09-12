@@ -54,7 +54,8 @@ export interface StoreDef {
    * Ordering on the phone (ADR 0008 amendment): JS run inside the store's own
    * page, in the person's own session, that puts `lines` into the store's cart
    * through the store's own endpoints and posts
-   * `cart:{results:[{gtin,status:'added'|'missing'|'error',detail?}],cartUrl?}`.
+   * `cart:{results:[{gtin,status:'added'|'missing'|'unavailable'|'error',detail?}],cartUrl?}`
+   * ('unavailable': the store carries it, this branch does not - never added, said on screen).
    * The page then shows the store's cart/checkout for the one approval.
    */
   readonly cartJs?: (lines: readonly CartLine[]) => string;
@@ -214,12 +215,12 @@ export const RAMI_LEVY: Platform = {
   const shape={};const rows=(j)=>{if(!j)return[];const c=[j.data,j.items,j.products,j.data&&j.data.items,j.data&&j.data.data,j.results];for(const x of c)if(Array.isArray(x))return x;return[];};
   const tfetch=(u,o,ms)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||12000);return fetch(u,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t));};
   const lookup=async(body)=>{const r=await tfetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify(body)},12000);const j=await r.json().catch(()=>({}));shape.keys=j&&typeof j==='object'?Object.keys(j).slice(0,6):typeof j;const arr=rows(j);shape.rows=arr.length;return arr;};
-  const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(bc&&id!=null&&!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
+  const unavailable={};const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(!bc||id==null)continue;if(Array.isArray(it.available_in)&&!it.available_in.includes(+store)){unavailable[bc]=it.name||it.Name||'';continue;}if(!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
   if(codes.length){take(await lookup({store,items:codes.join(','),itemsBy:'barcode',size:codes.length}));
   // Not in this branch? try without a branch, then one by one.
   const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
   // Still missing: the store's own text search by the product name, first hit that carries a barcode.
-  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const toks=String(l.name).split(/\\s+/).filter(t=>t.length>=3);const hit=arr.find(it=>it&&(it.id||it.C)&&toks.some(t=>String(it.name||it.Name||'').includes(t)));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
+  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const toks=String(l.name).split(/\\s+/).filter(t=>t.length>=3);const hit=arr.find(it=>it&&(it.id||it.C)&&(!Array.isArray(it.available_in)||it.available_in.includes(+store))&&toks.some(t=>String(it.name||it.Name||'').includes(t)));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
   // Delivery windows, read-only: what the site's own two calls answer for this address
   // (shapes go to the log so the slot picker can be built on real answers).
   try{const u=(st&&st.getters&&st.getters['authuser/loggedInUser'])||null;const addrs=(u&&Array.isArray(u.addresses))?u.addresses:[];const a=addrs[0]||null;
@@ -237,7 +238,7 @@ export const RAMI_LEVY: Platform = {
   // default branch. Say so and let the screen hand over to the store's own pages.
   for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
   window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
-  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
+  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else if(l.gtin&&unavailable[l.gtin]!==undefined)out.push({gtin:l.gtin,status:'unavailable',detail:unavailable[l.gtin]||l.name});else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   // The site's own helper (collect.js pluck('Quantity','C')) builds items as a MAP {itemId: quantity}.
   // Captured from the site itself (e2e/rl-cart-capture.mjs): quantities are strings with two
   // decimals and supplyAt is the current time as an ISO timestamp - null makes the backend hang.

@@ -36,7 +36,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
 
   type Phase = 'loading' | 'filling' | 'signin' | 'cart' | 'links';
   const [phase, setPhase] = useState<Phase>('loading');
-  const [results, setResults] = useState<Record<string, 'added' | 'missing' | 'error'>>({});
+  const [results, setResults] = useState<Record<string, 'added' | 'missing' | 'unavailable' | 'error'>>({});
   const [diag, setDiag] = useState<string | null>(null);
   const [linkIdx, setLinkIdx] = useState(0);
   const ran = useRef(false);
@@ -45,7 +45,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   if (!store) return null;
   const hasRecipe = !!store.cartJs;
   const added = lines.filter((l) => l.gtin && results[l.gtin] === 'added');
-  const count = (st: 'added' | 'missing' | 'error') => Object.values(results).filter((v) => v === st).length;
+  const count = (st: 'added' | 'missing' | 'unavailable' | 'error') => Object.values(results).filter((v) => v === st).length;
 
   // Deep-link mode: one line at a time, in the same WebView.
   // Every line gets a page at this store: its deep link when the quote has one, else the
@@ -113,8 +113,8 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
     if (!d.startsWith('cart:')) return;
     if (watchdog.current) { clearTimeout(watchdog.current); watchdog.current = null; }
     try {
-      const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'error' }[]; cartUrl?: string; diag?: unknown };
-      const r: Record<string, 'added' | 'missing' | 'error'> = {};
+      const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'unavailable' | 'error' }[]; cartUrl?: string; diag?: unknown };
+      const r: Record<string, 'added' | 'missing' | 'unavailable' | 'error'> = {};
       for (const x of j.results ?? []) if (x.gtin) r[x.gtin] = x.status;
       setResults(r);
       setDiag(j.diag ? JSON.stringify(j.diag) : null);
@@ -159,6 +159,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
             <View style={[s.rowStart, { gap: 8, flexWrap: 'wrap' }]}>
               <Chip text={tr('cartAdded', { n: count('added') })} tone="good" />
               {count('missing') > 0 ? <Chip text={tr('cartMissing', { n: count('missing') })} tone="warn" /> : null}
+              {count('unavailable') > 0 ? <Chip text={tr('cartUnavailable', { n: count('unavailable') })} tone="warn" /> : null}
               {count('error') > 0 ? <Chip text={tr('cartError', { n: count('error') })} tone="bad" /> : null}
               {storeCount !== null && phase === 'cart' ? <Chip text={tr('storeBasket', { s: store.name, n: storeCount })} tone={storeCount >= count('added') ? 'good' : 'bad'} /> : null}
               {phase === 'filling' ? <Text style={[s.small, { color: t.accent }]}>{tr('cartWorking')}</Text> : null}
