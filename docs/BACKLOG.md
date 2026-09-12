@@ -12,6 +12,26 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **Cart recipes for stor.ai (Victory, Carrefour, Keshet, Mahsanei HaShuk, Tiv Taam) and Wolt** — today per-item deep links; the family taps "add" per item. Native carts need a test account per chain (the owner allowed creating fictive accounts). *store-recipe-fixer*
 - [ ] **Hatzi Hinam cart recipe** written, unverified. *store-recipe-fixer*
 
+## Store truth (promise 9)
+- [x] Rami Levy: only a verified cart counts as added; the store's basket count shown beside ours; a mismatch reaches the channel (PRs #36, this one).
+- [x] Rami Levy: branch stock (`available_in`) checked in the compare before a line is offered, and again in the cart recipe; the store-chosen branch kept on the household from the phone's report.
+- [ ] **Branch stock for the other chains** (stor.ai exposes per-branch availability; Hatzi Hinam, Wolt venues): an item the family's branch does not carry is missing in the compare, not a surprise at checkout. *store-recipe-fixer + api-fixer*
+- [ ] **Basket count for every store with a cart recipe** (Hatzi Hinam, the stor.ai chains once their recipes exist, Wolt): a `basketCountJs` per store, read on the cart page. *store-recipe-fixer*
+- [ ] **Per-item flow verified too**: when the family adds item by item on the store's pages, read the store's count after each and show it. *store-recipe-fixer + app-designer*
+- [ ] **product-qa checks promise 9 daily**: every claim in the shopper and the cart lab is matched against the store's own state; a mismatch is a red check. *product-qa*
+
+## Ladders (ADR 0010, promise 8)
+- [ ] **History from the DOM**: for every store, a second rung that reads the orders page itself when the orders API changes. *store-recipe-fixer*
+- [ ] **Cart rungs for stor.ai, Wolt, Hatzi Hinam**: a native rung above the per-item pages (needs the fictive accounts the owner allowed). *store-recipe-fixer*
+- [ ] **The store's own catalogue as a second price source** in the compare when the provider lacks a store or is slow (Rami Levy first, its catalogue already answers the API). *api-fixer*
+- [ ] **product-qa: two working rungs per ladder**, checked daily in the labs; one rung left is a red check. *product-qa*
+
+## Choosing an item (promises 1, 4, 7) — design: docs/design/item-identity.md
+- [ ] **Variants in the domain**: `variantKey` / `groupIntoVariants` (size + the category's defining attribute; brand kept aside), tested on real Israeli names. *api-fixer*
+- [ ] **Search answers variants**: brand count and price range per variant, the flat list behind "הצגת כל המוצרים". *api-fixer*
+- [ ] **Variant cards and the brand chip**: the add flow shows variants; every list line carries the choice chip; the brand sheet writes memory. *app-designer*
+- [ ] **The compare names the product per store** for "כל מותג" lines, so a split is legible. *app-designer*
+
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
 - [x] The compare screen to the approved design; store rows open their own store (PR #13).

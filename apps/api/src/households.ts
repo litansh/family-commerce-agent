@@ -27,6 +27,8 @@ export interface Household {
   readonly fulfillment?: 'delivery' | 'pickup' | 'either';
   /** Apartment, floor, entrance, notes — what the courier needs beyond the street. */
   readonly addressDetails?: Record<string, unknown>;
+  /** The store-chosen branch per store, as the phone reported it from the store's own address mapping (rami-levy → online branch id). */
+  readonly branches?: Record<string, number>;
   /** UI language the family chose; the country stays IL for now. */
   readonly language?: string;
   readonly createdBy: string;
@@ -86,7 +88,7 @@ export class HouseholdStore {
     return h;
   }
 
-  async update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment' | 'addressDetails' | 'language'>>): Promise<Household> {
+  async update(id: string, patch: Partial<Pick<Household, 'name' | 'address' | 'retailers' | 'fulfillment' | 'addressDetails' | 'language' | 'branches'>>): Promise<Household> {
     const names: Record<string, string> = {}; const values: Record<string, unknown> = {}; const sets: string[] = [];
     for (const [k, v] of Object.entries(patch)) { if (v === undefined) continue; names[`#${k}`] = k; values[`:${k}`] = v; sets.push(`#${k} = :${k}`); }
     if (sets.length > 0) await this.#doc.send(new UpdateCommand({ TableName: this.#table, Key: { PK: `HOUSEHOLD#${id}`, SK: 'META' }, UpdateExpression: `SET ${sets.join(', ')}`, ExpressionAttributeNames: names, ExpressionAttributeValues: values }));

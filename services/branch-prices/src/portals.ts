@@ -6,9 +6,11 @@
  *               Rami Levy, Keshet Teamim, Tiv Taam, Osher Ad, Yohananof
  *   hazi-hinam  a static page of blob links (no Stores file: branches come from elsewhere)
  *   carrefour   a page that embeds the day's file list as JSON
+ *   laib        laibcatalog.co.il (Victory, Mahsanei HaShuk, H. Cohen): the ASP.NET form on
+ *               its front page lists only H. Cohen's Stores file, but the page's newer UI
+ *               (/mshuk/index.html) calls a JSON API that has every file of every chain
  *
- * Victory / Mahsanei HaShuk (laibcatalog.co.il, an ASP.NET postback form) are not
- * read yet. Everything here is a plain fetch: no browser, no account of ours.
+ * Everything here is a plain fetch: no browser, no account of ours.
  */
 import { decodeXml, parseStores, sameStoreId, type Branch } from './xml.ts';
 
@@ -27,6 +29,8 @@ export interface Portal {
   stores(): Promise<Branch[]>;
   /** The latest full price file for one branch. */
   priceFile(storeId: string): Promise<PriceFileRef | undefined>;
+  /** The latest full promotions file for one branch (club prices, multi-buys); undefined if the chain publishes none. */
+  promoFile(storeId: string): Promise<PriceFileRef | undefined>;
   download(ref: PriceFileRef): Promise<Buffer>;
 }
 
@@ -64,6 +68,11 @@ export function shufersalPortal(fetchImpl: typeof fetch = fetch): Portal {
     async priceFile(storeId) {
       const html = (await getBytes(`${base}?catID=2&storeId=${Number(storeId)}`, fetchImpl, {}, 120_000)).toString('utf8');
       const refs = links(html).filter((u) => /\/PriceFull\d+/.test(u)).map((url) => ({ chain: 'shufersal', storeId, url, name: /\/(PriceFull[^?]+)/.exec(url)?.[1] ?? url }));
+      return newest(refs);
+    },
+    async promoFile(storeId) {
+      const html = (await getBytes(`${base}?catID=4&storeId=${Number(storeId)}`, fetchImpl, {}, 120_000)).toString('utf8');
+      const refs = links(html).filter((u) => /\/PromoFull\d+/.test(u)).map((url) => ({ chain: 'shufersal', storeId, url, name: /\/(PromoFull[^?]+)/.exec(url)?.[1] ?? url }));
       return newest(refs);
     },
     download: (ref) => getBytes(ref.url, fetchImpl),
@@ -142,6 +151,11 @@ export function cerberusPortal(chain: string, fetchImpl: typeof fetch = fetch): 
       const pick = newest(files.map((name) => ({ name })));
       return pick ? { chain, storeId, name: pick.name, url: `https://url.publishedprices.co.il/file/d/${pick.name}` } : undefined;
     },
+    async promoFile(storeId) {
+      const files = (await session.dir('PromoFull')).map((f) => f.fname).filter((n) => { const s = storeIdOf(n); return !!s && sameStoreId(s, storeId); });
+      const pick = newest(files.map((name) => ({ name })));
+      return pick ? { chain, storeId, name: pick.name, url: `https://url.publishedprices.co.il/file/d/${pick.name}` } : undefined;
+    },
     download: (ref) => session.file(ref.name),
   };
 }
@@ -193,6 +207,11 @@ export function haziHinamPortal(fetchImpl: typeof fetch = fetch): Portal {
       const refs = [...html.matchAll(/href="(https:\/\/[^"]+\/(PriceFull[^"/]+\.gz))"/g)].map((m) => ({ chain: 'hazi-hinam', storeId, url: m[1]!, name: m[2]! })).filter((r) => { const s = storeIdOf(r.name); return !!s && sameStoreId(s, storeId); });
       return newest(refs);
     },
+    async promoFile(storeId) {
+      const html = await page();
+      const refs = [...html.matchAll(/href="(https:\/\/[^"]+\/(PromoFull[^"/]+\.gz))"/g)].map((m) => ({ chain: 'hazi-hinam', storeId, url: m[1]!, name: m[2]! })).filter((r) => { const s = storeIdOf(r.name); return !!s && sameStoreId(s, storeId); });
+      return newest(refs);
+    },
     download: (ref) => getBytes(ref.url, fetchImpl),
   };
 }
@@ -223,6 +242,67 @@ export function carrefourPortal(fetchImpl: typeof fetch = fetch): Portal {
       const refs = files.filter((x) => /^PriceFull/.test(x.name) && (() => { const s = storeIdOf(x.name); return !!s && sameStoreId(s, storeId); })()).map((x) => ({ chain: 'carrefour', storeId, name: x.name, url: `${base}/${path}/${x.name}` }));
       return newest(refs);
     },
+    async promoFile(storeId) {
+      const { path, files } = await page();
+      const refs = files.filter((x) => /^PromoFull/.test(x.name) && (() => { const s = storeIdOf(x.name); return !!s && sameStoreId(s, storeId); })()).map((x) => ({ chain: 'carrefour', storeId, name: x.name, url: `${base}/${path}/${x.name}` }));
+      return newest(refs);
+    },
+    download: (ref) => getBytes(ref.url, fetchImpl),
+  };
+}
+
+// --- laibcatalog (Victory, Mahsanei HaShuk, H. Cohen) ------------------------
+
+export const LAIB_CHAINS: Record<string, { chainId: string; brand: string }> = {
+  'victory': { chainId: '7290696200003', brand: 'ויקטורי' },
+  'mahsanei-hashuk': { chainId: '7290661400001', brand: 'מחסני השוק' },
+  'h-cohen': { chainId: '7290455000004', brand: 'ח. כהן' },
+};
+
+export interface LaibFile { readonly branch: string; readonly name: string; readonly type: string; readonly date: string }
+
+/**
+ * `GET /webapi/api/getfiles?edi=<chainId>` → `[{ branchNumber, fileName, fileType, fileDate, fileSize }]`.
+ * `fileType` is one of price, pricefull, promo, promofull, stores (lower case); the Stores file is branch 0.
+ */
+export function parseLaibFiles(json: string): LaibFile[] {
+  let data: unknown;
+  try { data = JSON.parse(json); } catch { return []; }
+  if (!Array.isArray(data)) return [];
+  return (data as { branchNumber?: number | string; fileName?: string; fileType?: string; fileDate?: string }[])
+    .filter((f) => typeof f.fileName === 'string' && f.fileName)
+    .map((f) => ({ branch: String(f.branchNumber ?? ''), name: f.fileName!, type: String(f.fileType ?? '').toLowerCase(), date: String(f.fileDate ?? '') }));
+}
+
+export function laibPortal(chain: string, fetchImpl: typeof fetch = fetch): Portal {
+  const meta = LAIB_CHAINS[chain];
+  if (!meta) throw new Error(`no laibcatalog chain for ${chain}`);
+  const base = 'https://laibcatalog.co.il';
+  // The listing is the whole chain (a few hundred entries); one fetch serves every branch of a refresh.
+  let listing: { at: number; files: LaibFile[] } | undefined;
+  const files = async (): Promise<LaibFile[]> => {
+    if (listing && Date.now() - listing.at < 10 * 60_000) return listing.files;
+    const raw = (await getBytes(`${base}/webapi/api/getfiles?edi=${meta.chainId}`, fetchImpl, { accept: 'application/json' })).toString('utf8');
+    listing = { at: Date.now(), files: parseLaibFiles(raw) };
+    return listing.files;
+  };
+  const url = (name: string) => `${base}/webapi/${meta.chainId}/${name}`;
+  return {
+    chain, brand: meta.brand,
+    async stores() {
+      const latest = newest((await files()).filter((f) => f.type === 'stores' || f.type === 'storesfull'));
+      return latest ? parseStores(decodeXml(await getBytes(url(latest.name), fetchImpl))) : [];
+    },
+    async priceFile(storeId) {
+      const refs = (await files()).filter((f) => f.type === 'pricefull' && (() => { const s = storeIdOf(f.name) ?? f.branch; return !!s && sameStoreId(s, storeId); })());
+      const pick = newest(refs);
+      return pick ? { chain, storeId, name: pick.name, url: url(pick.name) } : undefined;
+    },
+    async promoFile(storeId) {
+      const refs = (await files()).filter((f) => f.type === 'promofull' && (() => { const s = storeIdOf(f.name) ?? f.branch; return !!s && sameStoreId(s, storeId); })());
+      const pick = newest(refs);
+      return pick ? { chain, storeId, name: pick.name, url: url(pick.name) } : undefined;
+    },
     download: (ref) => getBytes(ref.url, fetchImpl),
   };
 }
@@ -234,5 +314,6 @@ export function allPortals(fetchImpl: typeof fetch = fetch): Portal[] {
     ...Object.keys(CERBERUS_CHAINS).map((c) => cerberusPortal(c, fetchImpl)),
     carrefourPortal(fetchImpl),
     haziHinamPortal(fetchImpl),
+    ...Object.keys(LAIB_CHAINS).map((c) => laibPortal(c, fetchImpl)),
   ];
 }

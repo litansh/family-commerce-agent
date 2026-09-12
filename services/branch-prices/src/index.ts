@@ -9,7 +9,7 @@
 import type { Agorot, QuotedLine, StorefrontQuote, TravelCost } from '@fca/domain';
 import { haversineKm, travelTo, type LatLng } from './geo.ts';
 import { sameCity, type SettlementNames } from './cbs.ts';
-import type { Branch, PriceIndex } from './xml.ts';
+import { bestDealTotal, type Branch, type PriceIndex, type PromoIndex } from './xml.ts';
 
 export * from './xml.ts';
 export * from './geo.ts';
@@ -48,14 +48,19 @@ export interface BranchQuote {
   readonly branch: NearbyBranch;
 }
 
-/** Price a list at one branch by barcode. Lines without a barcode, or absent from the branch, stay unpriced. */
-export function priceAtBranch(branch: NearbyBranch, index: PriceIndex, lines: readonly ListLineForPricing[], constants: { costPerKm: Agorot; parkingCost: Agorot }): BranchQuote {
+/**
+ * Price a list at one branch by barcode. Lines without a barcode, or absent from the branch, stay
+ * unpriced. `promos` (that branch's PromoFull, optional) lowers a line's total when a club price or
+ * multi-buy beats the regular price; `clubOnly` marks a deal the family may not be able to redeem.
+ */
+export function priceAtBranch(branch: NearbyBranch, index: PriceIndex, lines: readonly ListLineForPricing[], constants: { costPerKm: Agorot; parkingCost: Agorot }, promos?: PromoIndex): BranchQuote {
   const quoted: QuotedLine[] = [];
   for (const l of lines) {
     const hit = l.gtin ? index[l.gtin] : undefined;
     if (!hit) continue;
     const unit = hit[0] as Agorot;
-    quoted.push({ lineId: l.id, query: l.query, productName: hit[1], gtin: l.gtin!, qty: l.qty, unitPrice: unit, lineTotal: (unit * l.qty) as Agorot, substituted: false, clubOnly: false, resolutionSource: 'gtin' });
+    const { total, clubOnly } = bestDealTotal(l.gtin ? promos?.[l.gtin] : undefined, l.qty, unit);
+    quoted.push({ lineId: l.id, query: l.query, productName: hit[1], gtin: l.gtin!, qty: l.qty, unitPrice: unit, lineTotal: total as Agorot, substituted: false, clubOnly, resolutionSource: 'gtin' });
   }
   const subtotal = quoted.reduce((s, q) => s + q.lineTotal, 0) as Agorot;
   const quote: StorefrontQuote = {

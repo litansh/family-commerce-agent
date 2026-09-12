@@ -36,7 +36,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
 
   type Phase = 'loading' | 'filling' | 'signin' | 'cart' | 'links';
   const [phase, setPhase] = useState<Phase>('loading');
-  const [results, setResults] = useState<Record<string, 'added' | 'missing' | 'error'>>({});
+  const [results, setResults] = useState<Record<string, 'added' | 'missing' | 'unavailable' | 'error'>>({});
   const [diag, setDiag] = useState<string | null>(null);
   const [linkIdx, setLinkIdx] = useState(0);
   const ran = useRef(false);
@@ -45,7 +45,7 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   if (!store) return null;
   const hasRecipe = !!store.cartJs;
   const added = lines.filter((l) => l.gtin && results[l.gtin] === 'added');
-  const count = (st: 'added' | 'missing' | 'error') => Object.values(results).filter((v) => v === st).length;
+  const count = (st: 'added' | 'missing' | 'unavailable' | 'error') => Object.values(results).filter((v) => v === st).length;
 
   // Deep-link mode: one line at a time, in the same WebView.
   // Every line gets a page at this store: its deep link when the quote has one, else the
@@ -71,7 +71,10 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
       });
     }, 45000);
   };
+  // On the store's cart page: ask the store how many lines IT holds, twice (its state hydrates late).
+  const [storeCount, setStoreCount] = useState<number | null>(null);
   const onLoadEnd = () => {
+    if (phase === 'cart' && store.basketCountJs) { for (const ms of [1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
     if (!hasRecipe || ran.current) return;
     // Signed in already (a store the family connected)? fill now. Otherwise the
     // store's own login is on screen; we wait for the person to sign in, then fill.
@@ -98,11 +101,20 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
       }
       return;
     }
+    if (d.startsWith('basket:')) {
+      const n = Number(d.slice(7));
+      if (Number.isFinite(n)) {
+        setStoreCount(n);
+        // The store's count next to ours, in the log and (a mismatch) in the channel: no discrepancy goes unseen.
+        void api.importHistory(householdId, storeId, [], { build: BUILD, basket: { store: n, added: count('added') } }).catch(() => null);
+      }
+      return;
+    }
     if (!d.startsWith('cart:')) return;
     if (watchdog.current) { clearTimeout(watchdog.current); watchdog.current = null; }
     try {
-      const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'error' }[]; cartUrl?: string; diag?: unknown };
-      const r: Record<string, 'added' | 'missing' | 'error'> = {};
+      const j = JSON.parse(d.slice(5)) as { results?: { gtin?: string; status: 'added' | 'missing' | 'unavailable' | 'error' }[]; cartUrl?: string; diag?: unknown };
+      const r: Record<string, 'added' | 'missing' | 'unavailable' | 'error'> = {};
       for (const x of j.results ?? []) if (x.gtin) r[x.gtin] = x.status;
       setResults(r);
       setDiag(j.diag ? JSON.stringify(j.diag) : null);
@@ -147,9 +159,12 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
             <View style={[s.rowStart, { gap: 8, flexWrap: 'wrap' }]}>
               <Chip text={tr('cartAdded', { n: count('added') })} tone="good" />
               {count('missing') > 0 ? <Chip text={tr('cartMissing', { n: count('missing') })} tone="warn" /> : null}
+              {count('unavailable') > 0 ? <Chip text={tr('cartUnavailable', { n: count('unavailable') })} tone="warn" /> : null}
               {count('error') > 0 ? <Chip text={tr('cartError', { n: count('error') })} tone="bad" /> : null}
+              {storeCount !== null && phase === 'cart' ? <Chip text={tr('storeBasket', { s: store.name, n: storeCount })} tone={storeCount >= count('added') ? 'good' : 'bad'} /> : null}
               {phase === 'filling' ? <Text style={[s.small, { color: t.accent }]}>{tr('cartWorking')}</Text> : null}
             </View>
+            {storeCount !== null && phase === 'cart' && storeCount < count('added') ? <Text style={[s.small, { color: t.red, marginTop: 6 }]}>{tr('storeBasketMismatch', { s: store.name })}</Text> : null}
           </View>
         ) : null}
 

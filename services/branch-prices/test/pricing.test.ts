@@ -40,6 +40,21 @@ test('a list priced at a branch by barcode: hits priced, misses left for the cov
   assert.equal(q.quote.lines[0]!.lineId, 'a');
 });
 
+test('a promotion lowers the branch total: a "2 for" deal beats the regular price, a club deal is flagged, no deal leaves the regular price', () => {
+  const branch = { ...b('rami-levy', '1', 32.09, 34.78), distanceKm: 1.1 };
+  const index = { '7290004131074': [735, 'חלב 3%'] as [number, string], '7290000208114': [1090, 'אפונה'] as [number, string] };
+  const promos = { '7290004131074': [{ minQty: 2, dealPrice: 1390, clubOnly: false }], '7290000208114': [{ minQty: 1, dealPrice: 890, clubOnly: true }] };
+  const q = priceAtBranch(branch, index, [{ id: 'a', query: 'חלב', gtin: '7290004131074', qty: 2 }, { id: 'b', query: 'אפונה', gtin: '7290000208114', qty: 1 }], DEFAULT_CONSTANTS, promos);
+  assert.equal(q.quote.lines[0]!.lineTotal, 1390);
+  assert.equal(q.quote.lines[0]!.clubOnly, false);
+  assert.equal(q.quote.lines[1]!.lineTotal, 890);
+  assert.equal(q.quote.lines[1]!.clubOnly, true);
+  assert.equal(q.quote.itemsSubtotal, 1390 + 890);
+  const noPromo = priceAtBranch(branch, index, [{ id: 'a', query: 'חלב', gtin: '7290004131074', qty: 1 }], DEFAULT_CONSTANTS, promos);
+  assert.equal(noPromo.quote.lines[0]!.lineTotal, 735);
+  assert.equal(noPromo.quote.lines[0]!.clubOnly, false);
+});
+
 test('the carrefour page and file names give the day, the files and the branch', () => {
   const p = parseCarrefourPage(`<script>const path = '20260911';\n const files = [{"name":"PriceFull7290055700007-001-002-20260911-090015.gz","size":1}];\n const branches = {};</script>`);
   assert.equal(p.path, '20260911');

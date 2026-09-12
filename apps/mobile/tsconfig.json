@@ -13,6 +13,7 @@
   "exclude": [
     "dist",
     "e2e/**",
+    "test/**",
     "ios",
     "node_modules"
   ]
