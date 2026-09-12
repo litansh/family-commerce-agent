@@ -173,7 +173,8 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
  * Picking a product by name, when a line has no barcode the store knows. The stores' own search is
  * loose - Rami Levy answers "מיץ פירות הדרים" with lemon juice and cherry juice - so one shared word
  * is never a match: the head word of the phrase (its last meaningful word, the one that says which
- * juice) must be there, and at least half the words. Nothing passes, nothing is added: a line the
+ * juice) must be there, and at least half the words. A short stem never matches by prefix - 'קיים'
+ * is not 'קייק' - and a stem is only shortened while it stays a word. Nothing passes, nothing is added: a line the
  * family adds themselves beats a wrong item in the cart (promise 9). What is picked is reported as
  * a swap, never as the thing that was asked for.
  * Plain JavaScript because it runs inside the store's page; apps/mobile/test/name-match.test.ts
@@ -181,15 +182,15 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
  */
 export const PICK_BY_NAME_JS = `
 function __kFinals(w){return w.replace(/\u05dd/g,'\u05de').replace(/\u05df/g,'\u05e0').replace(/\u05e5/g,'\u05e6').replace(/\u05e3/g,'\u05e4').replace(/\u05da/g,'\u05db');}
-function __kStem(w){var x=__kFinals(w.replace(/["'\u05f3\u05f4]/g,''));return x.replace(/(\u05d9\u05d5\u05ea|\u05d5\u05ea|\u05d9\u05de|\u05d9\u05e0|\u05d9\u05d4|\u05d4)$/,'');}
-function __kWords(s){return String(s||'').split(/[^\u0590-\u05ffA-Za-z0-9%]+/).filter(function(w){return w.length>=3&&!/^[0-9]+$/.test(w);}).map(__kStem);}
+function __kStem(w){var x=__kFinals(w.replace(/["'\u05f3\u05f4]/g,''));var y=x.replace(/(\u05d9\u05d5\u05ea|\u05d5\u05ea|\u05d9\u05de|\u05d9\u05e0|\u05d9\u05d4|\u05d4)$/,'');return y.length>=3?y:x;}
+function __kWords(s){return String(s||'').split(/[^\u0590-\u05ffA-Za-z0-9%]+/).filter(function(w){return w.length>=3&&!/^[0-9]+$/.test(w);}).map(__kStem).filter(function(w){return w.length>=3;});}
 function __kPick(rows,query,keep){
   var toks=__kWords(query); if(!toks.length) return null;
   var head=toks[toks.length-1], need=Math.max(1,Math.ceil(toks.length/2)), best=null, bestScore=0;
   for(var i=0;i<(rows||[]).length;i++){
     var r=rows[i]; if(!r) continue; if(typeof keep==='function'&&!keep(r)) continue;
     var name=__kWords(r.name||r.Name||'');
-    var has=function(t){for(var j=0;j<name.length;j++){var n=name[j];if(n===t||n.indexOf(t)===0||(t.indexOf(n)===0&&n.length>=3))return true;}return false;};
+    var has=function(t){for(var j=0;j<name.length;j++){var n=name[j];if(n===t)return true;var pre=n.length<t.length?n:t,full=n.length<t.length?t:n;if(pre.length>=4&&full.indexOf(pre)===0)return true;}return false;};
     if(!has(head)) continue;
     var score=0; for(var k=0;k<toks.length;k++) if(has(toks[k])) score++;
     if(score>=need&&score>bestScore){best=r;bestScore=score;}
@@ -397,7 +398,9 @@ export const HAZI_HINAM: Platform = {
   // then item/addItemToCart {ItemId,Quantity,Type,IsCalculateCart}. The session
   // (H_UUID + bearer the page holds) makes these the person's own cart.
   cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
-  const B='https://shop.hazi-hinam.co.il/proxy/';
+  // Was missing 'api/' (proxy/item/... 404s; historyJs already had it right) - the cart recipe
+  // could never find an item, confirmed in a lab, 2026-09-13.
+  const B='https://shop.hazi-hinam.co.il/proxy/api/';
   let auth='';try{auth=(window.sessionStorage.getItem('access_token')||window.localStorage.getItem('access_token')||'');}catch(e){}
   const H={accept:'application/json','content-type':'application/json; charset=utf-8'};if(auth)H.Authorization=/^Bearer/i.test(auth)?auth:'Bearer '+auth;
   const j=async(u,opt)=>{const r=await fetch(B+u,Object.assign({credentials:'include',headers:H},opt||{}));const t=await r.text();let d=null;try{d=JSON.parse(t)}catch(e){}return {s:r.status,d};};
@@ -405,6 +408,10 @@ export const HAZI_HINAM: Platform = {
   const it=await j('item/getItemByBarkod/'+encodeURIComponent(l.gtin));
   const item=it.d&&it.d.IsOK&&it.d.Results&&it.d.Results.Item;
   if(!item){out.push({gtin:l.gtin,status:'missing'});continue;}
+  // The store's own branch stock (confirmed in a lab, 2026-09-13: getItemByBarkod answers
+  // IsInStock for the branch the session is scoped to) - never add a line the branch cannot
+  // supply; the family meets it as a substitution offer, not a surprise at checkout.
+  if(item.IsInStock===false){out.push({gtin:l.gtin,status:'unavailable',detail:item.Name||l.name});continue;}
   const id=item.Id||item.ItemId;
   const add=await j('item/addItemToCart',{method:'POST',body:JSON.stringify({ItemId:id,Quantity:l.qty||1,Type:0,IsCalculateCart:true})});
   const ok=add.d&&add.d.IsOK;
