@@ -193,6 +193,20 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     const swaps = Object.values(sl).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName));
     return { missing, swaps };
   };
+  // "Out of stock at your branch" is a decision the family makes here, in Kaniti, not at the store's
+  // till: the line, what we put in its place (the compare already priced it), and a way to change it.
+  const outOfStockRows = (o: PurchaseOption | undefined) => {
+    if (!o) return [];
+    const rows: { lineId: string; asked: string; instead: string | null; sid: string }[] = [];
+    for (const leg of o.legs) {
+      for (const lineId of q.branchStock?.[leg.storefrontId]?.lineIds ?? []) {
+        if (!leg.lineIds.includes(lineId) && !o.unpricedLineIds.includes(lineId)) continue;
+        const sl = q.storefrontLines?.[leg.storefrontId]?.[lineId];
+        rows.push({ lineId, asked: nameOf(lineId), instead: sl?.substituted ? sl.productName : null, sid: leg.storefrontId });
+      }
+    }
+    return rows;
+  };
   const noneAnywhere = q.lines.filter((l) => !Object.values(q.storefrontLines ?? {}).some((m) => m[l.id]));
   // Every store this list cannot be bought from as-is, as a row: what it prices, what it lacks, how short.
   const answer = pick;
@@ -252,6 +266,17 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               <Text style={[s.small, { color: t.accent, marginTop: 2 }]}>{why}</Text>
               {ex.missing.length ? <Text style={[s.small, { color: t.red, marginTop: 6 }]}>{tr('unavailable', { x: ex.missing.join(', ') })}{answer.missingEstimate ? ` · ${tr('toComplete', { x: money(answer.missingEstimate) })}` : ''}</Text> : null}
               {ex.swaps.length ? <Text style={[s.small, { color: t.amber, marginTop: 4 }]}>{tr('swapsLine', { x: ex.swaps.join(' · ') })}</Text> : null}
+              {/* Out of stock at the family's branch: said here, with the alternative, before anyone shops. */}
+              {outOfStockRows(answer).map((r) => (
+                <View key={`oos-${r.lineId}`} style={{ marginTop: 8, backgroundColor: t.amberSoft, borderRadius: 10, padding: 10 }} testID={`oos-${r.lineId}`}>
+                  <Text style={[s.small, { color: t.amber }]}>{tr('oosTitle', { x: r.asked })}</Text>
+                  <Text style={[s.body, { marginTop: 2 }]} numberOfLines={2}>{r.instead ? tr('oosInstead', { y: r.instead }) : tr('oosNone')}</Text>
+                  <View style={[s.rowStart, { gap: 14, marginTop: 6 }]}>
+                    <Pressable onPress={(e) => { e.stopPropagation?.(); setFixing(r.asked); }} hitSlop={8}><Text style={[s.small, { color: t.accent }]}>{tr('oosPickOther')}</Text></Pressable>
+                    <Pressable onPress={(e) => { e.stopPropagation?.(); removeLine(r.lineId); setQ(null); api.quote(household.id, lines.filter((l) => l.id !== r.lineId).map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch(() => null); }} hitSlop={8}><Text style={[s.small, { color: t.red }]}>{tr('oosDrop')}</Text></Pressable>
+                  </View>
+                </View>
+              ))}
               <Text style={[s.small, { marginTop: 8 }]}>{legsOpen ? '▾' : '▸'} {answer.legs.map((l) => tr('legsLine', { n: l.lineIds.length, b: l.brand })).join(' · ')}</Text>
               {legsOpen ? answer.legs.map((leg) => (
                 <View key={leg.storefrontId} style={[s.row, { paddingVertical: 3 }]}>
