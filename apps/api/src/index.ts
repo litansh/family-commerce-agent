@@ -434,9 +434,12 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     // Pictures for a set of barcodes, resolved within a time budget so the
     // grid never waits on them. The app calls this right after rendering.
     if (method === 'POST' && rest === 'images') {
+      // Barcodes, and names for the lines a family typed in their own words - those have no barcode,
+      // and a drawn glyph where a photograph belongs is the commonest "the app looks unfinished".
       const gtins = arr<string>(body['gtins'], 'gtins').filter((g) => typeof g === 'string').slice(0, 40);
-      const found = await images.resolveMany(gtins.map((g) => ({ key: g, gtin: g })), 10, 12_000);
-      return ok({ images: Object.fromEntries(gtins.map((g) => [g, found[g]?.url ?? null])) });
+      const names = Array.isArray(body['names']) ? (body['names'] as unknown[]).filter((n): n is string => typeof n === 'string').slice(0, 40) : [];
+      const found = await images.resolveMany([...gtins.map((g) => ({ key: g, gtin: g })), ...names.map((n) => ({ key: n, name: n }))], 10, 12_000);
+      return ok({ images: Object.fromEntries([...gtins, ...names].map((k) => [k, found[k]?.url ?? null])) });
     }
 
     // One product, every chain that carries it. The catalogue's canonical

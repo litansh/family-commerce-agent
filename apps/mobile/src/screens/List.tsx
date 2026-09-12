@@ -78,13 +78,32 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         if (mine !== seq.current) return;
         setHits(r.products); setSearching(false);
         const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
-        if (missing.length === 0) return;
-        const im = await api.images(household.id, missing).catch(() => null);
-        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => (h.gtin && im.images[h.gtin] ? { ...h, imageUrl: im.images[h.gtin]! } : h)));
+        const unnamed = r.products.filter((h) => !h.imageUrl && !h.gtin).map((h) => h.name);
+        if (missing.length === 0 && unnamed.length === 0) return;
+        const im = await api.images(household.id, missing, unnamed).catch(() => null);
+        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; }));
       }).catch(() => { if (mine === seq.current) { setHits([]); setSearching(false); } });
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);
+
+  // A line the family typed has no barcode and so no picture. Ask for one by name, once per line,
+  // and keep it on the line: a list of drawn glyphs is what makes an app look unfinished.
+  const askedImages = useRef(new Set<string>());
+  useEffect(() => {
+    const want = lines.filter((l) => !l.imageUrl && !askedImages.current.has(l.id)).slice(0, 20);
+    if (!want.length) return;
+    for (const l of want) askedImages.current.add(l.id);
+    const gtins = want.filter((l) => l.gtin).map((l) => l.gtin!);
+    const names = want.filter((l) => !l.gtin).map((l) => l.productName ?? l.query);
+    void api.images(household.id, gtins, names).then((im) => {
+      setLines((xs) => xs.map((l) => {
+        if (l.imageUrl) return l;
+        const u = (l.gtin && im.images[l.gtin]) || im.images[l.productName ?? l.query];
+        return u ? { ...l, imageUrl: u } : l;
+      }));
+    }).catch(() => null);
+  }, [lines, api, household.id]);
 
   const onList = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);
   const due = useMemo(() => new Set(suggestions.filter((x) => x.reason === 'overdue').map((x) => x.preference.key)), [suggestions]);
