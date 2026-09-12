@@ -5,11 +5,12 @@
 # waits for the reset and resumes the same session - nothing is lost and nothing runs twice.
 #
 #   ops/fleet.sh [agent ...]              default: every charter in .claude/agents, in this order
+#   ops/lanes.sh                          two lanes at once (what the daily run uses)
 #   ops/fleet.sh product-qa               one agent
 #   FLEET_TASK="..." ops/fleet.sh api-fixer   a specific task instead of "work the backlog"
 #
-# Never runs two agents at once: five parallel agents on the biggest model is what emptied the
-# budget every day. Log: ~/.kaniti/health/fleet-<date>.log
+# One agent at a time inside a lane. ops/lanes.sh runs two lanes side by side: fast enough for a
+# day's backlog, far from the five-at-once on the biggest model that emptied the budget every day. Log: ~/.kaniti/health/fleet-<date>.log
 set -uo pipefail
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/opt/openjdk/bin:$HOME/.maestro/bin:/usr/local/bin:$PATH"
@@ -46,7 +47,7 @@ for A in "${AGENTS[@]}"; do
   ATTEMPT=0; ARGS=(--session-id "$SID")
   while :; do
     ATTEMPT=$((ATTEMPT + 1))
-    ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 100 \
+    ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 140 \
         --allowedTools "Read,Grep,Glob,Edit,Write,Bash(node *),Bash(npx *),Bash(npm *),Bash(git *),Bash(gh *),Bash(./ops/*),Bash(ops/*),Bash(bash ops/*),Bash(./maestro/*),Bash(bash maestro/*),Bash(aws logs *),Bash(aws dynamodb get-item *),Bash(aws dynamodb scan *),Bash(curl *),Bash(ls *),Bash(cat *),Bash(sed *),Bash(head *),Bash(tail *),Bash(wc *)" ) > "$OUT" 2>&1
     # A run killed from outside (a stray pkill, the OS) or ended without its report is resumed, not skipped.
     if grep -q "Killed: 9\|Terminated: 15" "$OUT" || [ "$(wc -c < "$OUT")" -lt 200 ]; then
