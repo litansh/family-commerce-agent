@@ -74,7 +74,9 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   // On the store's cart page: ask the store how many lines IT holds, twice (its state hydrates late).
   const [storeCount, setStoreCount] = useState<number | null>(null);
   const onLoadEnd = () => {
-    if (phase === 'cart' && store.basketCountJs) { for (const ms of [1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
+    // Per-item flow: the family adds on the store's own page, tap by tap; read the
+    // store's own count after each page too, the same way the cart page is read.
+    if ((phase === 'cart' || phase === 'links') && store.basketCountJs) { for (const ms of [1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
     if (!hasRecipe || ran.current) return;
     // Signed in already (a store the family connected)? fill now. Otherwise the
     // store's own login is on screen; we wait for the person to sign in, then fill.
@@ -192,9 +194,14 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
 
         <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
           {phase === 'links' ? (
-            <View style={[s.rowStart, { gap: 10 }]}>
-              <View style={{ flex: 1 }}><Button title={linkIdx + 1 < linkLines.length ? tr('cartNextItem') : tr('cartToCart')} onPress={nextLink} testID="order-next" /></View>
-            </View>
+            <>
+              {/* Reusing the cart phase's own chip verbatim (app-designer approved it there); a
+                  different treatment for the per-item flow is app-designer's call, not made here. */}
+              {storeCount !== null ? <Chip text={tr('storeBasket', { s: store.name, n: storeCount })} tone={storeCount >= linkIdx ? 'good' : 'bad'} /> : null}
+              <View style={[s.rowStart, { gap: 10, marginTop: storeCount !== null ? 8 : 0 }]}>
+                <View style={{ flex: 1 }}><Button title={linkIdx + 1 < linkLines.length ? tr('cartNextItem') : tr('cartToCart')} onPress={nextLink} testID="order-next" /></View>
+              </View>
+            </>
           ) : phase === 'cart' ? (
             <>
               <Button title={tr('cartDone')} icon="check" onPress={() => onDone(hasRecipe ? added : lines)} testID="order-done" />
