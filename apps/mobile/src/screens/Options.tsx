@@ -150,11 +150,14 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
   // Which row (or the answer's legs) is unfolded.
   const [open, setOpen] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    setErr(null);
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
-  }, [api, household.id, lines]);
+  }, [api, household.id, lines, attempt]);
 
-  if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err}</Text></View>;
+  // A slow minute at the stores is a retry, in words a family understands; anything else is shown as is.
+  if (err) return <View style={s.screen}><Header title={tr('wentWrong')} onBack={onBack} /><Text style={[s.body, s.pad, { color: t.red }]}>{err === 'stores_slow' ? tr('storesSlow') : err}</Text><View style={s.pad}><Button title={tr('tryAgain')} onPress={() => setAttempt((n) => n + 1)} /></View></View>;
   if (!q) return (
     <View style={s.screen}>
       <Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} />

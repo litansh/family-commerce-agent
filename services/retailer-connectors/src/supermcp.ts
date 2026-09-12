@@ -85,8 +85,11 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
   readonly id = 'supermcp';
   readonly #mcp: McpClient;
 
-  constructor(url: string = SUPERMCP_URL) {
-    this.#mcp = new McpClient(url);
+  // API Gateway cuts the API off at 30 s. A whole-basket quote takes ~15 s when the provider is
+  // well; when it is not, the family gets "the stores are slow, try again" in time rather than a
+  // gateway 503 after the Lambda sat for its full minute. The route retries nothing: the phone does.
+  constructor(url: string = SUPERMCP_URL, timeoutMs = 22_000) {
+    this.#mcp = new McpClient(url, timeoutMs);
   }
 
   async quoteBasket(req: QuoteRequest): Promise<QuoteResponse> {

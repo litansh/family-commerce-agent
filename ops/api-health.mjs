@@ -15,7 +15,9 @@ const me = await fetch(`${API}/me`, { headers: h }).then((r) => r.json());
 const hid = me.households?.[0]?.id;
 if (!hid) { console.log('BAD  /me has no household', JSON.stringify(me).slice(0, 200)); process.exit(1); }
 const lines = [{ id: 'a', query: 'חלב 3%', gtin: '7290004131074', qty: 2 }, { id: 'b', query: 'אפונה יכין', gtin: '7290000208114', qty: 1 }, { id: 'c', query: 'ביצים L', qty: 1 }];
-const res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+// One gateway 5xx (a slow provider minute) is retried once: the check is about the product, not one bad minute.
+let res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+if (res.status >= 500) { await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
 const q = await res.json().catch(() => ({}));
 const ok = res.status === 200 && Array.isArray(q.options) && q.options.length > 0;
 console.log(`${ok ? 'ok ' : 'BAD'}  quote ${res.status} options=${q.options?.length ?? 0} rejected=${q.rejected?.length ?? 0} etas=${Object.keys(q.etas ?? {}).length} drive=${q.drive?.status ?? '-'}(${q.drive?.branches?.length ?? 0}) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

@@ -53,6 +53,14 @@ import { StoreSessionStore } from './store-sessions.ts';
 import { BranchPrices } from './branches.ts';
 import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
 
+/** Rejects with DeadlinePassed when `p` has not settled within `ms`. The work itself is not cancelled. */
+class DeadlinePassed extends Error { constructor(ms: number) { super(`deadline of ${ms} ms passed`); this.name = 'DeadlinePassed'; } }
+function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const clock = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new DeadlinePassed(ms)), ms); });
+  return Promise.race([p, clock]).finally(() => clearTimeout(timer));
+}
+
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 
 /**
@@ -521,15 +529,26 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const lines = applied.map((a) => a.line);
-      const res = await quoteWithFallback(
-        quoteProvider,
-        {
-          lines,
-          address: typeof body['address'] === 'string' ? body['address'] : household.address,
-          serviceType: body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery',
-        },
-        memory,
-      );
+      // The provider has 22 s per call and the whole quote (two passes at most) 26 s; past that the
+      // family hears "the stores are slow" now, not a gateway 503 at 30 s while the Lambda sits to 60.
+      const quoteStarted = Date.now();
+      const res = await withDeadline(
+        quoteWithFallback(
+          quoteProvider,
+          {
+            lines,
+            address: typeof body['address'] === 'string' ? body['address'] : household.address,
+            serviceType: body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery',
+          },
+          memory,
+        ),
+        26_000,
+      ).catch((e: unknown) => {
+        const slow = e instanceof DeadlinePassed || (e instanceof Error && (e.name === 'AbortError' || /aborted|timeout/i.test(e.message)));
+        console.warn(JSON.stringify({ event: 'quote-provider-slow', hid, ms: Date.now() - quoteStarted, lines: lines.length, error: e instanceof Error ? e.message : String(e), slow }));
+        if (slow) throw new HttpError(503, 'stores_slow');
+        throw e;
+      });
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
