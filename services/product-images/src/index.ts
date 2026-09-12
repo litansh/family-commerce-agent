@@ -4,8 +4,10 @@
  * No aggregator gives us pictures, but three sources do, in order of hit
  * rate on Israeli barcodes:
  *   1. Rami Levy's image host, keyed by GTIN — one URL, no lookup
- *   2. Open Food Facts, keyed by GTIN — global, free, needs one JSON call
- *   3. Shufersal's search, keyed by name — Cloudinary URL per product
+ *   2. Rami Levy's own catalogue, keyed by NAME — the picture the chain shows, and the only source
+ *      that answers for a line the family typed in their own words ("קפה שחור") with no barcode
+ *   3. Open Food Facts, keyed by GTIN — global, free, needs one JSON call
+ *   4. Shufersal's search, keyed by name — Cloudinary URL per product
  *
  * Results are cached in the main table under IMG#<key> with a 30-day TTL so
  * a household's usual forty items cost one lookup each, ever.
@@ -15,7 +17,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dyn
 
 export interface ImageRef {
   readonly url: string;
-  readonly source: 'rami-levy' | 'off' | 'shufersal';
+  readonly source: 'rami-levy' | 'off' | 'shufersal' | 'rami-levy-search';
 }
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
@@ -30,7 +32,7 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | undefined>
 }
 
 async function tryRamiLevy(gtin: string): Promise<ImageRef | undefined> {
-  const res = await withTimeout(fetch(ramiLevyImageUrl(gtin), { method: 'HEAD', headers: { 'user-agent': UA } }), 1500).catch(() => undefined);
+  const res = await withTimeout(fetch(ramiLevyImageUrl(gtin), { method: 'HEAD', headers: { 'user-agent': UA } }), 2500).catch(() => undefined);
   return res?.ok && (res.headers.get('content-type') ?? '').startsWith('image/jpeg') ? { url: ramiLevyImageUrl(gtin), source: 'rami-levy' } : undefined;
 }
 
@@ -40,6 +42,23 @@ async function tryOff(gtin: string): Promise<ImageRef | undefined> {
   const d = (await res.json().catch(() => null)) as { status?: number; product?: { image_front_small_url?: string } } | null;
   const url = d?.product?.image_front_small_url;
   return d?.status === 1 && url ? { url, source: 'off' } : undefined;
+}
+
+/**
+ * Rami Levy's catalogue, by name. Its rows carry the picture the chain itself shows, so a line with
+ * no barcode — the commonest reason a family sees a drawn glyph instead of a photo — still gets one.
+ */
+async function tryRamiLevySearch(name: string): Promise<ImageRef | undefined> {
+  const res = await withTimeout(fetch('https://www.rami-levy.co.il/api/catalog?', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json;charset=utf-8', accept: 'application/json', 'user-agent': UA },
+    body: JSON.stringify({ q: name, size: 5 }),
+  }), 2500).catch(() => undefined);
+  if (!res?.ok) return undefined;
+  const d = (await res.json().catch(() => null)) as { data?: { images?: { small?: string; trim?: string } }[] } | null;
+  const path = d?.data?.find((r) => r.images?.small ?? r.images?.trim)?.images;
+  const url = path?.small ?? path?.trim;
+  return url ? { url: url.startsWith('http') ? url : `https://img.rami-levy.co.il${url}`, source: 'rami-levy-search' } : undefined;
 }
 
 async function tryShufersal(name: string): Promise<ImageRef | undefined> {
@@ -81,7 +100,7 @@ export class ImageResolver {
 
     let ref: ImageRef | undefined;
     if (p.gtin) ref = (await tryRamiLevy(p.gtin)) ?? (await tryOff(p.gtin));
-    if (!ref && p.name) ref = await tryShufersal(p.name);
+    if (!ref && p.name) ref = (await tryRamiLevySearch(p.name)) ?? (await tryShufersal(p.name));
 
     const ttl = Math.floor(Date.now() / 1000) + (ref ? TTL_DAYS : MISS_TTL_DAYS) * 86_400;
     await this.#doc

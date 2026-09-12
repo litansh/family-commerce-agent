@@ -103,7 +103,7 @@ export class Api {
   stores = (hid: string) => this.#call<{ storefronts: { serviceSlug: string; brand: string; chainName: string; serviceType: string }[] }>('GET', `/households/${hid}/stores`);
   /** Live promotions across every store in the area, the household's own products first. */
   deals = (hid: string) => this.#call<{ deals: Deal[] }>('GET', `/households/${hid}/deals`);
-  images = (hid: string, gtins: string[]) => this.#call<{ images: Record<string, string | null> }>('POST', `/households/${hid}/images`, { gtins });
+  images = (hid: string, gtins: string[], names: string[] = []) => this.#call<{ images: Record<string, string | null> }>('POST', `/households/${hid}/images`, { gtins, names });
   product = (hid: string, gtin: string) => this.#call<{ gtin: string; name: string; brand?: string; listings: { chainId: string; chainName: string; name: string }[]; imageUrl: string | null; prices: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]; priceMin?: number; priceMax?: number }>('GET', `/households/${hid}/product?gtin=${encodeURIComponent(gtin)}`);
   order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
   approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
