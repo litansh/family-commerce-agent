@@ -56,7 +56,9 @@ check('lines resolve to products', withProduct >= LIST.length * 0.8, `${withProd
 const lines = LIST.map((l) => { const c = choices[l.id]; const gtin = c?.chosen?.gtin ?? c?.gtin; return gtin ? { ...l, gtin } : l; });
 
 // 2. Quote: the compare screen.
-const res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+// A 5xx from the gateway (a slow provider minute) is retried once before it counts: the check is about the product, not one bad minute.
+let res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+if (res.status >= 500) { await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
 const q = await res.json().catch(() => ({}));
 check('quote answers', res.status === 200 && Array.isArray(q.options), `HTTP ${res.status}, ${q.options?.length ?? 0} options, ${q.rejected?.length ?? 0} rejected, ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 const options = q.options ?? [];
