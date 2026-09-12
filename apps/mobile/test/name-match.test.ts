@@ -38,3 +38,10 @@ test('an empty answer, or a query of only short words, picks nothing', () => {
   assert.equal(pick([], 'מיץ תפוזים'), null);
   assert.equal(pick([{ id: 1, name: 'מלח ים' }], 'ים'), null);
 });
+
+test('a short stem never matches by prefix: "לא קיים" is not "קייק"', () => {
+  // The daily cart lab caught this: its deliberately absent line was added as a cake tin, because
+  // "קיים" stemmed to "קי" and prefix-matched "קייק".
+  assert.equal(pick([{ id: 5, name: 'קופסת אחסון אניגליש קייק' }], 'לא קיים'), null);
+  assert.equal(pick([{ id: 6, name: 'עוגת קייק שיש' }], 'קייק שיש')?.id, 6);
+});
