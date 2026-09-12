@@ -3,3 +3,4 @@ export * from './mcp-client.ts';
 export * from './supermcp.ts';
 export * from './wolt-eta.ts';
 export * from './rami-levy-stock.ts';
+export * from './chain-slots.ts';

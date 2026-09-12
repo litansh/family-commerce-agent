@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { etaForStorefront, parseWoltFront, woltEtasNear } from '../src/wolt-eta.ts';
+import { etaForStorefront, parseWoltFront, parseWoltVenueDynamic, woltEtasNear, woltNextOpen } from '../src/wolt-eta.ts';
 
 const feed = {
   sections: [
@@ -51,4 +51,18 @@ test('the chains\' venues live on the grocery page, not the front page: both are
   const half = (async (url: string) => (/category-grocery/.test(url) ? new Response(JSON.stringify(grocery), { status: 200 }) : new Response('', { status: 500 }))) as unknown as typeof fetch;
   const etas2 = await woltEtasNear(32.11, 34.84, half);
   assert.equal(etas2['victory-rothschild']!.minutes, 50);
+});
+
+test('the venue page\'s open status parses; a page that does not say yields undefined', () => {
+  const open = parseWoltVenueDynamic({ venue: { delivery_open_status: { is_open: false, next_open: '2026-09-14T07:00:00+03:00', value: 'נפתח ביום שני' } } });
+  assert.deepEqual(open, { isOpen: false, nextOpen: '2026-09-14T07:00', text: 'נפתח ביום שני' });
+  assert.equal(parseWoltVenueDynamic({}), undefined);
+  assert.equal(parseWoltVenueDynamic({ venue: {} }), undefined);
+});
+
+test('woltNextOpen reads the venue\'s dynamic page and never blocks on failure', async () => {
+  const ok = await woltNextOpen('wolt-market-bialik', 32.08, 34.81, (async () => new Response(JSON.stringify({ venue: { delivery_open_status: { is_open: true } } }), { status: 200 })) as unknown as typeof fetch);
+  assert.deepEqual(ok, { isOpen: true });
+  const failed = await woltNextOpen('some-other-venue', 32.08, 34.81, (async () => { throw new Error('down'); }) as unknown as typeof fetch);
+  assert.equal(failed, undefined);
 });
