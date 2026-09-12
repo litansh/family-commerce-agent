@@ -1,0 +1,39 @@
+name: logs
+
+# Production logs, on request, without a laptop credential: the same OIDC role the deploy uses,
+# read-only on this project's log groups. Run it from the Actions tab or with
+#   gh workflow run logs.yml -f minutes=30 -f pattern='"event":"quote-provider-slow"'
+on:
+  workflow_dispatch:
+    inputs:
+      function:
+        description: which Lambda (api, branch-prices, alerts)
+        default: api
+      minutes:
+        description: how far back to read
+        default: '30'
+      pattern:
+        description: CloudWatch filter pattern (empty for everything)
+        default: ''
+      limit:
+        description: how many events at most
+        default: '120'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::437075214009:role/fca-github-deploy
+          aws-region: eu-central-1
+      - name: Read the log
+        run: |
+          START=$(( ($(date +%s) - ${{ inputs.minutes }} * 60) * 1000 ))
+          ARGS=(--log-group-name "/aws/lambda/fca-${{ inputs.function }}" --region eu-central-1 --start-time "$START" --limit "${{ inputs.limit }}" --output text --query 'events[].message')
+          if [ -n "${{ inputs.pattern }}" ]; then ARGS+=(--filter-pattern '${{ inputs.pattern }}'); fi
+          aws logs filter-log-events "${ARGS[@]}" | tr '\t' '\n' | tail -c 60000
