@@ -355,7 +355,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const { catalog } = requirePricing();
       const cached = (await readRow(TABLE, 'CATALOG', 'PROMOS')) as { promos?: Promotion[]; at?: string } | undefined;
       let promos: readonly Promotion[] = cached?.promos ?? [];
-      if (!promos.length || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
+      // A cache written before the round-robin fix (or from a feed minute that was itself lopsided)
+      // otherwise sits there for its full 6h doing the exact thing that fix was for: one chain's
+      // page. Never trust a cached spread that thin; only a fresh pull can widen it.
+      const cachedChains = new Set(promos.map((p) => p.chainName)).size;
+      if (!promos.length || cachedChains < 3 || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
         // The feed caps at 200, ordered by soonest end - the ones worth acting on this week.
         const fresh = catalog.listPromotions ? await catalog.listPromotions(200).catch(() => null) : null;
         if (fresh?.length) {
@@ -708,7 +712,12 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
       const bestLines = substituted.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
-      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
+      // Not on the shared clock like substitutes and etas above, this defaulted to 20s of its own -
+      // on a five-person week (30+ lines, several cache misses) that alone could carry the whole
+      // request past API Gateway's 30s cutoff into the 503 a family saw with no picture to show for it
+      // either. A picture is worth having, not worth the compare itself; a miss here is cached for a
+      // day and self-heals on the next look, same as any other resolveMany caller.
+      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, 5_000);
       const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
       // (minutes, from Wolt's own feed for the family's address); the chains deliver in
