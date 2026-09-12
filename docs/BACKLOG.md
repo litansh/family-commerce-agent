@@ -26,6 +26,12 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **The store's own catalogue as a second price source** in the compare when the provider lacks a store or is slow (Rami Levy first, its catalogue already answers the API). *api-fixer*
 - [ ] **product-qa: two working rungs per ladder**, checked daily in the labs; one rung left is a red check. *product-qa*
 
+## Choosing an item (promises 1, 4, 7) — design: docs/design/item-identity.md
+- [ ] **Variants in the domain**: `variantKey` / `groupIntoVariants` (size + the category's defining attribute; brand kept aside), tested on real Israeli names. *api-fixer*
+- [ ] **Search answers variants**: brand count and price range per variant, the flat list behind "הצגת כל המוצרים". *api-fixer*
+- [ ] **Variant cards and the brand chip**: the add flow shows variants; every list line carries the choice chip; the brand sheet writes memory. *app-designer*
+- [ ] **The compare names the product per store** for "כל מותג" lines, so a split is legible. *app-designer*
+
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
 - [x] The compare screen to the approved design; store rows open their own store (PR #13).
