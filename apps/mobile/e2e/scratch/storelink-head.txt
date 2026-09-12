@@ -1,0 +1,32 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { confirmFromHistory } from '../lib/pending';
+import React, { useEffect, useRef, useState } from 'react';
+import { Linking, Modal, Platform, Text, View } from 'react-native';
+import { STORES, signupFillJs, type SignupKnown } from '../lib/stores';
+import { markLinked, markUnlinked } from '../lib/linked';
+import { t as tr } from '../lib/i18n';
+import { Button, S, t } from '../ui';
+import { Pressable } from 'react-native';
+import { isRTL } from '../lib/i18n';
+import { BUILD } from '../lib/config';
+import { CloudConnect, SignupGuide } from './CloudConnect';
+
+/**
+ * Connect a store, entirely inside Kaniti.
+ *
+ * The store's own login opens in a WebView, so the OS autofills a saved
+ * password with Face ID, or the person enters the SMS code — the very page
+ * the store's own app uses, which is why "already have an account" and "new"
+ * are one flow. Every couple of seconds Kaniti asks the store's own page
+ * whether it is signed in; when it says yes, the store is connected. The
+ * session stays in the WebView, on the device — nothing is sent to a server.
+ *
+ * On the web there is no WebView (stores forbid being framed), so the web
+ * takes the cloud rung instead (`CloudConnect`, ADR 0008): a password typed
+ * once where the store allows it, and an honest "from your phone" where the
+ * store gates sign-in behind a captcha.
+ *
+ * After a native sign-in the session is captured (the cookies the page can
+ * read, plus the store's token names) and sent to the cloud, so the family's
+ * other devices - and the web - see the store as connected too.
+ */

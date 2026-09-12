@@ -1,0 +1,118 @@
+  if (!store) return null;
+  // The web's copy lives in CloudConnect; the header keeps only the store name there.
+  const hint = !WebView ? '' : store.loginKind === 'otp' ? tr('linkHintOtp', { s: store.name }) : tr('linkHintPw', { s: store.name });
+
+  const rtl = isRTL();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+      {/* A full-screen modal starts under the clock; the app provider's top inset keeps the close bar below it. */}
+      <View style={[s.screen, { paddingTop: Math.max(insets.top, 20) + 4 }]}>
+        {/* Solid close bar, always on top of the WebView. */}
+        <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.card, zIndex: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.title, { fontSize: 18, textAlign: rtl ? 'right' : 'left' }]}>{tr('connectStore', { s: store.name })}</Text>
+            {hint ? <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]}>{hint}</Text> : null}
+          </View>
+          <Pressable onPress={onClose} hitSlop={16} testID="link-close" style={{ backgroundColor: t.bg, borderRadius: 999, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }}>
+            <Text style={{ fontSize: 20, color: t.ink, fontWeight: '700' }}>✕</Text>
+          </Pressable>
+        </View>
+        {!WebView ? (
+          <CloudConnect store={store} api={api} householdId={householdId} email={email} onLinked={() => onLinked(store.id)} onClose={onClose} />
+        ) : signup ? (
+          <SignupGuide store={store} api={api} householdId={householdId} email={email} onOpen={() => { setSignup(false); (webref.current as unknown as { injectJavaScript?: (s: string) => void } | null)?.injectJavaScript?.(`location.href=${JSON.stringify(store.signup.url)};true;`); }} onBack={() => setSignup(false)} />
+        ) : signedIn ? (
+          <View style={[s.pad, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+            <Text style={{ fontSize: 48 }}>✓</Text>
+            <Text style={[s.title, { marginTop: 12, textAlign: 'center' }]}>{tr('linked', {})}</Text>
+            <Text style={[s.body, { color: t.muted, textAlign: 'center', marginTop: 6 }]}>{tr('linkedSub', { s: store.name })}</Text>
+            {saved != null ? <Text style={[s.small, { marginTop: 8, color: saved ? t.accent : t.muted }]}>{saved ? tr('sessionSaved') : tr('sessionNotSaved')}</Text> : null}
+            {importing ? <Text style={[s.small, { marginTop: 10 }]}>{tr('importingHistory')}</Text>
+              : imported != null && imported > 0 ? <Text style={[s.small, { color: t.accent, marginTop: 10 }]}>{tr('importedHistory', { n: imported })}</Text>
+              : imported === 0 ? <Text style={[s.faint, { marginTop: 10, textAlign: 'center' }]} selectable>{tr('importedNone', { d: diag ?? '—' })}</Text> : null}
+            <View style={{ height: 16 }} />
+            <Button title={tr('done')} onPress={() => onLinked(store.id)} />
+          </View>
+        ) : (
+          <>
+            <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 10 }}>
+              <Text style={[s.small, { color: t.accent, fontWeight: '600' }]}>{store.loginKind === 'password' ? tr('linkTipPw') : tr('linkTipOtp')}</Text>
+              <View style={[s.rowStart, { marginTop: 8, gap: 8, flexWrap: 'wrap' }]}>
+                {store.forgotJs ? <Pressable onPress={createPassword} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('createPwOnce')}</Text></Pressable> : null}
+                <Pressable onPress={() => setSignup(true)} style={{ borderWidth: 1, borderColor: t.ink, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.ink, fontWeight: '700', fontSize: 13 }}>{tr('cloudNoAccount', { s: store.name })}</Text></Pressable>
+              </View>
+            </View>
+            {guard ? (
+              <View style={{ backgroundColor: guard === 'blocked' ? '#FDECEC' : '#FFF6DF', paddingHorizontal: 16, paddingVertical: 10 }} testID="link-guard">
+                <Text style={[s.small, { color: t.ink, fontWeight: '600' }]}>{guard === 'blocked' ? tr('guardBlocked', { s: store.name }) : tr('guardChallenge', { s: store.name })}</Text>
+                {guard === 'blocked' ? (
+                  <View style={[s.rowStart, { marginTop: 8, gap: 8 }]}>
+                    <Pressable onPress={() => { setGuard(''); retried.current = false; (webref.current as unknown as { reload?: () => void } | null)?.reload?.(); }} style={{ borderWidth: 1, borderColor: t.ink, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 }}><Text style={{ color: t.ink, fontWeight: '700', fontSize: 13 }}>{tr('tryAgain')}</Text></Pressable>
+                    <Pressable onPress={() => { void Linking.openURL(store.loginUrl); }} style={{ backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{tr('guardOpenBrowser')}</Text></Pressable>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+            <View style={{ flex: 1, overflow: 'hidden' }}>
+              <WebView
+                ref={(r) => { webref.current = r; }}
+                source={{ uri: store.loginUrl }}
+                sharedCookiesEnabled
+                thirdPartyCookiesEnabled
+                domStorageEnabled
+                javaScriptCanOpenWindowsAutomatically
+                // The login page's "reset password" and OTP steps use target=_blank;
+                // keep them in this same WebView instead of dropping them.
+                setSupportMultipleWindows={false}
+                originWhitelist={['*']}
+                // The WebView's own user agent: it already says iPhone, so stores serve the phone
+                // flow; a WebView claiming to be Safari reads as spoofed to Cloudflare's checks
+                // and Victory answered 403 before the person could do anything.
+                onLoadEnd={settle}
+                onError={onLoadError}
+                onHttpError={(e: { nativeEvent: { statusCode?: number; url?: string } }) => { if ((e.nativeEvent.statusCode ?? 0) >= 400) void api.importHistory(householdId, storeId, [], { build: BUILD, httpError: e.nativeEvent }).catch(() => null); }}
+                renderError={() => (
+                  <View style={[s.pad, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg }]}>
+                    <Text style={[s.body, { textAlign: 'center' }]}>{tr('storeLoadFailed', { s: store.name })}</Text>
+                    <View style={{ height: 12 }} />
+                    <Button title={tr('tryAgain')} kind="secondary" onPress={() => { setLoadErr(null); retried.current = false; (webref.current as unknown as { reload?: () => void } | null)?.reload?.(); }} />
+                    {loadErr ? <Text style={[s.faint, { marginTop: 8 }]} selectable>{loadErr}</Text> : null}
+                  </View>
+                )}
+                onMessage={(e: { nativeEvent: { data: string } }) => {
+                  const d = e.nativeEvent.data;
+                  if (d.startsWith('guard:')) { const g = d.slice(6) as '' | 'challenge' | 'blocked'; setGuard((prev) => (prev === g ? prev : g)); return; }
+                  if (d === 'signedin:0') {
+                    // The store's own page says "not signed in". A stale "connected" flag on this
+                    // phone (an earlier misread, an expired session) is cleared after a few looks,
+                    // so Me never keeps showing a store as connected that is not.
+                    notIn.current += 1; seenIn.current = 0;
+                    if (notIn.current === 3) markUnlinked(storeId);
+                  }
+                  // "Signed in" must hold on two looks in a row: a page mid-transition once read as
+                  // signed in for a single poll and marked a store connected that was not.
+                  if (d === 'signedin:1' && ++seenIn.current >= 2) {
+                    setSignedIn(true);
+                    // The store itself says the person is in: any "needs re-connecting" suspicion is wrong, clear it now.
+                    markLinked(storeId);
+                    if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } }
+                  }
+                  else if (d.startsWith('session:')) { void postSession(d.slice(8)); }
+                  else if (d.startsWith('history:')) { void postHistory(d.slice(8)); }
+                  else if (d.startsWith('probe:')) { try { void api.importHistory(householdId, storeId, [], { build: BUILD, probe: JSON.parse(d.slice(6)) as unknown }); } catch { /* diagnostic only */ } }
+                }}
+              />
+            </View>
+            <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
+              {/* The person is never stuck behind the detector: once they see
+                  themselves signed in, one tap confirms it and starts the import. */}
+              <Button title={tr('imSignedIn')} kind="secondary" icon="check" onPress={() => { setSignedIn(true); if (!didImport.current) { didImport.current = true; inject(PROBE_JS); inject(CAPTURE_JS); const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined); if (h) { setImporting(true); inject(h); } } }} />
+              <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('linkPrivacy')}</Text>
+            </View>
+          </>
+        )}
+      </View>
+    </Modal>
+  );
+}

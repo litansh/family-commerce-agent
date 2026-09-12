@@ -247,7 +247,8 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         const tokens = body['tokens'] && typeof body['tokens'] === 'object' ? Object.fromEntries(Object.entries(body['tokens'] as Record<string, unknown>).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, String(v)])) : undefined;
         // Visible in the log: a phone that captured nothing is the difference between "connected" and "looked connected".
         console.log(JSON.stringify({ event: 'store-session', hid, store, cookies: cookies.length, tokens: tokens ? Object.keys(tokens).length : 0 }));
-        if (cookies.length === 0 && !tokens) throw new HttpError(400, 'no session in body');
+        // Nothing captured is not a session: `{cookies:[],tokens:{}}` must never become a "connected" row.
+        if (cookies.length === 0 && (!tokens || Object.keys(tokens).length === 0)) throw new HttpError(400, 'no session in body');
         const session: StoreSession = { retailer: store, cookies, capturedAt: new Date().toISOString(), ...(typeof body['userAgent'] === 'string' ? { userAgent: body['userAgent'] } : {}), ...(tokens ? { tokens } : {}) };
         // The phone already ran the store's own signed-in check, and from AWS
         // the stores answer with block pages (ADR 0008 amendment) - so the
