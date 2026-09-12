@@ -63,7 +63,7 @@ anything else in this file: they are what a family meets.
 ## In-store prices (promise 1)
 - [x] Six chains' price files, nearest branches, honest like-for-like comparison (ADR 0009, PRs #5, #9).
 - [ ] **Victory / Mahsanei HaShuk** price portal (laibcatalog postback answered "no files"). *price-portal-fixer*
-- [ ] **Promotions** (PromoFull files: club prices, multi-buys) lower the in-store total. *price-portal-fixer*
+- [x] **Promotions** (PromoFull files: club prices, multi-buys) lower the in-store total. The library side (`parsePromoFull`, `bestDealTotal`, `promoFile` on every portal) landed earlier unwired; the refresher now fetches each indexed branch's promo file alongside its price file and the quote path prices every line the cheapest way, marking club-only deals (this PR). *price-portal-fixer*
 - [ ] **Items of physical-only chains** (Osher Ad, Yohananof) into the item list from the branch indexes. *store scout + api-fixer*
 
 ## The list and the memory (promises 6, 7)
