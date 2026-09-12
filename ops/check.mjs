@@ -1,6 +1,9 @@
 /**
  * The orchestrator's eyes: every check Kaniti has, run from this Mac (a residential
- * network, like a phone), summarised in one table and one JSON report.
+ * network, like a phone), summarised in one table and one JSON report. Also derives, from
+ * that same run, whether each ADR 0010 ladder (connect, compare, fill the cart, read
+ * history, prices in-store) has at least two working rungs today — one rung left (or a
+ * ladder no daily lab touches at all) is a red check, same as any other.
  *
  *   node ops/check.mjs [--sim] [--only stores,cart,prices,api,unit,recipes]
  *
@@ -40,6 +43,32 @@ const CHECKS = {
   sim: () => run('sim', './maestro/connect-all.sh && ./maestro/run.sh order', `${ROOT}/apps/mobile`, 2_400_000, (o) => { const rows = [...o.matchAll(/^([a-z-]+)\s+(yes|NO)\s+(yes|NO)/gm)]; const bad = rows.filter((r) => r[2] !== 'yes' || r[3] !== 'yes').map((r) => r[1]); const order = /Flow order[\s\S]*?(\d+)\/(\d+)/.exec(o); return { ok: rows.length === 9 && bad.length === 0, summary: `connect ${rows.length - bad.length}/${rows.length}${bad.length ? ` (bad: ${bad.join(',')})` : ''}${order ? `, order ${order[1]}/${order[2]}` : ''}` }; }),
 };
 
+// ADR 0010: no store action depends on one flow. A ladder is healthy only when at least two of
+// its rungs are proven — not assumed — by today's labs; one rung left is a red check.
+// This reads the same run's own results, so it costs nothing extra: no lab runs twice.
+function ladderHealth(results) {
+  const by = Object.fromEntries(results.map((r) => [r.name, r]));
+  const has = (n) => by[n] !== undefined;
+  const ladders = [];
+  if (has('stores')) {
+    // The earlier connect rungs (session capture, OTP, password, cloud restore) need a real
+    // household and are not exercised by any daily lab (docs/BACKLOG.md, "Connect and stay connected").
+    ladders.push({ ladder: 'Connect', rungs: [{ name: 'the store\'s own login page (stores)', ok: by.stores.ok }] });
+  }
+  if (has('api') || has('shopper') || has('topup') || has('prices')) {
+    const subsOk = [by.shopper, by.topup].some((r) => r && /^ok\s+substitutes are the same kind of product/m.test(r.tail));
+    const rungs = [];
+    if (has('api')) rungs.push({ name: 'SuperMCP quote (api)', ok: by.api.ok });
+    if (has('shopper') || has('topup')) rungs.push({ name: 'substitutes from the catalogue', ok: subsOk });
+    if (has('prices')) rungs.push({ name: 'price-transparency files (prices)', ok: by.prices.ok });
+    ladders.push({ ladder: 'Compare', rungs });
+  }
+  if (has('cart')) ladders.push({ ladder: 'Fill the cart', rungs: [{ name: 'rami-levy guest cart (cart)', ok: by.cart.ok }] });
+  if (has('stores') || has('cart')) ladders.push({ ladder: 'Read history', rungs: [] }); // no daily lab exercises this at all — docs/BACKLOG.md
+  if (has('prices')) ladders.push({ ladder: 'Prices in-store', rungs: [{ name: 'six chains\' portals (prices)', ok: by.prices.ok }] });
+  return ladders.map((l) => { const working = l.rungs.filter((r) => r.ok).length; return { ...l, working, of: l.rungs.length, ok: working >= 2 }; });
+}
+
 mkdirSync(`${homedir()}/.kaniti/health`, { recursive: true });
 const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'shopper', 'topup']).filter((n) => CHECKS[n]);
 if (withSim && !only) names.push('sim');
@@ -52,9 +81,14 @@ const at = new Date().toISOString();
 console.log(`\nKaniti health · ${at}`);
 console.log('check     ok   time   summary');
 for (const r of results) console.log(`${r.name.padEnd(9)} ${(r.ok ? 'ok' : r.unknown ? '?' : 'BAD').padEnd(4)} ${String(r.seconds + 's').padEnd(6)} ${r.summary}`);
-const report = { at, ok: results.every((r) => r.ok), results };
+const ladders = ladderHealth(results);
+if (ladders.length) {
+  console.log('\nladders (ADR 0010) — at least two working rungs, checked daily');
+  for (const l of ladders) console.log(`${(l.ok ? 'ok  ' : 'BAD ')} ${l.ladder.padEnd(16)} ${l.working}/${l.of} rung(s) working${l.of ? ` (${l.rungs.map((r) => `${r.ok ? 'ok' : 'BAD'} ${r.name}`).join(', ')})` : ' — no daily lab exercises this ladder at all'}`);
+}
+const report = { at, ok: results.every((r) => r.ok) && ladders.every((l) => l.ok), results, ladders };
 const stamp = at.replace(/[:.]/g, '-');
 writeFileSync(`${homedir()}/.kaniti/health/${stamp}.json`, JSON.stringify(report, null, 1));
 writeFileSync(`${homedir()}/.kaniti/health/latest.json`, JSON.stringify(report, null, 1));
-console.log(report.ok ? '\nall healthy' : `\nUNHEALTHY: ${results.filter((r) => !r.ok).map((r) => r.name).join(', ')}  (report: ~/.kaniti/health/latest.json)`);
+console.log(report.ok ? '\nall healthy' : `\nUNHEALTHY: ${results.filter((r) => !r.ok).map((r) => r.name).concat(ladders.filter((l) => !l.ok).map((l) => `ladder:${l.ladder}`)).join(', ')}  (report: ~/.kaniti/health/latest.json)`);
 process.exit(report.ok ? 0 : 1);
