@@ -267,6 +267,9 @@ resource "aws_lambda_function" "api" {
       BRANCH_BUCKET    = aws_s3_bucket.branch_prices.bucket
       REFRESH_FUNCTION = "${var.name}-branch-prices"
       NODE_OPTIONS     = "--enable-source-maps"
+      # Phone diagnostics a person should see (a cart that added nothing) go to the channel.
+      TELEGRAM_BOT_TOKEN = var.telegram_bot_token
+      TELEGRAM_CHAT_ID   = var.telegram_chat_id
     }
   }
 

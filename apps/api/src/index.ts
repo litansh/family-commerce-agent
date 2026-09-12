@@ -402,6 +402,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // have into a session that lives on the device.
       // One JSON line per report, so CloudWatch metric filters can count store errors seen by real phones.
       console.log(JSON.stringify({ event: 'import-history', hid, retailer: body['retailer'], orders: raw.length, lines: raw.reduce((n, o) => n + (o.lines?.length ?? 0), 0), diag: body['diag'] ?? null }));
+      // A cart that added nothing, or a store page that failed to load, is a broken promise in a
+      // family's hand right now: it goes to the Kaniti Telegram channel as it is, so the fixer sees
+      // the store's actual answer without anyone reading a log. Never blocks the response.
+      void tellTelegram(String(body['retailer'] ?? ''), body['diag']);
       const result = await importRawOrders(hid, catalog, raw);
       // Keep the store's own orders (last 30, newest first) so the Orders tab shows what
       // was really bought and the phone can confirm the cart it filled - no tap needed.
@@ -679,6 +683,22 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         quotedLines,
         suggestions: suggestMissing(memory, lines),
       };
+}
+
+/** Phone diagnostics worth a person's eye, to the Telegram channel (when the API has the bot's token). */
+async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
+  const token = process.env['TELEGRAM_BOT_TOKEN'] ?? '';
+  const chat = process.env['TELEGRAM_CHAT_ID'] ?? '';
+  if (!token || !chat || !diag || typeof diag !== 'object') return;
+  const d = diag as { cart?: { results?: { status?: string }[]; diag?: unknown }; loadError?: unknown; build?: unknown };
+  const results = d.cart?.results ?? [];
+  const added = results.filter((r) => r.status === 'added').length;
+  let why = '';
+  if (d.cart && added === 0 && results.length > 0) why = `cart at ${retailer}: 0 of ${results.length} lines added`;
+  else if (d.loadError) why = `store page failed at ${retailer}`;
+  if (!why) return;
+  const text = `📱 ${why}\nbuild ${String(d.build ?? '?')}\n${JSON.stringify(d.cart?.diag ?? d.loadError ?? {}).slice(0, 1800)}`;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }), signal: AbortSignal.timeout(4000) }).catch((e: unknown) => console.warn('telegram failed', e instanceof Error ? e.message : String(e)));
 }
 
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
