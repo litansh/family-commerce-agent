@@ -547,22 +547,32 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const choices: Record<string, ProductChoice | null> = {};
+      const unresolved: string[] = [];
+      // One line's provider error must never sink the other 38 (ADR 0010): each line gets its own
+      // budget and, on a miss, reports itself in `unresolved` instead of rejecting the whole batch.
+      const LINE_BUDGET_MS = 6_000;
       await Promise.all(
         applied.map(async ({ line, fromMemory }) => {
-          const [branded, open] = await Promise.all([
-            line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : [],
-            catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
-          ]);
-          const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
-          const c = buildChoice(merged, {
-            lineId: line.id, query: line.query,
-            ...(line.brand ? { requestedBrand: line.brand } : {}),
-            ...(line.gtin ? { requestedGtin: line.gtin } : {}),
-          });
-          choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
+          try {
+            const [branded, open] = await withDeadline(Promise.all([
+              line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
+              catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
+            ]), LINE_BUDGET_MS);
+            const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
+            const c = buildChoice(merged, {
+              lineId: line.id, query: line.query,
+              ...(line.brand ? { requestedBrand: line.brand } : {}),
+              ...(line.gtin ? { requestedGtin: line.gtin } : {}),
+            });
+            choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
+          } catch (e) {
+            console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, lineId: line.id, query: line.query, error: e instanceof Error ? e.message : String(e) }));
+            choices[line.id] = null;
+            unresolved.push(line.id);
+          }
         }),
       );
-      return ok({ choices, fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id) });
+      return ok({ choices, fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id), unresolved });
     }
 
     if (method === 'POST' && rest === 'quote') {

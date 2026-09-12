@@ -227,8 +227,11 @@ export class SuperMcpCatalogProvider implements CatalogProvider {
   readonly id = 'supermcp';
   readonly #mcp: McpClient;
 
-  constructor(url: string = SUPERMCP_URL) {
-    this.#mcp = new McpClient(url, 60_000);
+  // Search is interactive - a family waiting on a keystroke - so it gets a short per-attempt budget,
+  // not the whole-basket 60s this used to carry; a stuck call is one rung failing, not a frozen
+  // screen. One bounded retry on the vendor's own transient internal_error (docs/adr/0010).
+  constructor(url: string = SUPERMCP_URL, timeoutMs = 8_000) {
+    this.#mcp = new McpClient(url, timeoutMs, 1);
   }
 
   async listStorefronts(address: string): Promise<readonly StorefrontInfo[]> {

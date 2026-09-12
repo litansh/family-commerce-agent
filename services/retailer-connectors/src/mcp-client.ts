@@ -20,17 +20,39 @@ export class McpCallError extends Error {
   }
 }
 
+/** SuperMCP's own transient failure: never a validation problem, worth one more try. */
+const TRANSIENT = /internal_error|internal server error/i;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export class McpClient {
   #id = 0;
   readonly #url: string;
   readonly #timeoutMs: number;
+  readonly #retries: number;
 
-  constructor(url: string, timeoutMs = 120_000) {
+  /**
+   * `retries` bounds a retry-with-backoff on the vendor's own `internal_error` (free, unversioned,
+   * no SLA — this happens) — never on a validation error, and never past `retries` attempts, so one
+   * bad call costs a fixed amount of time, not an unbounded wait.
+   */
+  constructor(url: string, timeoutMs = 120_000, retries = 0) {
     this.#url = url;
     this.#timeoutMs = timeoutMs;
+    this.#retries = retries;
   }
 
   async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.#callOnce<T>(name, args);
+      } catch (e) {
+        if (attempt >= this.#retries || !(e instanceof McpCallError) || !TRANSIENT.test(e.message)) throw e;
+        await sleep(300 * (attempt + 1));
+      }
+    }
+  }
+
+  async #callOnce<T>(name: string, args: Record<string, unknown>): Promise<T> {
     const body = JSON.stringify({
       jsonrpc: '2.0',
       id: ++this.#id,
