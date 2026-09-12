@@ -1,6 +1,9 @@
 import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
 
 export type SearchHit = ProductCandidate & { imageUrl: string | null; priceMin?: number; priceMax?: number; bought?: boolean };
+
+/** A group of SearchHits a family would compare as one thing — same size, same defining attribute, brand aside (docs/design/item-identity.md). */
+export interface SearchVariant { base: string; attrs: string; size?: { qty: number; unit: string }; brandCount: number; priceMin?: number; priceMax?: number; products: SearchHit[] }
 import { config } from './config';
 
 export interface Household { id: string; name: string; address: string; country?: string; retailers?: string[]; fulfillment?: 'delivery' | 'pickup' | 'either' }
@@ -101,7 +104,7 @@ export class Api {
   suggestAddress = (q: string) => this.#call<{ suggestions: { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }[] }>('GET', `/geo/suggest?q=${encodeURIComponent(q)}`);
   household = (hid: string) => this.#call<Household>('GET', `/households/${hid}`);
   importHistory = (hid: string, retailer: string, orders: { at: string; lines: { name: string; code?: string; qty: number }[] }[], diag?: Record<string, unknown>) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/import-history`, { retailer, orders, ...(diag ? { diag } : {}) });
-  search = (hid: string, q: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
+  search = (hid: string, q: string) => this.#call<{ products: SearchHit[]; variants?: SearchVariant[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
   lookup = (hid: string, gtin: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?gtin=${encodeURIComponent(gtin)}`);
   createOrder = (hid: string, legs: { retailer: string; lines: Omit<ListLine, 'id'>[] }[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { legs });
   orders = (hid: string) => this.#call<{ orders: Order[] }>('GET', `/households/${hid}/orders`);

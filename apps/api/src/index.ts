@@ -39,6 +39,7 @@ import {
   applyCoupons,
   type Coupon,
   type StorefrontQuote,
+  groupIntoVariants,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
@@ -494,7 +495,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
       const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
       const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
-      return ok({ products: buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null })) });
+      const products = buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null }));
+      // Variants (docs/design/item-identity.md): the same size and defining attribute, priced by
+      // however many brands — "12 מותגים · ₪5.90–8.40", not forty products the family scrolls past.
+      // Additive for now: `products` keeps its flat shape so today's add flow (List/Options/Aisle)
+      // is untouched until the variant cards it is designed for exist (app-designer's own PR).
+      const variants = groupIntoVariants(products).map((v) => ({ base: v.base, attrs: v.attrs, size: v.size, brandCount: v.brandCount, priceMin: v.priceMin, priceMax: v.priceMax, products: v.candidates }));
+      return ok({ products, variants });
     }
     if (method === 'GET' && rest === 'region') return ok(region);
     if (method === 'GET' && rest === 'worker') {
