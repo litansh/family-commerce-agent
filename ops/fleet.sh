@@ -48,6 +48,11 @@ for A in "${AGENTS[@]}"; do
     ATTEMPT=$((ATTEMPT + 1))
     ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 150 \
         --allowedTools "Read,Grep,Glob,Edit,Write,Bash(node *),Bash(npx *),Bash(npm *),Bash(git *),Bash(gh *),Bash(./ops/*),Bash(ops/*),Bash(bash ops/*),Bash(./maestro/*),Bash(bash maestro/*),Bash(aws logs *),Bash(aws dynamodb get-item *),Bash(aws dynamodb scan *),Bash(curl *),Bash(ls *),Bash(cat *),Bash(sed *),Bash(head *),Bash(tail *),Bash(wc *)" ) > "$OUT" 2>&1
+    # A run killed from outside (a stray pkill, the OS) or ended without its report is resumed, not skipped.
+    if grep -q "Killed: 9\|Terminated: 15" "$OUT" || [ "$(wc -c < "$OUT")" -lt 200 ]; then
+      echo "   run ended early ($(tail -c 120 "$OUT" | tr '\n' ' ')); resuming in 2 min" | tee -a "$LOG"
+      sleep 120; ARGS=(--resume "$SID"); PROMPT="Continue exactly where you stopped; your WIP is committed on $BR."; [ "$ATTEMPT" -lt 8 ] && continue
+    fi
     if grep -q "hit your session limit\|rate_limit" "$OUT"; then
       S=$(until_reset "$OUT"); echo "   limit reached; resuming in $((S / 60)) min" | tee -a "$LOG"; tg "🛒 fleet · $A paused by the usage limit, resumes in $((S / 60)) min"
       sleep "$S"; ARGS=(--resume "$SID"); PROMPT="Continue exactly where you stopped; your WIP is committed on $BR."; [ "$ATTEMPT" -lt 8 ] && continue
