@@ -151,6 +151,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // Which row (or the answer's legs) is unfolded.
   const [open, setOpen] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Past half a minute the loading copy says why it is taking longer, so nobody thinks it is stuck.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => { setSlow(false); const timer = setTimeout(() => setSlow(true), 35_000); return () => clearTimeout(timer); }, [attempt, lines]);
   useEffect(() => {
     setErr(null);
     api.quote(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then(setQ).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
@@ -162,7 +165,7 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     <View style={s.screen}>
       <Header title={tr('comparing')} subtitle={tr('comparingSub', { n: lines.length, addr: household.address })} onBack={onBack} />
       <View style={{ paddingHorizontal: 20 }}><Skeleton lines={4} /><Skeleton /><Skeleton /></View>
-      <Text style={[s.small, { textAlign: 'center' }]}>{tr('about20s')}</Text>
+      <Text style={[s.small, { textAlign: 'center' }]}>{slow ? tr('stillComparing') : tr('about20s')}</Text>
     </View>
   );
 
