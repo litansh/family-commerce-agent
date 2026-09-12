@@ -535,7 +535,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
       // marked as a substitution the card shows ("סלמון → פילה סלמון"). One extra quote, not one per store.
-      const substituted = await substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; });
+      // API Gateway answers 503 after 30 s, so the extra quote for substitutes has a budget: past it the
+      // compare goes out without substitutes rather than not at all (the log says which).
+      const budgetMs = 9000;
+      const substituted = await Promise.race([
+        substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
+        new Promise<typeof res>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs)),
+      ]);
       // Personal coupons the worker read from the family's accounts change
       // which chain wins; apply them before ranking.
       const couponRows = await Promise.all((household.retailers ?? []).map(async (r) => (await readRow(TABLE, hid, `COUPONS#${r}`)) as { coupons?: Coupon[] } | undefined));
