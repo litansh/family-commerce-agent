@@ -59,8 +59,9 @@ export function parseStores(xml: string): Branch[] {
   const groups = subs.length ? subs.map((m) => m[1]!) : [xml];
   for (const g of groups) {
     const subChainId = tag(g, 'SubChainID') || tag(g, 'SubChainId') || '0';
-    for (const s of g.matchAll(/<Store>([\s\S]*?)<\/Store>/gi)) {
-      const b = s[1]!;
+    // laibcatalog's older files wrap each branch in <Branch> instead of <Store>.
+    for (const s of g.matchAll(/<(Store|Branch)>([\s\S]*?)<\/\1>/gi)) {
+      const b = s[2]!;
       const storeId = tag(b, 'StoreID') || tag(b, 'StoreId');
       if (!storeId) continue;
       const zip = tag(b, 'ZIPCode') || tag(b, 'ZipCode');
