@@ -18,13 +18,12 @@ import type { Api } from './lib/api';
 import { STORES } from './lib/stores';
 import { markLinked, markNeedsRelink, useLinked } from './lib/linked';
 import { confirmFromHistory } from './lib/pending';
-import { HISTORY_JS } from './screens/StoreLink';
+import { HISTORY_JS } from './lib/inject';
 import { BUILD } from './lib/config';
+import { captureSessionJs, GUARD_JS, parseCapturedSession, sessionSummary } from './lib/session';
 
 const EVERY_MS = 6 * 3600_000;
 const KEY = (id: string) => `fca.keepalive.${id}`;
-
-const GUARD = `(()=>{try{const t=(document.title+' '+((document.body&&document.body.innerText)||'').slice(0,600));if(/Sorry, you have been blocked|Error 1020|Access denied|has been blocked/i.test(t))return 'blocked';if(document.querySelector('#challenge-form,#challenge-running,#challenge-stage,.cf-turnstile,[id^="cf-chl"],iframe[src*="challenges.cloudflare.com"]')||/cdn-cgi\\/challenge/.test(location.href)||/Just a moment|Attention Required|Verify you are human|Checking your browser/i.test(t))return 'challenge';}catch(e){}return '';})()`;
 
 function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: Api; householdId: string; onDone: () => void }) {
   const store = STORES[storeId];
@@ -52,9 +51,10 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
   };
   useEffect(() => { const t = setTimeout(() => finish('timeout'), 60_000); return () => clearTimeout(t); }, []);
   if (!store || !WebView) return null;
-  const check = `(async()=>{try{const g=${GUARD};if(g){window.ReactNativeWebView.postMessage('keep:'+g);return;}const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('keep:'+(ok?'in':'out'));}catch(e){window.ReactNativeWebView.postMessage('keep:err');}})();true;`;
+  const check = `(async()=>{try{const g=${GUARD_JS};if(g){window.ReactNativeWebView.postMessage('keep:'+g);return;}const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('keep:'+(ok?'in':'out'));}catch(e){window.ReactNativeWebView.postMessage('keep:err');}})();true;`;
   const promptCheck = `(()=>{try{const t=((document.body&&document.body.innerText)||'').replace(/\\s+/g,' ');const p=/(^|\\s)(כניסה|כניסת משתמש|התחברות|התחבר|כניסה לחשבון|הרשמה|log ?in|sign ?in)(\\s|$)/i.test(t)||!!document.querySelector('input[type="password"],input[type="tel"]');window.ReactNativeWebView.postMessage('keep:'+(p?'out-confirmed':'unclear'));}catch(e){window.ReactNativeWebView.postMessage('keep:unclear');}})();true;`;
-  const capture = `(()=>{try{const keys=${JSON.stringify(store.sessionKeys ?? [])};const cookies=document.cookie.split(';').map(c=>c.trim()).filter(Boolean).map(c=>{const i=c.indexOf('=');return {name:c.slice(0,i),value:decodeURIComponent(c.slice(i+1)),domain:location.hostname}});const tokens={};try{for(const k of Object.keys(localStorage)){if(keys.includes(k)||/token/i.test(k)){const v=localStorage.getItem(k);if(v&&v.length>8&&v.length<4000)tokens[k]=v;}}}catch(e){}window.ReactNativeWebView.postMessage('keepsession:'+JSON.stringify({cookies,tokens,userAgent:navigator.userAgent}));}catch(e){}})();true;`;
+  // The same capture the connect screen runs: the cloud copy is refreshed on every signed-in visit.
+  const capture = captureSessionJs(store, 'keepsession');
   return (
     <View style={{ width: 1, height: 1, opacity: 0, position: 'absolute', left: -2, top: -2 }} pointerEvents="none">
       <WebView
@@ -75,7 +75,15 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             } catch { /* a malformed report is only a report */ }
             finish('in'); return;
           }
-          if (d.startsWith('keepsession:')) { const got = JSON.parse(d.slice(12)) as { cookies: { name: string; value: string; domain?: string }[]; tokens: Record<string, string>; userAgent?: string }; void api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) }).catch(() => null); return; }
+          if (d.startsWith('keepsession:')) {
+            // What was captured, and whether the cloud took it, both reach the log: a keep-alive
+            // that finds a session and posts nothing is exactly the failure nobody would see.
+            const got = parseCapturedSession(d.slice(12)); const sum = sessionSummary(got);
+            const done = (extra: Record<string, unknown>) => api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { sessionCapture: { ...sum, ...extra } } }).catch(() => null);
+            if (sum.cookies + sum.tokens === 0) { void done({ empty: true }); return; }
+            void api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) }).then((r) => done({ saved: r.connected }), (e: unknown) => done({ saved: false, postError: String(e).slice(0, 200) }));
+            return;
+          }
           if (!d.startsWith('keep:')) return;
           const v = d.slice(5); looks.current.push(v);
           // Two looks agree before a verdict; a challenge or block is neither "in" nor "out".
