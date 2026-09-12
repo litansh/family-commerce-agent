@@ -4,6 +4,7 @@ import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from 'rea
 import type { Api } from '../lib/api';
 import { STORES, type CartLine } from '../lib/stores';
 import { isRTL, t as tr } from '../lib/i18n';
+import { emptyTally, nextItem, readCount, type PerItemTally } from '../lib/basket';
 import { Button, Chip, S, t } from '../ui';
 import { BUILD } from '../lib/config';
 
@@ -51,7 +52,16 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   // Every line gets a page at this store: its deep link when the quote has one, else the
   // store's own search for the product name - the universal last resort, any store.
   const linkLines = lines.map((l) => (l.link ? l : store?.searchUrl ? { ...l, link: store.searchUrl(l.name) } : l)).filter((l) => l.link);
-  const nextLink = () => { const i = linkIdx + 1; if (i < linkLines.length) { setLinkIdx(i); setUri(linkLines[i]!.link!); } else { setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); } };
+  // Promise 9 for the per-item rung: an item counts as added only when the store's own basket number
+  // rose while its page was on screen. `baseline` is that number when this item's page settled; a
+  // store that does not publish a count (no `basketCountJs`) verifies nothing, and the screen says so
+  // rather than implying the tap worked.
+  const [tally, setTally] = useState<PerItemTally>(emptyTally);
+  const nextLink = () => {
+    const i = linkIdx + 1;
+    setTally(nextItem);
+    if (i < linkLines.length) { setLinkIdx(i); setUri(linkLines[i]!.link!); } else { setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); }
+  };
 
   useEffect(() => { if (!hasRecipe) setPhase('links'); }, [hasRecipe]);
 
@@ -76,13 +86,20 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
   const onLoadEnd = () => {
     // Per-item flow: the family adds on the store's own page, tap by tap; read the
     // store's own count after each page too, the same way the cart page is read.
-    if ((phase === 'cart' || phase === 'links') && store.basketCountJs) { for (const ms of [1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
+    if ((phase === 'cart' || phase === 'links') && store.basketCountJs) { for (const ms of [300, 1500, 4000]) setTimeout(() => inject(store.basketCountJs), ms); }
     if (!hasRecipe || ran.current) return;
     // Signed in already (a store the family connected)? fill now. Otherwise the
     // store's own login is on screen; we wait for the person to sign in, then fill.
     inject(`(async()=>{try{const ok=await (${store.signedInCheck});window.ReactNativeWebView.postMessage('signedin:'+(ok?'1':'0'));}catch(e){window.ReactNativeWebView.postMessage('signedin:0');}})();true;`);
     if (phase === 'loading') { setTimeout(() => { if (!ran.current) runRecipe(); }, 1500); } // guest stores (Rami Levy) fill without waiting
   };
+  // Adding on a store's own product page does not reload anything, so a count read on page load is
+  // stale exactly when it matters. While an item is on screen, keep asking the store.
+  useEffect(() => {
+    if (phase !== 'links' || !store.basketCountJs) return;
+    const id = setInterval(() => inject(store.basketCountJs), 2500);
+    return () => clearInterval(id);
+  }, [phase, store, linkIdx]); // eslint-disable-line react-hooks/exhaustive-deps
   // While waiting for a sign-in, keep asking the store's page whether it is in yet.
   useEffect(() => {
     if (!hasRecipe) return;
@@ -107,8 +124,12 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
       const n = Number(d.slice(7));
       if (Number.isFinite(n)) {
         setStoreCount(n);
+        // Per-item flow: the first reading on an item's page is that item's baseline; the number
+        // rising while the page is on screen is the store itself saying the tap worked. It is the
+        // only proof there is here - our own side never touches this cart.
+        if (phase === 'links') setTally((prev) => readCount(prev, linkIdx, n));
         // The store's count next to ours, in the log and (a mismatch) in the channel: no discrepancy goes unseen.
-        void api.importHistory(householdId, storeId, [], { build: BUILD, basket: { store: n, added: count('added') } }).catch(() => null);
+        void api.importHistory(householdId, storeId, [], { build: BUILD, basket: { store: n, added: phase === 'links' ? tally.verified.size : count('added'), ...(phase === 'links' ? { perItem: { item: linkIdx + 1, of: linkLines.length } } : {}) } }).catch(() => null);
       }
       return;
     }
@@ -137,6 +158,11 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
     } catch (err) { setDiag(String(err)); setPhase('cart'); if (store.cartUrl) setUri(store.cartUrl); }
   };
 
+  // What "done" may claim after the per-item flow: the items the store's own count confirmed, when
+  // the store publishes one. When it does not, the whole list stays a question for the Orders tab
+  // ("did you buy it?") — as it was — rather than becoming an answer nobody checked.
+  const perItemDone = store.basketCountJs ? linkLines.filter((_l, i) => tally.verified.has(i)) : lines;
+
   const title = phase === 'cart' ? tr('cartReady', { s: store.name }) : phase === 'signin' ? tr('cartSignin', { s: store.name }) : phase === 'links' ? tr('cartLinks', { s: store.name, i: linkIdx + 1, n: linkLines.length }) : tr('cartFilling', { s: store.name });
   const sub = phase === 'cart' ? tr('cartReadySub') : phase === 'signin' ? tr('cartSigninSub', { s: store.name }) : phase === 'links' ? tr('cartLinksSub') : tr('cartFillingSub', { s: store.name });
 
@@ -155,8 +181,25 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
           </Pressable>
         </View>
 
+        {/* Per-item flow: the store's own number is the only one anybody can trust here — Kaniti does
+            not touch this cart, the person does — so it is the only one shown, with "in the basket"
+            appearing on the item whose tap the store's count confirmed. A store that publishes no
+            count says so plainly instead of leaving the family to assume. */}
+        {phase === 'links' ? (
+          <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 8 }} testID="per-item-strip">
+            {store.basketCountJs ? (
+              <View style={[s.rowStart, { gap: 8, flexWrap: 'wrap' }]}>
+                <Chip text={tr('storeBasket', { s: store.name, n: storeCount ?? 0 })} tone="neutral" />
+                {tally.verified.has(linkIdx) ? <Chip text={tr('perItemIn')} tone="good" /> : null}
+              </View>
+            ) : (
+              <Text style={[s.small, { textAlign: rtl ? 'right' : 'left' }]} testID="per-item-no-count">{tr('perItemNoCount', { s: store.name })}</Text>
+            )}
+          </View>
+        ) : null}
+
         {/* Per-line status strip: what went in, what the store does not carry. */}
-        {hasRecipe && phase !== 'loading' ? (
+        {hasRecipe && phase !== 'loading' && phase !== 'links' ? (
           <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 16, paddingVertical: 8 }}>
             <View style={[s.rowStart, { gap: 8, flexWrap: 'wrap' }]}>
               <Chip text={tr('cartAdded', { n: count('added') })} tone="good" />
@@ -194,17 +237,14 @@ export function OrderOnDevice({ storeId, lines, api, householdId, onClose, onDon
 
         <View style={[s.pad, { borderTopWidth: 1, borderColor: t.line, backgroundColor: t.card, paddingTop: 10 }]}>
           {phase === 'links' ? (
-            <>
-              {/* Reusing the cart phase's own chip verbatim (app-designer approved it there); a
-                  different treatment for the per-item flow is app-designer's call, not made here. */}
-              {storeCount !== null ? <Chip text={tr('storeBasket', { s: store.name, n: storeCount })} tone={storeCount >= linkIdx ? 'good' : 'bad'} /> : null}
-              <View style={[s.rowStart, { gap: 10, marginTop: storeCount !== null ? 8 : 0 }]}>
-                <View style={{ flex: 1 }}><Button title={linkIdx + 1 < linkLines.length ? tr('cartNextItem') : tr('cartToCart')} onPress={nextLink} testID="order-next" /></View>
-              </View>
-            </>
+            /* The store's number moved up into the status strip, where the recipe flow keeps its
+               own: one place on this screen tells you what the store holds. */
+            <View style={[s.rowStart, { gap: 10 }]}>
+              <View style={{ flex: 1 }}><Button title={linkIdx + 1 < linkLines.length ? tr('cartNextItem') : tr('cartToCart')} onPress={nextLink} testID="order-next" /></View>
+            </View>
           ) : phase === 'cart' ? (
             <>
-              <Button title={tr('cartDone')} icon="check" onPress={() => onDone(hasRecipe ? added : lines)} testID="order-done" />
+              <Button title={tr('cartDone')} icon="check" onPress={() => onDone(hasRecipe ? added : perItemDone)} testID="order-done" />
               <Text style={[s.faint, { textAlign: 'center', marginTop: 8 }]}>{tr('payAtStore')}</Text>
               {diag && count('added') === 0 ? <Text style={[s.faint, { marginTop: 4 }]} numberOfLines={2} selectable>{diag}</Text> : null}
             </>
