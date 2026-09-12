@@ -170,6 +170,21 @@ export function inferBrandFromName(name: string | null | undefined): string | un
 }
 
 /**
+ * A name with its maker's own text removed and quote marks folded away, so what is left
+ * describes the product rather than who makes it or how the catalogue punctuated it.
+ */
+export function stripBrandFromName(name: string): string {
+  const cleaned = name.replace(/["'׳״]/g, '');
+  let longest: string | undefined;
+  for (const b of KNOWN_BRANDS) {
+    const needle = b.replace(/["'׳״]/g, '');
+    if (cleaned.includes(needle) && (longest === undefined || needle.length > longest.length)) longest = needle;
+  }
+  const stripped = longest === undefined ? cleaned : cleaned.replace(new RegExp(escapeRe(longest), 'g'), ' ');
+  return stripped.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * The consumer brand for a product.
  *
  * The name wins over the catalogue field. The field is frequently the
