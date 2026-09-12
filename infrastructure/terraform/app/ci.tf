@@ -56,11 +56,20 @@ resource "aws_iam_role_policy" "github_deploy" {
   role = aws_iam_role.github_deploy.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
-      Resource = [aws_lambda_function.api.arn, aws_lambda_function.refresh.arn, aws_lambda_function.alerts.arn]
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
+        Resource = [aws_lambda_function.api.arn, aws_lambda_function.refresh.arn, aws_lambda_function.alerts.arn]
+      },
+      {
+        # Reading this project's own logs, so a production failure is diagnosed from CI instead of
+        # from a laptop with credentials (ops/logs.yml). Read-only, and only these log groups.
+        Effect   = "Allow"
+        Action   = ["logs:FilterLogEvents", "logs:DescribeLogStreams", "logs:DescribeLogGroups", "logs:GetLogEvents"]
+        Resource = ["arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.name}-*", "arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.name}-*:*"]
+      },
+    ]
   })
 }
 

@@ -42,7 +42,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltEtasNear, woltNextOpen, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -351,7 +351,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           // Retailers describe promotions in till-speak ("קטיף 5.90 רימון-מות-299ישיר");
           // the catalogue knows the product's real name. Resolve once per refresh,
           // for the strongest deals, and keep the names with the cache.
-          const top = [...fresh].sort((a, b) => b.discountRate - a.discountRate).slice(0, 80);
+          // Round-robin by chain before naming: one chain's feed is always the biggest, and naming
+          // only its promotions is how "מבצעים" quietly became a Shufersal page.
+          const perChain = new Map<string, typeof fresh[number][]>();
+          for (const p of [...fresh].sort((a, b) => b.discountRate - a.discountRate)) {
+            const list = perChain.get(p.chainName) ?? []; list.push(p); perChain.set(p.chainName, list);
+          }
+          const top: typeof fresh[number][] = [];
+          for (let i = 0; top.length < 120; i++) {
+            const before = top.length;
+            for (const list of perChain.values()) { const p = list[i]; if (p) top.push(p); if (top.length >= 120) break; }
+            if (top.length === before) break;
+          }
           const named = await Promise.all(top.map(async (p) => {
             const gtin = p.itemCodes.find((c) => /^\d{8,14}$/.test(c));
             if (!gtin) return p;
@@ -385,9 +396,21 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         const name = u?.productName ?? p.description.replace(/^קו קופה\s*-\s*/, '').trim();
         if (!name) return [];
         return [{ gtin, name, ...(u?.brand ? { brand: u.brand } : {}), chainName: p.chainName, price: Math.round(p.discountedPrice * 100), discountRate: p.discountRate, clubOnly: p.clubOnly, endTs: p.endTs, usual: !!u, score: (u ? 1000 : 0) + p.discountRate }];
-      }).sort((a, b) => b.score - a.score).slice(0, 40);
-      const imgs = await images.cachedMany(ranked.map((d) => ({ key: d.gtin, name: d.name, gtin: d.gtin })));
-      return ok({ deals: ranked.map(({ score: _s, ...d }) => ({ ...d, imageUrl: imgs[d.gtin]?.url ?? null })) });
+      }).sort((a, b) => b.score - a.score);
+      // Every chain that has something good gets a place before any chain gets a second one. A family
+      // shops at two or three chains, not at whichever one publishes the most promotions.
+      const byChain = new Map<string, typeof ranked>();
+      for (const d of ranked) { const l = byChain.get(d.chainName) ?? []; l.push(d); byChain.set(d.chainName, l); }
+      const spread: typeof ranked = [];
+      for (let i = 0; spread.length < 40; i++) {
+        const before = spread.length;
+        for (const l of byChain.values()) { const d = l[i]; if (d) spread.push(d); if (spread.length >= 40) break; }
+        if (spread.length === before) break;
+      }
+      const deals = spread.sort((a, b) => b.score - a.score);
+      const imgs = await images.cachedMany(deals.map((d) => ({ key: d.gtin, name: d.name, gtin: d.gtin })));
+      console.log(JSON.stringify({ event: 'deals', hid, shown: deals.length, chains: [...new Set(deals.map((d) => d.chainName))] }));
+      return ok({ deals: deals.map(({ score: _s, ...d }) => ({ ...d, imageUrl: imgs[d.gtin]?.url ?? null })) });
     }
 
     // Import order history captured on the device: the phone's logged-in
@@ -407,7 +430,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // the store's actual answer without anyone reading a log. Never blocks the response.
       void tellTelegram(String(body['retailer'] ?? ''), body['diag']);
       const cartDiag = ((body['diag'] as { cart?: { diag?: { store?: unknown; branchFrom?: unknown } } } | undefined)?.cart?.diag) ?? {};
-      if (cartDiag.branchFrom === 'address' && typeof cartDiag.store === 'number' && household.branches?.[String(body['retailer'])] !== cartDiag.store) {
+      // The store's own answer for this family's address, whatever the recipe called it ('selected
+      // address', 'first address', 'user home branch'). Only 'default' is a guess worth ignoring.
+      if (typeof cartDiag.branchFrom === 'string' && cartDiag.branchFrom !== 'default' && typeof cartDiag.store === 'number' && household.branches?.[String(body['retailer'])] !== cartDiag.store) {
         await households.update(hid, { branches: { ...(household.branches ?? {}), [String(body['retailer'])]: cartDiag.store } }).catch(() => null);
       }
       const result = await importRawOrders(hid, catalog, raw);
@@ -434,9 +459,12 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     // Pictures for a set of barcodes, resolved within a time budget so the
     // grid never waits on them. The app calls this right after rendering.
     if (method === 'POST' && rest === 'images') {
+      // Barcodes, and names for the lines a family typed in their own words - those have no barcode,
+      // and a drawn glyph where a photograph belongs is the commonest "the app looks unfinished".
       const gtins = arr<string>(body['gtins'], 'gtins').filter((g) => typeof g === 'string').slice(0, 40);
-      const found = await images.resolveMany(gtins.map((g) => ({ key: g, gtin: g })), 10, 12_000);
-      return ok({ images: Object.fromEntries(gtins.map((g) => [g, found[g]?.url ?? null])) });
+      const names = Array.isArray(body['names']) ? (body['names'] as unknown[]).filter((n): n is string => typeof n === 'string').slice(0, 40) : [];
+      const found = await images.resolveMany([...gtins.map((g) => ({ key: g, gtin: g })), ...names.map((n) => ({ key: n, name: n }))], 10, 12_000);
+      return ok({ images: Object.fromEntries([...gtins, ...names].map((k) => [k, found[k]?.url ?? null])) });
     }
 
     // One product, every chain that carries it. The catalogue's canonical
@@ -617,12 +645,18 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
       if (rl.length) {
         try {
-          const branch = household.branches?.['rami-levy'] ?? branchForCity(await ramiLevyStock.branches(), (household.addressDetails as { city?: string } | undefined)?.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
+          // The branch the family's basket will actually be filled from - not a guess, when we can help it.
+          const ad = (household.addressDetails ?? {}) as { city?: string; lat?: number; lng?: number };
+          const known = household.branches?.['rami-levy'];
+          const geoList = known ? [] : ((await readRow(TABLE, 'CATALOG', 'RL_BRANCHES')) as { branches?: RamiLevyBranch[] } | undefined)?.branches ?? [];
+          const near = known ? undefined : typeof ad.lat === 'number' && typeof ad.lng === 'number' ? nearestBranch(geoList, { lat: ad.lat, lng: ad.lng }) : undefined;
+          const branch = known ?? near?.id ?? branchForCity(await ramiLevyStock.branches(), ad.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
+          const branchFrom = known ? 'household' : near ? 'nearest' : 'city-or-default';
           const av = await ramiLevyStock.availableIn(rl.flatMap((q) => q.lines.map((l) => l.gtin ?? '')), branch);
           const droppedNames: string[] = []; const droppedIds: string[] = [];
           for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
           if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
-            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, dropped: droppedNames })); }
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the

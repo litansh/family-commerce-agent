@@ -397,7 +397,9 @@ export const HAZI_HINAM: Platform = {
   // then item/addItemToCart {ItemId,Quantity,Type,IsCalculateCart}. The session
   // (H_UUID + bearer the page holds) makes these the person's own cart.
   cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
-  const B='https://shop.hazi-hinam.co.il/proxy/';
+  // Was missing 'api/' (proxy/item/... 404s; historyJs already had it right) - the cart recipe
+  // could never find an item, confirmed in a lab, 2026-09-13.
+  const B='https://shop.hazi-hinam.co.il/proxy/api/';
   let auth='';try{auth=(window.sessionStorage.getItem('access_token')||window.localStorage.getItem('access_token')||'');}catch(e){}
   const H={accept:'application/json','content-type':'application/json; charset=utf-8'};if(auth)H.Authorization=/^Bearer/i.test(auth)?auth:'Bearer '+auth;
   const j=async(u,opt)=>{const r=await fetch(B+u,Object.assign({credentials:'include',headers:H},opt||{}));const t=await r.text();let d=null;try{d=JSON.parse(t)}catch(e){}return {s:r.status,d};};
@@ -405,6 +407,10 @@ export const HAZI_HINAM: Platform = {
   const it=await j('item/getItemByBarkod/'+encodeURIComponent(l.gtin));
   const item=it.d&&it.d.IsOK&&it.d.Results&&it.d.Results.Item;
   if(!item){out.push({gtin:l.gtin,status:'missing'});continue;}
+  // The store's own branch stock (confirmed in a lab, 2026-09-13: getItemByBarkod answers
+  // IsInStock for the branch the session is scoped to) - never add a line the branch cannot
+  // supply; the family meets it as a substitution offer, not a surprise at checkout.
+  if(item.IsInStock===false){out.push({gtin:l.gtin,status:'unavailable',detail:item.Name||l.name});continue;}
   const id=item.Id||item.ItemId;
   const add=await j('item/addItemToCart',{method:'POST',body:JSON.stringify({ItemId:id,Quantity:l.qty||1,Type:0,IsCalculateCart:true})});
   const ok=add.d&&add.d.IsOK;

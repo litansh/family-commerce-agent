@@ -1,6 +1,6 @@
 import { formatSize, sizeFromName } from '@fca/domain';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain';
 import type { Api, Deal, Household, SearchHit } from '../lib/api';
@@ -39,22 +39,6 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const seq = useRef(0);
   const [scanning, setScanning] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [imp, setImp] = useState<{ status: string; orders?: number; products?: number; error?: string } | null>(null);
-  const firstRetailer = household.retailers?.[0];
-  useEffect(() => {
-    if (!firstRetailer) return;
-    let alive = true;
-    const poll = async () => {
-      const st = await api.importStatus(household.id, firstRetailer).catch(() => null);
-      if (!alive) return;
-      setImp(st);
-      if (st && ['queued', 'connecting', 'reading', 'resolving'].includes(st.status)) setTimeout(poll, 4000);
-      if (st?.status === 'done') api.memory(household.id).then(setMemory).catch(() => null);
-    };
-    void poll();
-    return () => { alive = false; };
-  }, [api, household.id, firstRetailer]);
-  const startImport = async () => { if (!firstRetailer) return; tap(); setImp({ status: 'queued' }); await api.requestImport(household.id, firstRetailer).catch(() => setImp({ status: 'failed', error: '' })); };
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
 
   useEffect(() => { api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
@@ -78,13 +62,32 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         if (mine !== seq.current) return;
         setHits(r.products); setSearching(false);
         const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
-        if (missing.length === 0) return;
-        const im = await api.images(household.id, missing).catch(() => null);
-        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => (h.gtin && im.images[h.gtin] ? { ...h, imageUrl: im.images[h.gtin]! } : h)));
+        const unnamed = r.products.filter((h) => !h.imageUrl && !h.gtin).map((h) => h.name);
+        if (missing.length === 0 && unnamed.length === 0) return;
+        const im = await api.images(household.id, missing, unnamed).catch(() => null);
+        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; }));
       }).catch(() => { if (mine === seq.current) { setHits([]); setSearching(false); } });
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);
+
+  // A line the family typed has no barcode and so no picture. Ask for one by name, once per line,
+  // and keep it on the line: a list of drawn glyphs is what makes an app look unfinished.
+  const askedImages = useRef(new Set<string>());
+  useEffect(() => {
+    const want = lines.filter((l) => !l.imageUrl && !askedImages.current.has(l.id)).slice(0, 20);
+    if (!want.length) return;
+    for (const l of want) askedImages.current.add(l.id);
+    const gtins = want.filter((l) => l.gtin).map((l) => l.gtin!);
+    const names = want.filter((l) => !l.gtin).map((l) => l.productName ?? l.query);
+    void api.images(household.id, gtins, names).then((im) => {
+      setLines((xs) => xs.map((l) => {
+        if (l.imageUrl) return l;
+        const u = (l.gtin && im.images[l.gtin]) || im.images[l.productName ?? l.query];
+        return u ? { ...l, imageUrl: u } : l;
+      }));
+    }).catch(() => null);
+  }, [lines, api, household.id]);
 
   const onList = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);
   const due = useMemo(() => new Set(suggestions.filter((x) => x.reason === 'overdue').map((x) => x.preference.key)), [suggestions]);
@@ -112,7 +115,23 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
   const addHit = (h: SearchHit) => { const size = formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name); addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), ...(size ? { size } : {}), imageUrl: h.imageUrl }); };
   const addUsual = (p: ProductPreference) => addLine(lineFromPref(p));
-  const remove = (id: string) => { tap(); setLines((xs) => xs.filter((x) => x.id !== id)); };
+  // Nothing leaves the list without a way back: a delete keeps the line and its place for a few
+  // seconds and the bar at the foot puts it back. A list a family built cannot cost one careless tap.
+  const [undo, setUndo] = useState<{ line: Line; at: number } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remove = (id: string) => {
+    tap();
+    setLines((xs) => { const at = xs.findIndex((x) => x.id === id); const line = xs[at]; if (line) setUndo({ line, at }); return xs.filter((x) => x.id !== id); });
+    setDetail(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 6000);
+  };
+  const undoRemove = () => {
+    const u = undo; if (!u) return;
+    tap(); setUndo(null);
+    setLines((xs) => { const next = [...xs]; next.splice(Math.min(u.at, next.length), 0, u.line); return next; });
+  };
+  const [detail, setDetail] = useState<Line | null>(null);
   const bump = (id: string, d: number) => { tap(); setLines((xs) => xs.map((x) => x.id !== id ? x : (x.amount !== undefined && x.unit) ? { ...x, amount: Math.max(0.5, x.amount + d) } : { ...x, packQty: Math.max(1, (x.packQty ?? 1) + d) })); };
 
   const qtyLabel = (l: Line) => (l.amount !== undefined && l.unit ? `${l.amount} ${l.unit}` : `×${l.packQty ?? 1}`);
@@ -168,19 +187,6 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           </View>
         ) : null}
 
-        {!showSearch && firstRetailer && (!memory || Object.keys(memory.products).length === 0) && imp?.status !== 'done' && (
-          <View style={[s.card, { backgroundColor: t.accentSoft }]}>
-            <Text style={[s.title, { color: t.accent, fontSize: 17 }]}>{tr('connectTitle', { r: firstRetailer })}</Text>
-            <Text style={[s.small, { marginBottom: 10 }]}>{tr('connectSub')}</Text>
-            <Text style={[s.faint, { fontFamily: 'Menlo', marginBottom: 10 }]}>KANITI_HOUSEHOLD={household.id} npm run link -w @fca/order-worker</Text>
-            {imp && ['queued', 'connecting', 'reading', 'resolving'].includes(imp.status) ? <Text style={s.small}>{tr('importing')}</Text>
-              : imp?.status === 'failed' ? <Text style={[s.small, { color: t.red }]}>{/no saved session/.test(imp.error ?? '') ? tr('importNeedsLink') : tr('importFailed', { e: imp.error ?? '' })}</Text>
-              : <Button title={tr('importBtn')} kind="secondary" onPress={startImport} />}
-          </View>
-        )}
-        {!showSearch && imp?.status === 'done' && (imp.orders ?? 0) > 0 && lines.length === 0 && Object.keys(memory?.products ?? {}).length > 0 && (
-          <Text style={[s.small, { marginBottom: 8 }]}>{tr('importDone', { o: imp.orders ?? 0, p: imp.products ?? 0 })}</Text>
-        )}
         {!showSearch && lines.length === 0 && usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length >= 5 && (
           <Pressable onPress={usualShop} style={({ pressed }) => [s.card, { backgroundColor: t.accent, marginBottom: 14 }, pressed && { opacity: 0.85 }]}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length })}</Text>
@@ -241,28 +247,36 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           <View key={a.key} style={[s.card, { paddingVertical: 8 }]}>
             <Text style={[s.small, { fontWeight: '700', color: t.muted, paddingVertical: 6 }]}>{a.glyph}  {a[locale]}</Text>
             {items.map((item) => (
-              <View key={item.id} style={[s.row, { paddingVertical: 8, borderTopWidth: 1, borderColor: t.line }]}>
-                <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
-                  <Pressable onPress={() => remove(item.id)} hitSlop={14} style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
+              <SwipeRow key={item.id} onDelete={() => remove(item.id)} label={tr('swipeDelete')}>
+                <Pressable style={[s.rowStart, { flex: 1, gap: 10 }]} onPress={() => { tap(); setDetail(item); }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
                     <Icon name="check" size={14} color={t.faint} />
-                  </Pressable>
+                  </View>
                   <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
                   <View style={{ flex: 1 }}>
                     <Text style={[s.body, { fontSize: 16 }]} numberOfLines={1}>{item.query}</Text>
                     {/* Brand and pack size under the name: "תנובה · 1 ליטר", so two milks are never the same line. */}
                     {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); const bits = [item.brand, sz].filter(Boolean); return bits.length ? <Text style={s.faint}>{bits.join(' · ')}</Text> : null; })()}
                   </View>
-                </View>
+                </Pressable>
                 <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
                   <Pressable onPress={() => bump(item.id, -1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="minus" size={16} color={t.muted} /></Pressable>
                   <Text style={[s.priceSmall, { color: t.ink, minWidth: 40, textAlign: 'center', fontWeight: '700' }]}>{qtyLabel(item)}</Text>
                   <Pressable onPress={() => bump(item.id, 1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="plus" size={16} color={t.ink} /></Pressable>
                 </View>
-              </View>
+              </SwipeRow>
             ))}
           </View>
         )))}
       </ScrollView>
+
+      {undo ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: Platform.OS === 'web' ? 168 : 160, backgroundColor: t.ink, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: isRTL() ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: t.card, flexShrink: 1 }} numberOfLines={1}>{tr('deleted', { x: undo.line.query })}</Text>
+          <Pressable onPress={undoRemove} hitSlop={10}><Text style={{ color: t.card, fontWeight: '700' }}>{tr('undo')}</Text></Pressable>
+        </View>
+      ) : null}
+      {detail ? <ItemSheet item={detail} onClose={() => setDetail(null)} onBump={(d) => bump(detail.id, d)} onDelete={() => remove(detail.id)} lines={lines} /> : null}
 
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: Platform.OS === 'web' ? 96 : 88, backgroundColor: t.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, borderTopWidth: 1, borderColor: t.line, shadowColor: '#0E2E1F', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: -6 } }}>
         {query.trim() ? (
@@ -281,5 +295,77 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       </View>
       <Toast text={toast} />
     </View>
+  );
+}
+
+/**
+ * A list row that can be swiped away. The swipe has to be deliberate - past a third of the row -
+ * and even then the delete is undoable; a tap anywhere on the row opens the item instead.
+ * PanResponder, not a gesture library: one row, one axis, nothing to install.
+ */
+function SwipeRow({ children, onDelete, label }: { children: React.ReactNode; onDelete: () => void; label: string }) {
+  const s = S();
+  const x = useRef(new Animated.Value(0)).current;
+  const open = useRef(false);
+  const pan = useRef(
+    PanResponder.create({
+      // Only a clearly horizontal drag; the list must still scroll and the row must still be tappable.
+      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_e, g) => { const d = isRTL() ? Math.max(0, g.dx) : Math.min(0, g.dx); x.setValue(d); },
+      onPanResponderRelease: (_e, g) => {
+        const far = Math.abs(g.dx) > 96;
+        open.current = far;
+        Animated.spring(x, { toValue: far ? (isRTL() ? 104 : -104) : 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+    }),
+  ).current;
+  return (
+    <View style={{ borderTopWidth: 1, borderColor: t.line }}>
+      <View style={{ position: 'absolute', top: 0, bottom: 0, [isRTL() ? 'left' : 'right']: 0, width: 104, backgroundColor: t.redSoft, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable onPress={onDelete} hitSlop={8} style={{ padding: 8 }}><Text style={{ color: t.red, fontWeight: '700' }}>{label}</Text></Pressable>
+      </View>
+      <Animated.View style={[s.row, { paddingVertical: 8, backgroundColor: t.card, transform: [{ translateX: x }] }]} {...pan.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
+/**
+ * The item, in full: its picture, what it is, how much of it, and the two things a person wants to
+ * do with it - change the amount, or take it off the list. Deleting from here is deliberate, and
+ * still undoable from the bar.
+ */
+function ItemSheet({ item, onClose, onBump, onDelete, lines }: { item: Line; onClose: () => void; onBump: (d: number) => void; onDelete: () => void; lines: readonly Line[] }) {
+  const s = S();
+  const live = lines.find((l) => l.id === item.id) ?? item;
+  const size = live.size ?? sizeFromName(live.productName ?? live.query);
+  const qty = live.amount !== undefined && live.unit ? `${live.amount} ${live.unit}` : `×${live.packQty ?? 1}`;
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: '#0006' }} onPress={onClose} />
+      <View style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }}>
+        <View style={[s.rowStart, { gap: 14 }]}>
+          <ProductImage url={live.imageUrl} gtin={live.gtin} name={live.query} size={84} radius={16} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.title, { fontSize: 18 }]} numberOfLines={3}>{live.productName ?? live.query}</Text>
+            {[live.brand, size].filter(Boolean).length ? <Text style={[s.faint, { marginTop: 2 }]}>{[live.brand, size].filter(Boolean).join(' · ')}</Text> : null}
+            {live.gtin ? <Text style={[s.faint, { marginTop: 2, fontSize: 11 }]}>{live.gtin}</Text> : null}
+          </View>
+        </View>
+        <View style={[s.row, { marginTop: 18 }]}>
+          <Text style={s.body}>{tr('amount')}</Text>
+          <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
+            <Pressable onPress={() => onBump(-1)} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 11 }}><Icon name="minus" size={18} color={t.muted} /></Pressable>
+            <Text style={[s.priceSmall, { color: t.ink, minWidth: 56, textAlign: 'center', fontWeight: '700' }]}>{qty}</Text>
+            <Pressable onPress={() => onBump(1)} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 11 }}><Icon name="plus" size={18} color={t.ink} /></Pressable>
+          </View>
+        </View>
+        <View style={{ marginTop: 18, gap: 10 }}>
+          <Button title={tr('closeSheet')} onPress={onClose} />
+          <Pressable onPress={onDelete} style={{ alignItems: 'center', paddingVertical: 12 }}><Text style={{ color: t.red, fontWeight: '600' }}>{tr('removeFromList')}</Text></Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
