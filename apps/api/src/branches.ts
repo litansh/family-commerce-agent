@@ -16,7 +16,7 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { allPortals, branchesInCity, decodeXml, fetchCbs, geocode, nearestBranches, parsePriceFull, priceAtBranch, reverseCity, type Branch, type GeoBranch, type NearbyBranch, type PriceIndex, type SettlementNames } from '@fca/branch-prices';
+import { allPortals, branchesInCity, decodeXml, fetchCbs, geocode, nearestBranches, parsePriceFull, parsePromoFull, priceAtBranch, reverseCity, type Branch, type GeoBranch, type NearbyBranch, type PriceIndex, type PromoIndex, type SettlementNames } from '@fca/branch-prices';
 import { DEFAULT_CONSTANTS, type Agorot } from '@fca/domain';
 import { HouseholdStore, type Household } from './households.ts';
 import { readRow, writeRow } from './orders.ts';
@@ -64,7 +64,7 @@ export class BranchPrices {
   readonly #table: string;
   readonly #bucket: string;
   readonly #refreshFn: string;
-  readonly #indexCache = new Map<string, { at: number; index: PriceIndex }>();
+  readonly #indexCache = new Map<string, { at: number; index: PriceIndex; promos?: PromoIndex }>();
 
   constructor(table: string, bucket: string, refreshFn: string) { this.#table = table; this.#bucket = bucket; this.#refreshFn = refreshFn; }
 
@@ -97,9 +97,9 @@ export class BranchPrices {
     if (!row || row.status !== 'ready') return { status: row?.status === 'none' ? 'none' : 'pending', branches: [] };
     const views: DriveView[] = [];
     for (const b of row.branches) {
-      const index = await this.#index(b.chain, b.storeId);
-      if (!index) continue;
-      const q = priceAtBranch(b, index, lines, DEFAULT_CONSTANTS);
+      const indexed = await this.#index(b.chain, b.storeId);
+      if (!indexed) continue;
+      const q = priceAtBranch(b, indexed.index, lines, DEFAULT_CONSTANTS, indexed.promos);
       const priced = new Set(q.quote.lines.map((l) => l.lineId));
       views.push({
         storefrontId: q.quote.storefrontId, chain: b.chain, brand: b.brand, branchName: b.name, address: b.address,
@@ -118,14 +118,15 @@ export class BranchPrices {
     return { status: 'ready', branches: useful };
   }
 
-  async #index(chain: string, storeId: string): Promise<PriceIndex | undefined> {
+  async #index(chain: string, storeId: string): Promise<{ index: PriceIndex; promos?: PromoIndex } | undefined> {
     const key = `index/${chain}/${storeId}.json`;
     const hit = this.#indexCache.get(key);
-    if (hit && Date.now() - hit.at < 20 * 60_000) return hit.index;
-    const obj = await this.#getJson<{ prices: PriceIndex }>(key);
+    if (hit && Date.now() - hit.at < 20 * 60_000) return hit;
+    const obj = await this.#getJson<{ prices: PriceIndex; promos?: PromoIndex }>(key);
     if (!obj) return undefined;
-    this.#indexCache.set(key, { at: Date.now(), index: obj.prices });
-    return obj.prices;
+    const entry = { at: Date.now(), index: obj.prices, ...(obj.promos ? { promos: obj.promos } : {}) };
+    this.#indexCache.set(key, entry);
+    return entry;
   }
 
   // --- refresher side ---------------------------------------------------------
@@ -213,7 +214,14 @@ export class BranchPrices {
         const pf = parsePriceFull(decodeXml(await portal.download(ref)));
         const barcodes = Object.keys(pf.prices).length;
         if (barcodes < 500) { console.warn(`thin price file for ${b.chain} ${b.storeId}: ${barcodes}`); continue; }
-        await this.#putJson(key, { at: now, chain: b.chain, storeId: b.storeId, file: ref.name, barcodes, prices: pf.prices });
+        // Club prices and multi-buys lower the total further; a chain that publishes none, or a
+        // fetch that fails, still leaves the price index usable - promos only ever add a discount.
+        let promos: PromoIndex | undefined;
+        try {
+          const pref = await portal.promoFile(b.storeId);
+          if (pref) promos = parsePromoFull(decodeXml(await portal.download(pref)));
+        } catch (e) { console.warn(`promo file for ${b.chain} ${b.storeId}:`, e instanceof Error ? e.message : e); }
+        await this.#putJson(key, { at: now, chain: b.chain, storeId: b.storeId, file: ref.name, barcodes, prices: pf.prices, ...(promos ? { promos } : {}) });
         branches.push({ ...b, indexedAt: now, barcodes });
       } catch (e) { console.warn(`index ${b.chain} ${b.storeId}:`, e instanceof Error ? e.message : e); }
     }
