@@ -40,7 +40,7 @@ for A in "${AGENTS[@]}"; do
   else git worktree add -q -B "$BR" "$WT" origin/main 2>/dev/null || git worktree add -q "$WT" "$BR"; fi
   ( cd "$WT" && [ -d node_modules ] || ln -s "$ROOT/node_modules" node_modules; [ -e apps/mobile/node_modules ] || ln -s "$ROOT/apps/mobile/node_modules" apps/mobile/node_modules ) 2>/dev/null
   SID=$(uuidgen | tr 'A-Z' 'a-z'); OUT="$LOGDIR/fleet-$A-$DAY.out"
-  TASK="${FLEET_TASK:-Work the lines that name you in docs/BACKLOG.md and anything in docs/PRODUCT-REVIEW.md that is yours, one line at a time: reproduce in the smallest lab, fix, prove with the same lab, commit and push WIP as you go, and open one pull request per line with ops/pr.sh (it posts to Telegram for the owner). Stop after two pull requests or when nothing of yours is left; finish with a five-line report.}"
+  TASK="${FLEET_TASK:-Work the lines that name you in docs/BACKLOG.md and anything in docs/PRODUCT-REVIEW.md that is yours, one line at a time: reproduce in the smallest lab, fix, prove with the same lab, commit and push WIP as you go, and open one pull request per line with ops/pr.sh (it posts to Telegram for the owner). Stop after three pull requests or when nothing of yours is left; finish with a five-line report.}"
   PROMPT="You are Kaniti's $A agent. Read docs/CONTEXT.md and .claude/agents/$A.md first, nothing else up front. You are in the worktree $WT on branch $BR (never touch main). Run git log --oneline origin/main..HEAD and git diff origin/main --stat first: that is your saved work in progress - finish and prove it before anything new. $TASK"
   echo "== $A ($MODEL) on $BR at $(date)" | tee -a "$LOG"; tg "🛒 fleet · $A starts ($MODEL) on $BR"
   ATTEMPT=0; ARGS=(--session-id "$SID")
