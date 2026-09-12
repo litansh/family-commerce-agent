@@ -12,6 +12,12 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **Cart recipes for stor.ai (Victory, Carrefour, Keshet, Mahsanei HaShuk, Tiv Taam) and Wolt** — today per-item deep links; the family taps "add" per item. Native carts need a test account per chain (the owner allowed creating fictive accounts). *store-recipe-fixer*
 - [ ] **Hatzi Hinam cart recipe** written, unverified. *store-recipe-fixer*
 
+## Store truth (promise 9)
+- [x] Rami Levy: only a verified cart counts as added; the store's basket count shown beside ours; a mismatch reaches the channel (PRs #36, this one).
+- [ ] **Basket count for every store with a cart recipe** (Hatzi Hinam, the stor.ai chains once their recipes exist, Wolt): a `basketCountJs` per store, read on the cart page. *store-recipe-fixer*
+- [ ] **Per-item flow verified too**: when the family adds item by item on the store's pages, read the store's count after each and show it. *store-recipe-fixer + app-designer*
+- [ ] **product-qa checks promise 9 daily**: every claim in the shopper and the cart lab is matched against the store's own state; a mismatch is a red check. *product-qa*
+
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
 - [x] The compare screen to the approved design; store rows open their own store (PR #13).

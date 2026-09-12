@@ -690,15 +690,16 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
   const token = process.env['TELEGRAM_BOT_TOKEN'] ?? '';
   const chat = process.env['TELEGRAM_CHAT_ID'] ?? '';
   if (!token || !chat || !diag || typeof diag !== 'object') return;
-  const d = diag as { cart?: { results?: { status?: string }[]; diag?: unknown }; loadError?: unknown; build?: unknown };
+  const d = diag as { cart?: { results?: { status?: string }[]; diag?: unknown }; basket?: { store?: number; added?: number }; loadError?: unknown; build?: unknown };
   const results = d.cart?.results ?? [];
   const added = results.filter((r) => r.status === 'added').length;
   let why = '';
   // Every cart report goes out: 'added' is the recipe's word, the basket the family sees is the truth.
   if (d.cart && results.length > 0) why = `cart at ${retailer}: ${added} of ${results.length} lines added`;
+  else if (d.basket && typeof d.basket.store === 'number' && typeof d.basket.added === 'number' && d.basket.store < d.basket.added) why = `basket mismatch at ${retailer}: the store shows ${d.basket.store}, Kaniti added ${d.basket.added}`;
   else if (d.loadError) why = `store page failed at ${retailer}`;
   if (!why) return;
-  const text = `📱 ${why}\nbuild ${String(d.build ?? '?')}\n${JSON.stringify(d.cart?.diag ?? d.loadError ?? {}).slice(0, 1800)}`;
+  const text = `📱 ${why}\nbuild ${String(d.build ?? '?')}\n${JSON.stringify(d.cart?.diag ?? d.basket ?? d.loadError ?? {}).slice(0, 1800)}`;
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }), signal: AbortSignal.timeout(4000) }).catch((e: unknown) => console.warn('telegram failed', e instanceof Error ? e.message : String(e)));
 }
 
