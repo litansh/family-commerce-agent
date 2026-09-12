@@ -37,20 +37,33 @@ export function parseWoltFront(feed: FrontFeed): Record<string, WoltEta> {
 
 const cache = new Map<string, { at: number; etas: Record<string, WoltEta> }>();
 
+/**
+ * The pages a grocery venue can be listed on. The front page carries only a few "featured" markets
+ * (Wolt Market, Tiv Taam); the chains' venues - Victory, Mahsanei HaShuk, Shufersal, Carrefour - are
+ * on the grocery category page only, so both are read and merged (the front page wins on a repeat).
+ * Read from a residential and an AWS address alike; the feed needs no account.
+ */
+const PAGES = ['/v1/pages/front', '/v1/pages/venue-list/category-grocery'] as const;
+
 /** Estimates around (lat, lng), cached five minutes per ~100 m cell. Empty on any failure — never blocks a quote. */
 export async function woltEtasNear(lat: number, lng: number, fetchImpl: typeof fetch = fetch): Promise<Record<string, WoltEta>> {
   const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.etas;
-  try {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 6000);
-    const res = await fetchImpl(`https://restaurant-api.wolt.com/v1/pages/front?lat=${lat}&lon=${lng}`, { headers: { accept: 'application/json', 'app-language': 'he', platform: 'Web' }, signal: ctl.signal }).finally(() => clearTimeout(t));
-    if (!res.ok) return {};
-    const etas = parseWoltFront((await res.json()) as FrontFeed);
-    cache.set(key, { at: Date.now(), etas });
-    return etas;
-  } catch { return {}; }
+  const page = async (path: string): Promise<Record<string, WoltEta>> => {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const res = await fetchImpl(`https://restaurant-api.wolt.com${path}?lat=${lat}&lon=${lng}`, { headers: { accept: 'application/json', 'app-language': 'he', platform: 'Web' }, signal: ctl.signal }).finally(() => clearTimeout(t));
+      if (!res.ok) return {};
+      return parseWoltFront((await res.json()) as FrontFeed);
+    } catch { return {}; }
+  };
+  const pages = await Promise.all(PAGES.map(page));
+  const etas: Record<string, WoltEta> = {};
+  for (const p of pages) for (const [slug, e] of Object.entries(p)) if (!etas[slug]) etas[slug] = e;
+  if (Object.keys(etas).length > 0) cache.set(key, { at: Date.now(), etas });
+  return etas;
 }
 
 /** The estimate for a SuperMCP storefront id (`wolt-<slug>`), if Wolt lists that venue near the address. */

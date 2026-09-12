@@ -48,6 +48,21 @@ const me = await fetch(`${API}/me`, { headers: h }).then((r) => r.json());
 const hid = me.households?.[0]?.id;
 check('signed in as the test family', !!hid, hid);
 
+// Promise 7 — memory: seed a confirmed brand (olive oil, already on the list) and a forgotten
+// habit (instant coffee, never on this list) before the compare runs, so the compare itself is
+// the proof — not a side call. Both are the test family's own memory, no store touched.
+const OIL = { phrase: 'שמן זית', gtin: '7290017334479', productName: 'שמן זית ארומה פירותית750', brand: 'אליעד' };
+const COFFEE = { phrase: 'קפה נמס', gtin: '7290000072753', productName: "קפה נמס טייסטרס צ'ויס Taster's Choice" };
+if (!SHORT && hid) {
+  await fetch(`${API}/households/${hid}/memory/confirm`, { method: 'POST', headers: h, body: JSON.stringify(OIL) });
+  const mem = await fetch(`${API}/households/${hid}/memory`, { headers: h }).then((r) => r.json()).catch(() => ({ products: {} }));
+  const coffeeKnown = Object.values(mem.products ?? {}).find((p) => p.gtin === COFFEE.gtin);
+  // Two purchases are enough to count as "usual" (suggestMissing's minOrderCount); seed once, never regrow it.
+  if (!coffeeKnown || coffeeKnown.orderCount < 2) {
+    await fetch(`${API}/households/${hid}/memory/shop`, { method: 'POST', headers: h, body: JSON.stringify({ bought: [COFFEE, COFFEE] }) });
+  }
+}
+
 // 1. Resolve: what the app does as the list is typed.
 const resolved = await fetch(`${API}/households/${hid}/resolve`, { method: 'POST', headers: h, body: JSON.stringify({ lines: LIST }) }).then((r) => r.json()).catch(() => ({}));
 const choices = resolved.choices ?? {};
@@ -119,6 +134,21 @@ if (best) {
   const sl = q.storefrontLines?.[best.legs[0].storefrontId] ?? {};
   const fillable = best.legs[0].lineIds.filter((id) => sl[id]?.gtin || sl[id]?.link).length;
   check('the winning cart is fillable on the phone (barcode or link per line)', fillable >= best.legs[0].lineIds.length * 0.9, `${fillable}/${best.legs[0].lineIds.length}`);
+}
+
+// Promise 7 — it remembers the family: a confirmed brand wins the line in this very compare,
+// and a habit missing from the list surfaces as a suggestion, not silence.
+if (!SHORT) {
+  const oilLine = LIST.find((l) => l.query === OIL.phrase);
+  const oilQuoted = q.lines?.find((l) => l.id === oilLine?.id);
+  // The script mirrors the phone: resolve first (this is where memory is actually read from a bare
+  // query), then quote with the gtin resolve already chose — so by the time quote sees the line it
+  // is an explicit request, not a memory lookup of its own, and quote's own fromMemory is rightly empty.
+  const oilResolved = oilLine && choices[oilLine.id];
+  check('a confirmed brand preference changes the compare', !!oilResolved && oilResolved.source === 'memory' && oilResolved.chosen?.gtin === OIL.gtin && oilQuoted?.gtin === OIL.gtin, oilResolved ? `${oilResolved.chosen?.brand ?? '?'} ${oilResolved.chosen?.gtin} (source ${oilResolved.source}) → quoted ${oilQuoted?.gtin}` : 'no line');
+  const suggestions = q.suggestions ?? [];
+  const forgotten = suggestions.find((s) => s.preference?.gtin === COFFEE.gtin);
+  check('a forgotten habit is suggested from memory, not a generic list', !!forgotten, forgotten ? `${forgotten.preference.productName} (${forgotten.reason}, ${forgotten.preference.orderCount}x)` : `${suggestions.length} suggestion(s), none matched`);
 }
 
 const bad = checks.filter((c) => !c.ok);

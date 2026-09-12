@@ -230,6 +230,13 @@ resource "aws_iam_role_policy" "api" {
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.name}-api*"
       },
+      {
+        # The compare runs as a background job: the API invokes itself (POST /compares) so the
+        # family's phone waits on a row, not on API Gateway's 30 s. Named by ARN to avoid a cycle.
+        Effect   = "Allow"
+        Action   = ["lambda:InvokeFunction"]
+        Resource = "arn:aws:lambda:${var.region}:${data.aws_caller_identity.me.account_id}:function:${var.name}-api"
+      },
     ]
   })
 }
@@ -246,7 +253,7 @@ resource "aws_lambda_function" "api" {
   handler          = "index.handler"
   filename         = data.archive_file.api.output_path
   source_code_hash = data.archive_file.api.output_base64sha256
-  timeout          = 60 # a whole-basket quote takes ~15s
+  timeout          = 120 # a whole-basket quote takes ~15 s; the background compare job may retry a slow provider
   memory_size      = 512
   architectures    = ["arm64"]
 
