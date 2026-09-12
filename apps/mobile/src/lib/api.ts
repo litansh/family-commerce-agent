@@ -24,6 +24,8 @@ export interface DriveBranch {
 
 export interface QuoteResult {
   currency?: string;
+  /** Lines a store's own branch for this family does not stock: the compare says so, before anyone shops. */
+  branchStock?: Record<string, { branch: number; lineIds: string[] }>;
   /** How soon each storefront delivers: live minutes (Wolt) or window delivery (the chains). */
   etas?: Record<string, { kind: 'live' | 'slots'; minutes?: number; range?: string; name?: string }>;
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
