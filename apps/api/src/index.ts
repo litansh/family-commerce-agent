@@ -42,7 +42,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable } from '@fca/retailer-connectors';
+import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -407,7 +407,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // the store's actual answer without anyone reading a log. Never blocks the response.
       void tellTelegram(String(body['retailer'] ?? ''), body['diag']);
       const cartDiag = ((body['diag'] as { cart?: { diag?: { store?: unknown; branchFrom?: unknown } } } | undefined)?.cart?.diag) ?? {};
-      if (cartDiag.branchFrom === 'address' && typeof cartDiag.store === 'number' && household.branches?.[String(body['retailer'])] !== cartDiag.store) {
+      // The store's own answer for this family's address, whatever the recipe called it ('selected
+      // address', 'first address', 'user home branch'). Only 'default' is a guess worth ignoring.
+      if (typeof cartDiag.branchFrom === 'string' && cartDiag.branchFrom !== 'default' && typeof cartDiag.store === 'number' && household.branches?.[String(body['retailer'])] !== cartDiag.store) {
         await households.update(hid, { branches: { ...(household.branches ?? {}), [String(body['retailer'])]: cartDiag.store } }).catch(() => null);
       }
       const result = await importRawOrders(hid, catalog, raw);
@@ -617,12 +619,18 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
       if (rl.length) {
         try {
-          const branch = household.branches?.['rami-levy'] ?? branchForCity(await ramiLevyStock.branches(), (household.addressDetails as { city?: string } | undefined)?.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
+          // The branch the family's basket will actually be filled from - not a guess, when we can help it.
+          const ad = (household.addressDetails ?? {}) as { city?: string; lat?: number; lng?: number };
+          const known = household.branches?.['rami-levy'];
+          const geoList = known ? [] : ((await readRow(TABLE, 'CATALOG', 'RL_BRANCHES')) as { branches?: RamiLevyBranch[] } | undefined)?.branches ?? [];
+          const near = known ? undefined : typeof ad.lat === 'number' && typeof ad.lng === 'number' ? nearestBranch(geoList, { lat: ad.lat, lng: ad.lng }) : undefined;
+          const branch = known ?? near?.id ?? branchForCity(await ramiLevyStock.branches(), ad.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
+          const branchFrom = known ? 'household' : near ? 'nearest' : 'city-or-default';
           const av = await ramiLevyStock.availableIn(rl.flatMap((q) => q.lines.map((l) => l.gtin ?? '')), branch);
           const droppedNames: string[] = []; const droppedIds: string[] = [];
           for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
           if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
-            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, dropped: droppedNames })); }
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
