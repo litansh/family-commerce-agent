@@ -30,7 +30,9 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **Variants in the domain**: `variantKey` / `groupIntoVariants` (size + the category's defining attribute; brand kept aside), tested on real Israeli names. *api-fixer*
 - [ ] **Search answers variants**: brand count and price range per variant, the flat list behind "הצגת כל המוצרים". *api-fixer*
 - [ ] **Variant cards and the brand chip**: the add flow shows variants; every list line carries the choice chip; the brand sheet writes memory. *app-designer*
-- [ ] **The compare names the product per store** for "כל מותג" lines, so a split is legible. *app-designer*
+- [x] ~~**The compare names the product per store** for "כל מותג" lines, so a split is legible.~~ The answer card unfolds into each leg's own products, the checkout names what that leg's cart will add (it named the winner's before), `apps/mobile/e2e/split-naming.mjs` proves it on a live compare (PR #54).
+- [ ] **A per-store price per line in the quote** (`storefrontLines[sid][lineId].price`): the compare can name each store's product but not what that store charges for it, so `רמי לוי ₪6.20 (תנובה 1 ל')` from the design is still half a sentence. *api-fixer*
+- [ ] **Ordering through Kaniti uses the leg's own barcode**: `legsFor` in `apps/mobile/src/screens/Options.tsx` still sends `quotedLines`' gtin, i.e. the winner's product, to every leg — the same mix-up the screens just stopped making, one layer down. *api-fixer*
 
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
