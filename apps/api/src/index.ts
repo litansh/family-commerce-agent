@@ -694,7 +694,8 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
   const results = d.cart?.results ?? [];
   const added = results.filter((r) => r.status === 'added').length;
   let why = '';
-  if (d.cart && added === 0 && results.length > 0) why = `cart at ${retailer}: 0 of ${results.length} lines added`;
+  // Every cart report goes out: 'added' is the recipe's word, the basket the family sees is the truth.
+  if (d.cart && results.length > 0) why = `cart at ${retailer}: ${added} of ${results.length} lines added`;
   else if (d.loadError) why = `store page failed at ${retailer}`;
   if (!why) return;
   const text = `📱 ${why}\nbuild ${String(d.build ?? '?')}\n${JSON.stringify(d.cart?.diag ?? d.loadError ?? {}).slice(0, 1800)}`;
