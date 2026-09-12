@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "test": "node --test --experimental-strip-types \"packages/*/test/*.test.ts\" \"services/*/test/*.test.ts\"",
+    "test": "node --test --experimental-strip-types --experimental-test-module-mocks \"packages/*/test/*.test.ts\" \"services/*/test/*.test.ts\" \"apps/mobile/test/*.test.ts\"",
     "typecheck": "tsc --build --force",
     "shop": "node --experimental-strip-types apps/cli/src/index.ts",
     "resolve": "node --experimental-strip-types apps/cli/src/resolve-cli.ts",
