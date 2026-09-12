@@ -46,7 +46,7 @@ for A in "${AGENTS[@]}"; do
   ATTEMPT=0; ARGS=(--session-id "$SID")
   while :; do
     ATTEMPT=$((ATTEMPT + 1))
-    ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 150 \
+    ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 100 \
         --allowedTools "Read,Grep,Glob,Edit,Write,Bash(node *),Bash(npx *),Bash(npm *),Bash(git *),Bash(gh *),Bash(./ops/*),Bash(ops/*),Bash(bash ops/*),Bash(./maestro/*),Bash(bash maestro/*),Bash(aws logs *),Bash(aws dynamodb get-item *),Bash(aws dynamodb scan *),Bash(curl *),Bash(ls *),Bash(cat *),Bash(sed *),Bash(head *),Bash(tail *),Bash(wc *)" ) > "$OUT" 2>&1
     # A run killed from outside (a stray pkill, the OS) or ended without its report is resumed, not skipped.
     if grep -q "Killed: 9\|Terminated: 15" "$OUT" || [ "$(wc -c < "$OUT")" -lt 200 ]; then
