@@ -356,6 +356,9 @@ export const SHUFERSAL: Platform = {
   // Plain form post, no captcha — but from AWS the site serves a 441-byte block page
   // (verified from a Lambda, 2026-09-10), so there is no cloud rung: phone only.
   sessionKeys: ['JSESSIONID', 'XSRF-TOKEN', 'miglogstorefrontRememberMe'],
+  // The store's own count: the header's item-count badge (confirmed live, guest and
+  // signed-in alike, 2026-09-13), else the mobile badge's "N הסל שלי" text.
+  basketCountJs: `(()=>{try{const n=document.querySelector('#topCartTotalItems');if(n&&/^\\d+$/.test((n.textContent||'').trim())){window.ReactNativeWebView.postMessage('basket:'+n.textContent.trim());return;}const t=(document.body&&document.body.innerText||'').replace(/\\s+/g,' ');const m=t.match(/(\\d+)\\s*הסל שלי/);window.ReactNativeWebView.postMessage('basket:'+(m?m[1]:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
   cartUrl: 'https://www.shufersal.co.il/online/he/cart',
   // Hybris: POST /online/he/cart/add (productCodePost, qty, CSRFToken from the page). Product codes are
   // P_<barcode>; when that misses, the site's own search finds the code for the barcode.
