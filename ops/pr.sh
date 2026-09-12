@@ -13,7 +13,9 @@ TITLE="$1"; BODY="${2:-}"; WAIT=1; [ "${3:-}" = "--no-wait" ] && WAIT=0
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$BRANCH" != "main" ] || { echo "refusing: on main — create a branch first"; exit 1; }
 git push -u origin "$BRANCH" >/dev/null 2>&1
-if URL=$(gh pr view --json url --jq .url 2>/dev/null); then
+# gh pr view returns the branch's most recent PR even once it is MERGED or CLOSED; editing that
+# one instead of opening a fresh PR silently strands every commit pushed after it merged.
+if URL=$(gh pr view --json url,state --jq 'select(.state == "OPEN") | .url' 2>/dev/null) && [ -n "$URL" ]; then
   gh pr edit --title "$TITLE" --body "$BODY" >/dev/null
 else
   URL=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body "$BODY")
