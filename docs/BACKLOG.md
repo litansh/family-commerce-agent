@@ -25,7 +25,7 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **History from the DOM**: for every store, a second rung that reads the orders page itself when the orders API changes. *store-recipe-fixer*
 - [ ] **Cart rungs for stor.ai, Wolt, Hatzi Hinam**: a native rung above the per-item pages (needs the fictive accounts the owner allowed). *store-recipe-fixer*
 - [ ] **The store's own catalogue as a second price source** in the compare when the provider lacks a store or is slow (Rami Levy first, its catalogue already answers the API). *api-fixer*
-- [ ] **product-qa: two working rungs per ladder**, checked daily in the labs; one rung left is a red check. *product-qa*
+- [x] product-qa: two working rungs per ladder, checked daily in the labs (PR, this one). `ops/check.mjs` now derives each ADR 0010 ladder's rung count from that same run's own results (no lab runs twice) and prints it as a `ladders` section; a ladder under two working rungs, or one no daily lab touches at all, fails the run. Today: Compare is the only ladder with two (SuperMCP quote + price-transparency files); Connect, Fill the cart and Prices in-store each have exactly one, and Read history has none — all already tracked above and in "Connect and stay connected".
 
 ## Choosing an item (promises 1, 4, 7) — design: docs/design/item-identity.md
 - [ ] **Variants in the domain**: `variantKey` / `groupIntoVariants` (size + the category's defining attribute; brand kept aside), tested on real Israeli names. *api-fixer*
