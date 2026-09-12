@@ -15,10 +15,11 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 ## Store truth (promise 9)
 - [x] Rami Levy: only a verified cart counts as added; the store's basket count shown beside ours; a mismatch reaches the channel (PRs #36, this one).
 - [x] Rami Levy: branch stock (`available_in`) checked in the compare before a line is offered, and again in the cart recipe; the store-chosen branch kept on the household from the phone's report.
+- [ ] **Rami Levy cart recipe's name fallback picks an unrelated product**: `apps/mobile/src/lib/stores.ts` line ~270, `byName[l.name]` — a barcode the catalogue lacks falls back to a free-text name match that is not held to the head-word/half-the-words rule from PR #40; reproduced live with `cart-recipe-lab.mjs`'s deliberately-absent line (barcode `9999999999999`, name "לא קיים"), which the recipe added as "קופסת אחסון אניגליש קייק" (a storage box). Now a red `PROMISE9-VIOLATION` in the daily `cart` check (this PR) — was silently "ok" before. *store-recipe-fixer*
 - [ ] **Branch stock for the other chains** (stor.ai exposes per-branch availability; Hatzi Hinam, Wolt venues): an item the family's branch does not carry is missing in the compare, not a surprise at checkout. *store-recipe-fixer + api-fixer*
 - [ ] **Basket count for every store with a cart recipe** (Hatzi Hinam, the stor.ai chains once their recipes exist, Wolt): a `basketCountJs` per store, read on the cart page. *store-recipe-fixer*
 - [ ] **Per-item flow verified too**: when the family adds item by item on the store's pages, read the store's count after each and show it. *store-recipe-fixer + app-designer*
-- [ ] **product-qa checks promise 9 daily**: every claim in the shopper and the cart lab is matched against the store's own state; a mismatch is a red check. *product-qa*
+- [x] product-qa checks promise 9 daily: the cart lab now flags `PROMISE9-VIOLATION` when the store's basket count disagrees with ours, or a barcode the catalogue lacks resolves to an unrelated product; `ops/check.mjs`'s `cart` check turns red on either (PR, this one). The shopper's claims (barcode/link per line) are checked against the catalogue already; no store-state claim there yet to match.
 
 ## Ladders (ADR 0010, promise 8)
 - [ ] **History from the DOM**: for every store, a second rung that reads the orders page itself when the orders API changes. *store-recipe-fixer*

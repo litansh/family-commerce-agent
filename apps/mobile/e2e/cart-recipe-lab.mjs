@@ -13,10 +13,11 @@
 import { webkit, devices } from 'playwright';
 import { STORES } from '../src/lib/stores.ts';
 
+const FAKE_GTIN = '9999999999999'; // deliberately absent — must never resolve to a real product
 const BASKET = [
   { gtin: '7290004131074', name: 'חלב תנובה 3%', qty: 2 },   // milk
   { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas
-  { gtin: '9999999999999', name: 'לא קיים', qty: 1 },         // deliberately absent
+  { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },               // deliberately absent
 ];
 
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['rami-levy'];
@@ -46,6 +47,9 @@ for (const id of ids) {
     const counts = (res.results || []).reduce((m, x) => ((m[x.status] = (m[x.status] || 0) + 1), m), {});
     console.log(`\n== ${id}  ${JSON.stringify(counts)}  diag: ${JSON.stringify(res.diag || res)}`);
     for (const r of res.results || []) console.log(`   ${r.status.padEnd(7)} ${r.gtin || ''} ${r.detail || ''}`);
+    // Promise 9: a claim of "added" is only true if it is the product the family asked for.
+    const fakeAdded = (res.results || []).find((r) => r.gtin === FAKE_GTIN && r.status === 'added');
+    if (fakeAdded) console.log(`   PROMISE9-VIOLATION: the deliberately absent barcode ${FAKE_GTIN} was added as "${fakeAdded.detail}" — the store's cart holds a product the family never asked for`);
     // Read the store's own cart back, to confirm the lines really landed.
     if (id === 'rami-levy') {
       const n = await page.evaluate(async () => { try { const nx = window.$nuxt; const c = nx && nx.$store && nx.$store.getters['cart/getCartItems']; const items = (nx && nx.$store && nx.$store.state && nx.$store.state.cart && nx.$store.state.cart.items) || null; return items ? items.length : 'no cart state'; } catch (e) { return 'err ' + e.message; } });
@@ -53,6 +57,7 @@ for (const id of ids) {
       await page.goto('https://www.rami-levy.co.il/he/basket', { waitUntil: 'domcontentloaded', timeout: 45000 }); await page.waitForTimeout(5000);
       const badge = await page.evaluate(() => { const t=(document.body.innerText||'').replace(/\s+/g,' '); const m=t.match(/(\d+)\s*הסל שלי/); return m?m[1]:'?'; });
       console.log(`   basket page count: ${badge}`);
+      if (badge !== '?' && Number(badge) !== (counts.added || 0)) console.log(`   PROMISE9-VIOLATION: ${counts.added || 0} claimed added but the store's own basket shows ${badge}`);
     }
     await page.screenshot({ path: `e2e/shots/cart-${id}.png` });
   } catch (e) { console.log(`\n== ${id}: ${String(e).slice(0, 160)}`); }
