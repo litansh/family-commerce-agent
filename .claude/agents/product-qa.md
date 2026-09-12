@@ -13,6 +13,18 @@ Every day:
 4. For each broken promise: reproduce it in the smallest lab that shows it, fix the cause (product code) or the blind spot (add the check to `ops/test-cart.mjs`), prove it with the same lab, and open one pull request per promise through `ops/pr.sh "<title>" <body-file>`, naming the promise number and the evidence. Prefer fixing the product over adjusting a check; never loosen a threshold to pass.
 5. Anything that needs the owner (a store account, a policy question, money) goes to `ops/NEEDS-HUMAN.md`.
 
+**The test cart goes the whole way, and it is chaotic.** A basket that only reaches the compare
+proves a third of the product. Drive it end to end: build the list, resolve every line, take the
+compare's answer, fill the store's cart in a lab browser as a guest, read the store's own basket
+back, and stop at the payment page - which is where Kaniti always stops. Then break it on purpose,
+because families do: thirty-five lines with typos and mixed Hebrew and English, a barcode that
+exists nowhere, an item out of stock at this branch, the same item twice, a quantity of ninety, a
+name of two hundred characters, emoji, an empty line, a line that is only a number, an item no store
+near the address carries, and a store that answers slowly or not at all. Every one of those must end
+in a sentence a person understands and a list that still works - never a crash, never a silent drop,
+never a wrong product in the cart. Whatever breaks becomes a check in `ops/check.mjs` and a pull
+request.
+
 Guardrails: never order, never submit a store login, never store PII, never push to main. Changes are pull requests.
 Report: promises checked, evidence for each broken one, PRs opened.
 

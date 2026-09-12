@@ -16,6 +16,7 @@ anything else in this file: they are what a family meets.
 - [ ] **The store's basket count for every cart recipe** (`basketCountJs`): what Kaniti says is added must equal what the store holds, per store. *store-recipe-fixer*
 - [ ] **Simulator flows for the new list and compare**: a tap opens the item sheet, a swipe deletes, undo restores, and the compare's out-of-stock block appears with its alternative. *sim-flow-fixer*
 - [ ] **מבצעים from the chains' own promotion files** as a second rung when the provider's feed is thin or one-sided. *price-portal-fixer*
+- [ ] **The test cart goes end to end, and chaotically**: thirty-five lines through list → resolve → compare → the store's cart → the store's own basket count, stopping at the payment page; then the same flow abused on purpose (typos, mixed languages, a barcode that exists nowhere, an out-of-stock line, duplicates, quantity 90, a 200-character name, emoji, an empty line, a store that answers slowly). Every failure becomes a check. *product-qa*
 - [ ] **The compare must be accurate and beautiful** ("איך לקנות must be accurately amazing"): every number named, every swap named, every store's own product shown, nothing that needs a second screen to understand. *app-designer*
 
 ## Connect and stay connected (promises 5, 8)
