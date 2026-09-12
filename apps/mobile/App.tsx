@@ -106,7 +106,7 @@ export default function App() {
   else if (screen.name === 'order') body = <OrderScreen api={api} household={household} orderId={screen.orderId} onBack={() => { setTab('orders'); setScreen({ name: 'tabs' }); }} />;
   else {
     showTabs = true;
-    body = tab === 'home' ? <HomeScreen api={api} household={household} onAisle={(aisle) => setScreen({ name: 'aisle', aisle })} onList={() => setTab('list')} />
+    body = tab === 'home' ? <HomeScreen api={api} household={household} onAisle={(aisle) => setScreen({ name: 'aisle', aisle })} onList={() => setTab('list')} onMe={() => setTab('me')} />
       : tab === 'list' ? <ListScreen api={api} household={household} onQuote={(ls) => setScreen({ name: 'options', lines: ls })} onInvite={invite} />
       : tab === 'orders' ? <OrdersScreen api={api} household={household} onOpen={(orderId) => setScreen({ name: 'order', orderId })} />
       : <MeScreen api={api} household={household} onSignOut={doSignOut} onShowIntro={() => setIntro(true)} />;

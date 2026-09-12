@@ -51,13 +51,13 @@ const short = (x: string) => (x.length > 28 ? x.slice(0, 27) + '…' : x);
  * The price column of a row: the number with its note wrapping under it. Bounded so the name column
  * keeps its width; hugging the card's outer edge so the prices read as one column down the list.
  */
-function PriceCol({ price, note, color, noteColor }: { price: string; note?: string; color?: string; noteColor?: string }) {
+function PriceCol({ price, note, color }: { price: string; note?: string; color?: string }) {
   const s = S(); const rtl = isRTL();
   const edge = rtl ? ('left' as const) : ('right' as const);
   return (
     <View style={{ maxWidth: '45%', alignItems: rtl ? 'flex-start' : 'flex-end' }}>
       <Text style={[s.price, { fontSize: 18, color: color ?? t.ink, textAlign: edge }]}>{price}</Text>
-      {note ? <Text style={[s.faint, { fontSize: 11, textAlign: edge }, noteColor ? { color: noteColor } : null]}>{note}</Text> : null}
+      {note ? <Text style={[s.faint, { fontSize: 11, textAlign: edge }]}>{note}</Text> : null}
     </View>
   );
 }
@@ -208,9 +208,17 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     return rows;
   };
   const noneAnywhere = q.lines.filter((l) => !Object.values(q.storefrontLines ?? {}).some((m) => m[l.id]));
+  // A coupon is already inside a one-store option's cash (its delivered total is net of it); the price says so
+  // in small print rather than a chip. A split's legs are summed from lines, so no coupon is folded there.
+  const couponOf = (o: PurchaseOption) => (o.legs.length === 1 ? q.couponSavings?.[o.legs[0]!.storefrontId] ?? 0 : 0);
+  const couponNote = (o: PurchaseOption) => (couponOf(o) > 0 ? tr('inclCoupon', { x: money(couponOf(o)) }) : undefined);
   // Every store this list cannot be bought from as-is, as a row: what it prices, what it lacks, how short.
   const answer = pick;
-  const otherOptions: Row[] = q.options.filter((o) => o !== answer && o.kind !== 'drive').map((o) => ({ key: `o-${brandsOf(o)}`, title: brandsOf(o), when: whenOf(o), price: o.cashCost, priceNote: answer && o.cashCost > answer.cashCost ? `+${money(o.cashCost - answer.cashCost)}` : undefined, ...exceptionsOf(o.legs[0]!.storefrontId, o.legs.length === 1 ? o.unpricedLineIds : []), ...(o.missingEstimate ? { priceNote: `${tr('toComplete', { x: money(o.missingEstimate) })}` } : {}), option: o, sid: o.legs[0]!.storefrontId }));
+  const otherOptions: Row[] = q.options.filter((o) => o !== answer && o.kind !== 'drive').map((o) => {
+    const diff = o.missingEstimate ? tr('toComplete', { x: money(o.missingEstimate) }) : answer && o.cashCost > answer.cashCost ? `+${money(o.cashCost - answer.cashCost)}` : undefined;
+    const priceNote = [diff, couponNote(o)].filter(Boolean).join(' · ') || undefined;
+    return { key: `o-${brandsOf(o)}`, title: brandsOf(o), when: whenOf(o), price: o.cashCost, ...(priceNote ? { priceNote } : {}), ...exceptionsOf(o.legs[0]!.storefrontId, o.legs.length === 1 ? o.unpricedLineIds : []), option: o, sid: o.legs[0]!.storefrontId };
+  });
   const rejectedRows: Row[] = q.rejected.map((r) => ({ key: `r-${r.storefrontId}`, title: r.brand, when: etaText(r.storefrontId), price: r.itemsSubtotal, priceNote: tr('itemsOnly'), ...exceptionsOf(r.storefrontId), ...(r.code === 'minimum' && r.amountToMinimum !== undefined ? { short: r.amountToMinimum } : {}), sid: r.storefrontId }));
   const rows = [...otherOptions, ...rejectedRows];
   const buyRow = (row: Row) => {
@@ -260,7 +268,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                   <Chip text={tag} tone="good" />
                   <Text style={[s.title, { fontSize: 18, flexShrink: 1 }]} numberOfLines={2}>{brandsOf(answer)}</Text>
                 </View>
-                <Text style={s.priceBig}>{money(answer.cashCost)}</Text>
+                <View style={{ alignItems: isRTL() ? 'flex-start' : 'flex-end' }}>
+                  <Text style={s.priceBig}>{money(answer.cashCost)}</Text>
+                  {couponNote(answer) ? <Text style={[s.faint, { fontSize: 11 }]} testID="answer-coupon">{couponNote(answer)}</Text> : null}
+                </View>
               </View>
               {whenOf(answer) ? <Text style={[s.small, { marginTop: 6 }]}>{whenOf(answer)}</Text> : null}
               <Text style={[s.small, { color: t.accent, marginTop: 2 }]}>{why}</Text>
@@ -307,21 +318,28 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
             {q.drive.status === 'pending' || q.drive.branches.length === 0
               ? <Text style={[s.small, { paddingVertical: 8 }]}>{q.drive.status === 'pending' ? tr('drivePending') : q.drive.status === 'none' ? tr('driveNoAddress') : tr('driveNone')}</Text>
               : q.drive.branches.map((b) => {
+                // The price files name a branch with its code, "(4420)"; the code is theirs, not the family's.
+                // The brand is dropped when the branch name already carries it ("קרפור מרקט …").
+                const branch = b.branchName.replace(/\s*\(\d+\)/g, '').trim();
+                const title = branch.includes(b.brand) ? branch : `${b.brand} · ${branch}`;
                 const full = b.coveredLines === b.totalLines;
                 const ref = b.sameLines ? (full ? b.sameLines.delivered : b.sameLines.items) : 0;
                 const diff = ref > 0 ? ref - (b.itemsSubtotal + (full ? b.driveCost : 0)) : 0;
                 // A full basket is compared delivered-vs-driven and may claim a saving (or a cost). A partial one is only
                 // set beside the same lines at the winning store — like for like, no saving claimed, so no colour either.
+                // The sentence is the row's last line, not a note under the price: the winner's name can be long
+                // ("מחסני השוק | רמת גן (וולט)") and the price column is too narrow to keep it on one line.
                 const note = ref <= 0 ? undefined : full ? (diff > 0 ? tr('driveSaves', { x: money(diff) }) : tr('driveCosts', { x: money(-diff) })) : tr(b.coveredLines === 1 ? 'driveSameLine1' : 'driveSameLines', { n: b.coveredLines, s: b.sameLines!.brand, x: money(ref) });
                 const noteColor = ref <= 0 || !full ? t.muted : diff > 0 ? t.accent : t.amber;
                 return (
                   <View key={b.storefrontId} style={[s.row, { gap: 10, paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }]}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{b.brand} · {b.branchName}</Text>
-                      <Text style={[s.faint, { fontSize: 11 }]}>{tr('driveRow', { d: b.distanceKm, m: b.minutes, x: money(b.driveCost) })}</Text>
-                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={2}>{full ? tr('driveAll', { n: b.totalLines }) : tr('driveCovers', { n: b.coveredLines, t: b.totalLines })}{b.missingLineIds.length > 0 && b.missingLineIds.length <= 3 ? ` · ${tr('tblMissing', { x: b.missingLineIds.map((id) => short(nameOf(id))).join(', ') })}` : ''}</Text>
+                      <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={1}>{title}</Text>
+                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={1}>{tr('driveRow', { d: b.distanceKm, m: b.minutes, x: money(b.driveCost) })}</Text>
+                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={1}>{full ? tr('driveAll', { n: b.totalLines }) : tr('driveCovers', { n: b.coveredLines, t: b.totalLines })}{b.missingLineIds.length > 0 && b.missingLineIds.length <= 3 ? ` · ${tr('tblMissing', { x: b.missingLineIds.map((id) => short(nameOf(id))).join(', ') })}` : ''}</Text>
+                      {note ? <Text style={[s.faint, { fontSize: 11, color: noteColor }]} numberOfLines={1} testID={`drive-note-${b.storefrontId}`}>{note}</Text> : null}
                     </View>
-                    <PriceCol price={money(b.itemsSubtotal)} {...(note ? { note } : {})} color={full && diff > 0 ? t.accent : t.ink} noteColor={noteColor} />
+                    <PriceCol price={money(b.itemsSubtotal)} color={full && diff > 0 ? t.accent : t.ink} />
                   </View>
                 );
               })}
