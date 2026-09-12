@@ -42,16 +42,20 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteRequest, type QuoteResponse } from '@fca/retailer-connectors';
+import { etaForStorefront, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
-import { HouseholdStore } from './households.ts';
+import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
 import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
+import { randomUUID } from 'node:crypto';
+import { isSlowError, withDeadline } from './deadline.ts';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
 import { BranchPrices } from './branches.ts';
 import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
+
 
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 
@@ -136,6 +140,7 @@ const branchPrices = new BranchPrices(TABLE, process.env['BRANCH_BUCKET'] ?? '',
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
 export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
+  if ((event as unknown as { job?: string }).job === 'compare') { await runCompareJob(event as unknown as CompareJob); return { statusCode: 200, headers: JSON_H, body: '{}' }; }
   // The browser's CORS preflight carries no token and must succeed without
   // one. API Gateway adds the Access-Control-* headers on the way out.
   if (event.requestContext.http.method === 'OPTIONS') return { statusCode: 204 };
@@ -519,25 +524,92 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 
     if (method === 'POST' && rest === 'quote') {
       const { quote: quoteProvider, catalog } = requirePricing();
+      return ok(await buildCompare(hid, household, body, { quoteProvider, catalog, repo, region }, SYNC_BUDGET));
+    }
+    // The phone's path: start the compare, collect it when it is done. No gateway clock, no timeout
+    // on the family's side; the job retries a slow provider by itself. If the API may not invoke
+    // itself yet (a fresh deploy before its IAM grant), the compare is built here and now instead.
+    if (method === 'POST' && rest === 'compares') {
+      requirePricing();
+      const id = randomUUID();
+      const at = new Date().toISOString();
+      const ttl = Math.floor(Date.now() / 1000) + COMPARE_TTL_S;
+      await writeRow(TABLE, hid, `COMPARE#${id}`, { status: 'pending', at, ttl });
+      const self = process.env['AWS_LAMBDA_FUNCTION_NAME'];
+      try {
+        if (!self) throw new Error('not in Lambda');
+        await lambda.send(new InvokeCommand({ FunctionName: self, InvocationType: 'Event', Payload: Buffer.from(JSON.stringify({ job: 'compare', hid, id, body } satisfies CompareJob)) }));
+        return ok({ id, status: 'pending' }, 202);
+      } catch (e) {
+        console.warn(JSON.stringify({ event: 'compare-inline', hid, id, error: e instanceof Error ? e.message : String(e) }));
+        const { quote: quoteProvider, catalog } = requirePricing();
+        const result = await buildCompare(hid, household, body, { quoteProvider, catalog, repo, region }, SYNC_BUDGET);
+        await writeRow(TABLE, hid, `COMPARE#${id}`, { status: 'done', result, at, ttl });
+        return ok({ id, status: 'done', result });
+      }
+    }
+    if (method === 'GET' && seg[2] === 'compares' && seg[3] && seg.length === 4) {
+      const row = await readRow(TABLE, hid, `COMPARE#${seg[3]}`);
+      if (!row) throw new HttpError(404, 'not found');
+      return ok({ id: seg[3], status: row['status'], ...(row['result'] ? { result: row['result'] } : {}), ...(row['error'] ? { error: row['error'] } : {}) });
+    }
+
+    throw new HttpError(404, 'not found');
+  } catch (e) {
+    if (e instanceof HttpError) return { statusCode: e.status, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
+    if (e instanceof VersionConflict) return { statusCode: 409, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
+    if (e instanceof SyntaxError) return { statusCode: 400, headers: JSON_H, body: JSON.stringify({ error: 'invalid JSON' }) };
+    console.error(e);
+    return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
+  }
+}
+
+/** How long a compare may take: one try inside API Gateway's 30 s (the sync route), or several tries in the background job. */
+type CompareBudget = { tryMs: number; totalMs: number };
+const SYNC_BUDGET: CompareBudget = { tryMs: 26_000, totalMs: 26_000 };
+const JOB_BUDGET: CompareBudget = { tryMs: 40_000, totalMs: 110_000 };
+
+/**
+ * The compare: the family's list priced at every store that delivers, substitutes for what a store
+ * lacks, coupons, the optimizer's cheap / fast / split answers, delivery times, and the in-store
+ * branches if they drive. Shared by the sync route (the ops checks) and the background job (the phone).
+ */
+async function buildCompare(hid: string, household: Household, body: Record<string, unknown>, deps: { quoteProvider: QuoteProvider; catalog: CatalogProvider; repo: DynamoMemoryRepository; region: ReturnType<typeof regionOf> }, budget: CompareBudget): Promise<Record<string, unknown>> {
+      const { quoteProvider, catalog, repo, region } = deps;
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const lines = applied.map((a) => a.line);
-      const res = await quoteWithFallback(
-        quoteProvider,
-        {
-          lines,
-          address: typeof body['address'] === 'string' ? body['address'] : household.address,
-          serviceType: body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery',
-        },
-        memory,
-      );
+      // The provider has 22 s per call. The sync route (the ops checks) gives the whole quote one
+      // try inside API Gateway's 30 s; the background job (what the phone uses) tries again on a
+      // slow answer until its budget is spent - a slow minute at the stores is never the family's.
+      const quoteStarted = Date.now();
+      const quoteReq = {
+        lines,
+        address: typeof body['address'] === 'string' ? body['address'] : household.address,
+        serviceType: (body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery') as 'pickup' | 'delivery',
+      };
+      let res!: Awaited<ReturnType<typeof quoteWithFallback>>;
+      for (let attempt = 1; ; attempt++) {
+        try {
+          res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory), budget.tryMs);
+          break;
+        } catch (e: unknown) {
+          const slow = isSlowError(e);
+          const left = budget.totalMs - (Date.now() - quoteStarted);
+          console.warn(JSON.stringify({ event: 'quote-provider-slow', hid, attempt, ms: Date.now() - quoteStarted, leftMs: left, lines: lines.length, error: e instanceof Error ? e.message : String(e), slow }));
+          if (slow && left > 8_000) continue;
+          if (slow) throw new HttpError(503, 'stores_slow');
+          throw e;
+        }
+      }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
       // marked as a substitution the card shows ("סלמון → פילה סלמון"). One extra quote, not one per store.
       // API Gateway answers 503 after 30 s, so the extra quote for substitutes has a budget: past it the
       // compare goes out without substitutes rather than not at all (the log says which).
-      const budgetMs = 9000;
+      // One shared clock: on the sync route the substitutes get what is left of it (never more than 9 s).
+      const budgetMs = Math.max(0, Math.min(9_000, budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
       const substituted = await Promise.race([
         substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
         new Promise<typeof res>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs)),
@@ -592,7 +664,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       }) };
       // One line per compare, so "why only one option?" is answerable from the log.
       console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => { const have = new Set(substituted.quotes.find((q) => q.storefrontId === r.storefrontId)?.lines.map((l) => l.lineId) ?? []); const miss = lines.filter((l) => !have.has(l.id)).map((l) => l.query).slice(0, 4); return `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}${miss.length ? ' missing ' + miss.join('|') : ''}`; }), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
-      return ok({
+      return {
         currency: region.currency,
         etas,
         drive: driveOut,
@@ -606,16 +678,36 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         assumptions: substituted.assumptions,
         quotedLines,
         suggestions: suggestMissing(memory, lines),
-      });
-    }
+      };
+}
 
-    throw new HttpError(404, 'not found');
+type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
+const lambda = new LambdaClient({});
+const COMPARE_TTL_S = 3600;
+
+/** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */
+function fitRow(result: Record<string, unknown>): Record<string, unknown> {
+  if (JSON.stringify(result).length < 350_000) return result;
+  const options = result['options'] as { legs: { storefrontId: string }[] }[] | undefined;
+  const keep = new Set((options ?? []).flatMap((o) => o.legs.map((l) => l.storefrontId)));
+  const sl = (result['storefrontLines'] ?? {}) as Record<string, unknown>;
+  return { ...result, storefrontLines: Object.fromEntries(Object.entries(sl).filter(([sid]) => keep.has(sid))), trimmed: true };
+}
+
+/** The background job: build the compare and keep it under COMPARE#<id> for the phone to collect. */
+async function runCompareJob(job: CompareJob): Promise<void> {
+  const started = Date.now();
+  try {
+    const household = await households.get(job.hid);
+    if (!household) throw new HttpError(404, 'household not found');
+    const region = regionOf(household.country);
+    const providers = providersFor(region);
+    if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
+    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, JOB_BUDGET);
+    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: fitRow(result), at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
   } catch (e) {
-    if (e instanceof HttpError) return { statusCode: e.status, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
-    if (e instanceof VersionConflict) return { statusCode: 409, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
-    if (e instanceof SyntaxError) return { statusCode: 400, headers: JSON_H, body: JSON.stringify({ error: 'invalid JSON' }) };
-    console.error(e);
-    return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
+    console.error(JSON.stringify({ event: 'compare-failed', hid: job.hid, id: job.id, ms: Date.now() - started, error: e instanceof Error ? e.message : String(e) }));
+    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'failed', error: e instanceof HttpError ? e.message : 'internal error', at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
   }
 }
 

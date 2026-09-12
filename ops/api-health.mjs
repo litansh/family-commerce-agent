@@ -15,8 +15,17 @@ const me = await fetch(`${API}/me`, { headers: h }).then((r) => r.json());
 const hid = me.households?.[0]?.id;
 if (!hid) { console.log('BAD  /me has no household', JSON.stringify(me).slice(0, 200)); process.exit(1); }
 const lines = [{ id: 'a', query: 'חלב 3%', gtin: '7290004131074', qty: 2 }, { id: 'b', query: 'אפונה יכין', gtin: '7290000208114', qty: 1 }, { id: 'c', query: 'ביצים L', qty: 1 }];
-const res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+// One gateway 5xx (a slow provider minute) is retried once: the check is about the product, not one bad minute.
+let res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
+if (res.status >= 500) { console.log(`     quote answered ${res.status} first; retrying once after 8 s`); await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
 const q = await res.json().catch(() => ({}));
 const ok = res.status === 200 && Array.isArray(q.options) && q.options.length > 0;
+// The phone's path: the compare as a background job, collected when done. This is what a family
+// waits on, so it must end with a result - however long the stores take.
+const t1 = Date.now();
+let job = await (await fetch(`${API}/households/${hid}/compares`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) })).json();
+while (job.status === 'pending' && Date.now() - t1 < 180_000) { await new Promise((r) => setTimeout(r, 2000)); job = await (await fetch(`${API}/households/${hid}/compares/${job.id}`, { headers: h })).json(); }
+const jobOk = job.status === 'done' && Array.isArray(job.result?.options) && job.result.options.length > 0;
+console.log(`${jobOk ? 'ok ' : 'BAD'}  compare job ${job.status} options=${job.result?.options?.length ?? 0} in ${((Date.now() - t1) / 1000).toFixed(1)}s`);
 console.log(`${ok ? 'ok ' : 'BAD'}  quote ${res.status} options=${q.options?.length ?? 0} rejected=${q.rejected?.length ?? 0} etas=${Object.keys(q.etas ?? {}).length} drive=${q.drive?.status ?? '-'}(${q.drive?.branches?.length ?? 0}) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-process.exit(ok ? 0 : 1);
+process.exit(ok && jobOk ? 0 : 1);
