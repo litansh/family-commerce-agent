@@ -351,7 +351,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           // Retailers describe promotions in till-speak ("קטיף 5.90 רימון-מות-299ישיר");
           // the catalogue knows the product's real name. Resolve once per refresh,
           // for the strongest deals, and keep the names with the cache.
-          const top = [...fresh].sort((a, b) => b.discountRate - a.discountRate).slice(0, 80);
+          // Round-robin by chain before naming: one chain's feed is always the biggest, and naming
+          // only its promotions is how "מבצעים" quietly became a Shufersal page.
+          const perChain = new Map<string, typeof fresh[number][]>();
+          for (const p of [...fresh].sort((a, b) => b.discountRate - a.discountRate)) {
+            const list = perChain.get(p.chainName) ?? []; list.push(p); perChain.set(p.chainName, list);
+          }
+          const top: typeof fresh[number][] = [];
+          for (let i = 0; top.length < 120; i++) {
+            const before = top.length;
+            for (const list of perChain.values()) { const p = list[i]; if (p) top.push(p); if (top.length >= 120) break; }
+            if (top.length === before) break;
+          }
           const named = await Promise.all(top.map(async (p) => {
             const gtin = p.itemCodes.find((c) => /^\d{8,14}$/.test(c));
             if (!gtin) return p;
@@ -385,9 +396,21 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         const name = u?.productName ?? p.description.replace(/^קו קופה\s*-\s*/, '').trim();
         if (!name) return [];
         return [{ gtin, name, ...(u?.brand ? { brand: u.brand } : {}), chainName: p.chainName, price: Math.round(p.discountedPrice * 100), discountRate: p.discountRate, clubOnly: p.clubOnly, endTs: p.endTs, usual: !!u, score: (u ? 1000 : 0) + p.discountRate }];
-      }).sort((a, b) => b.score - a.score).slice(0, 40);
-      const imgs = await images.cachedMany(ranked.map((d) => ({ key: d.gtin, name: d.name, gtin: d.gtin })));
-      return ok({ deals: ranked.map(({ score: _s, ...d }) => ({ ...d, imageUrl: imgs[d.gtin]?.url ?? null })) });
+      }).sort((a, b) => b.score - a.score);
+      // Every chain that has something good gets a place before any chain gets a second one. A family
+      // shops at two or three chains, not at whichever one publishes the most promotions.
+      const byChain = new Map<string, typeof ranked>();
+      for (const d of ranked) { const l = byChain.get(d.chainName) ?? []; l.push(d); byChain.set(d.chainName, l); }
+      const spread: typeof ranked = [];
+      for (let i = 0; spread.length < 40; i++) {
+        const before = spread.length;
+        for (const l of byChain.values()) { const d = l[i]; if (d) spread.push(d); if (spread.length >= 40) break; }
+        if (spread.length === before) break;
+      }
+      const deals = spread.sort((a, b) => b.score - a.score);
+      const imgs = await images.cachedMany(deals.map((d) => ({ key: d.gtin, name: d.name, gtin: d.gtin })));
+      console.log(JSON.stringify({ event: 'deals', hid, shown: deals.length, chains: [...new Set(deals.map((d) => d.chainName))] }));
+      return ok({ deals: deals.map(({ score: _s, ...d }) => ({ ...d, imageUrl: imgs[d.gtin]?.url ?? null })) });
     }
 
     // Import order history captured on the device: the phone's logged-in
