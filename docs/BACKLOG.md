@@ -20,6 +20,12 @@ fixes it, proves it, and opens a pull request that names the line. Done lines st
 - [ ] **Per-item flow verified too**: when the family adds item by item on the store's pages, read the store's count after each and show it. *store-recipe-fixer + app-designer*
 - [ ] **product-qa checks promise 9 daily**: every claim in the shopper and the cart lab is matched against the store's own state; a mismatch is a red check. *product-qa*
 
+## Ladders (ADR 0010, promise 8)
+- [ ] **History from the DOM**: for every store, a second rung that reads the orders page itself when the orders API changes. *store-recipe-fixer*
+- [ ] **Cart rungs for stor.ai, Wolt, Hatzi Hinam**: a native rung above the per-item pages (needs the fictive accounts the owner allowed). *store-recipe-fixer*
+- [ ] **The store's own catalogue as a second price source** in the compare when the provider lacks a store or is slow (Rami Levy first, its catalogue already answers the API). *api-fixer*
+- [ ] **product-qa: two working rungs per ladder**, checked daily in the labs; one rung left is a red check. *product-qa*
+
 ## The compare (promises 1–4)
 - [x] Substitutes for missing lines; partial stores as split legs; one missing line never disqualifies; completed-cost ranking; same-kind substitutes; every store row names what it lacks (PRs #1, #6, #8, #9).
 - [x] The compare screen to the approved design; store rows open their own store (PR #13).
