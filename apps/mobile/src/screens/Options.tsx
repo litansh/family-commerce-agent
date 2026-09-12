@@ -186,7 +186,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const whenOf = (o: PurchaseOption) => [o.legs.length > 1 ? tr('twoDeliveries') : null, ...o.legs.map((l) => { const w = etaText(l.storefrontId); return w ? (o.legs.length > 1 ? `${l.brand}: ${w}` : w) : null; })].filter(Boolean).join(' · ');
   const exceptionsOf = (sid: string, unpriced: readonly string[] = []) => {
     const sl = q.storefrontLines?.[sid] ?? {};
-    const missing = (unpriced.length ? unpriced.map(nameOf) : q.lines.filter((l) => !sl[l.id]).map((l) => l.query)).map(short);
+    // "Not in stock at your branch" is not "this store does not carry it": say which, here, not at the till.
+    const outOfStock = new Set(q.branchStock?.[sid]?.lineIds ?? []);
+    const missingIds = unpriced.length ? [...unpriced] : q.lines.filter((l) => !sl[l.id]).map((l) => l.id);
+    const missing = missingIds.map((id) => (outOfStock.has(id) ? tr('outOfStockAt', { x: short(nameOf(id)) }) : short(nameOf(id))));
     const swaps = Object.values(sl).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName));
     return { missing, swaps };
   };

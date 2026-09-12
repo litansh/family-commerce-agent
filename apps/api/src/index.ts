@@ -613,14 +613,16 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Branch stock: an item Rami Levy's branch for this family does not carry is "out of stock" at
       // its checkout, which for a family equals "does not exist" - so it is missing there already here,
       // and the substitutes and the other stores take over. Unknown stock drops nothing.
+      const branchStock: Record<string, { branch: number; lineIds: string[] }> = {};
       const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
       if (rl.length) {
         try {
           const branch = household.branches?.['rami-levy'] ?? branchForCity(await ramiLevyStock.branches(), (household.addressDetails as { city?: string } | undefined)?.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
           const av = await ramiLevyStock.availableIn(rl.flatMap((q) => q.lines.map((l) => l.gtin ?? '')), branch);
-          const droppedNames: string[] = [];
-          for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); } }
-          if (droppedNames.length) console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, dropped: droppedNames }));
+          const droppedNames: string[] = []; const droppedIds: string[] = [];
+          for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
+          if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
@@ -687,6 +689,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => { const have = new Set(substituted.quotes.find((q) => q.storefrontId === r.storefrontId)?.lines.map((l) => l.lineId) ?? []); const miss = lines.filter((l) => !have.has(l.id)).map((l) => l.query).slice(0, 4); return `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}${miss.length ? ' missing ' + miss.join('|') : ''}`; }), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
       return {
         currency: region.currency,
+        branchStock,
         etas,
         drive: driveOut,
         storefrontLines,

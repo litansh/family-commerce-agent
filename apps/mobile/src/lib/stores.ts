@@ -169,6 +169,35 @@ const storaiStore = (id: string, name: string, host: string, storefront: RegExp,
 // auth module says whether you are in; the cart goes through the site's own $ecomws with the
 // person's branch. Verified live 2026-09-11.
 // ---------------------------------------------------------------------------
+/**
+ * Picking a product by name, when a line has no barcode the store knows. The stores' own search is
+ * loose - Rami Levy answers "מיץ פירות הדרים" with lemon juice and cherry juice - so one shared word
+ * is never a match: the head word of the phrase (its last meaningful word, the one that says which
+ * juice) must be there, and at least half the words. Nothing passes, nothing is added: a line the
+ * family adds themselves beats a wrong item in the cart (promise 9). What is picked is reported as
+ * a swap, never as the thing that was asked for.
+ * Plain JavaScript because it runs inside the store's page; apps/mobile/test/name-match.test.ts
+ * evaluates this same text, so what is tested is what ships.
+ */
+export const PICK_BY_NAME_JS = `
+function __kFinals(w){return w.replace(/\u05dd/g,'\u05de').replace(/\u05df/g,'\u05e0').replace(/\u05e5/g,'\u05e6').replace(/\u05e3/g,'\u05e4').replace(/\u05da/g,'\u05db');}
+function __kStem(w){var x=__kFinals(w.replace(/["'\u05f3\u05f4]/g,''));return x.replace(/(\u05d9\u05d5\u05ea|\u05d5\u05ea|\u05d9\u05de|\u05d9\u05e0|\u05d9\u05d4|\u05d4)$/,'');}
+function __kWords(s){return String(s||'').split(/[^\u0590-\u05ffA-Za-z0-9%]+/).filter(function(w){return w.length>=3&&!/^[0-9]+$/.test(w);}).map(__kStem);}
+function __kPick(rows,query,keep){
+  var toks=__kWords(query); if(!toks.length) return null;
+  var head=toks[toks.length-1], need=Math.max(1,Math.ceil(toks.length/2)), best=null, bestScore=0;
+  for(var i=0;i<(rows||[]).length;i++){
+    var r=rows[i]; if(!r) continue; if(typeof keep==='function'&&!keep(r)) continue;
+    var name=__kWords(r.name||r.Name||'');
+    var has=function(t){for(var j=0;j<name.length;j++){var n=name[j];if(n===t||n.indexOf(t)===0||(t.indexOf(n)===0&&n.length>=3))return true;}return false;};
+    if(!has(head)) continue;
+    var score=0; for(var k=0;k<toks.length;k++) if(has(toks[k])) score++;
+    if(score>=need&&score>bestScore){best=r;bestScore=score;}
+  }
+  return best;
+}
+`;
+
 export const RAMI_LEVY: Platform = {
   group: 'code', loginKind: 'otp',
   searchUrl: (q) => `https://www.rami-levy.co.il/he/online/search?q=${encodeURIComponent(q)}`,
@@ -194,7 +223,7 @@ export const RAMI_LEVY: Platform = {
   // so it is the person's own session and the store sees its own app at work.
   // The store's own count: its cart state (the plus buttons' source of truth), else the basket badge text.
   basketCountJs: `(()=>{try{const st=window.$nuxt&&window.$nuxt.$store;const items=st&&st.state&&st.state.cart&&st.state.cart.items;if(Array.isArray(items)){window.ReactNativeWebView.postMessage('basket:'+items.length);return;}const t=(document.body&&document.body.innerText||'').replace(/\s+/g,' ');const m=t.match(/(\d+)\s*הסל שלי/);window.ReactNativeWebView.postMessage('basket:'+(m?m[1]:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
-  cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{
+  cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{${PICK_BY_NAME_JS}
   const n=window.$nuxt;const st=(n&&n.$store)?n.$store:null;
   // The site's own anonymous (or signed-in) bearer, read off its axios defaults.
   let auth='';try{const hc=n&&n.$axios&&n.$axios.defaults&&n.$axios.defaults.headers&&n.$axios.defaults.headers.common;auth=(hc&&(hc.Authorization||hc.authorization))||'';}catch(e){}
@@ -215,12 +244,12 @@ export const RAMI_LEVY: Platform = {
   const shape={};const rows=(j)=>{if(!j)return[];const c=[j.data,j.items,j.products,j.data&&j.data.items,j.data&&j.data.data,j.results];for(const x of c)if(Array.isArray(x))return x;return[];};
   const tfetch=(u,o,ms)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||12000);return fetch(u,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t));};
   const lookup=async(body)=>{const r=await tfetch('/api/catalog?',{method:'POST',headers:{'content-type':'application/json;charset=utf-8',accept:'application/json'},body:JSON.stringify(body)},12000);const j=await r.json().catch(()=>({}));shape.keys=j&&typeof j==='object'?Object.keys(j).slice(0,6):typeof j;const arr=rows(j);shape.rows=arr.length;return arr;};
-  const unavailable={};const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(!bc||id==null)continue;if(Array.isArray(it.available_in)&&!it.available_in.includes(+store)){unavailable[bc]=it.name||it.Name||'';continue;}if(!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
+  const unavailable={};const take=(arr)=>{for(const it of arr){const bc=String(it.barcode||it.Barcode||(it.gs&&it.gs.barcode)||'');const id=it.id||it.C||it.ItemId;if(!bc||id==null)continue;if(Array.isArray(it.available_in)&&!it.available_in.includes(+store)){unavailable[bc]={id:id,name:it.name||it.Name||''};continue;}if(!byBarcode[bc])byBarcode[bc]={id,name:it.name||it.Name||''};}};
   if(codes.length){take(await lookup({store,items:codes.join(','),itemsBy:'barcode',size:codes.length}));
   // Not in this branch? try without a branch, then one by one.
   const left=codes.filter(c=>!byBarcode[c]);if(left.length)take(await lookup({items:left.join(','),itemsBy:'barcode',size:left.length}));}
   // Still missing: the store's own text search by the product name, first hit that carries a barcode.
-  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:5});const toks=String(l.name).split(/\\s+/).filter(t=>t.length>=3);const hit=arr.find(it=>it&&(it.id||it.C)&&(!Array.isArray(it.available_in)||it.available_in.includes(+store))&&toks.some(t=>String(it.name||it.Name||'').includes(t)));if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
+  const byName={};for(const l of L){if(l.gtin&&byBarcode[l.gtin])continue;if(l.gtin&&unavailable[l.gtin])continue;if(!l.name)continue;try{const arr=await lookup({store,q:l.name,size:12});const hit=__kPick(arr,l.name,function(r){return (r.id||r.C)&&(!Array.isArray(r.available_in)||r.available_in.includes(+store));});if(hit){byName[l.name]={id:hit.id||hit.C,name:hit.name||hit.Name||''};}}catch(e){}}
   // Delivery windows, read-only: what the site's own two calls answer for this address
   // (shapes go to the log so the slot picker can be built on real answers).
   try{const u=(st&&st.getters&&st.getters['authuser/loggedInUser'])||null;const addrs=(u&&Array.isArray(u.addresses))?u.addresses:[];const a=addrs[0]||null;
@@ -238,11 +267,15 @@ export const RAMI_LEVY: Platform = {
   // default branch. Say so and let the screen hand over to the store's own pages.
   for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
   window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
-  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name});}else if(l.gtin&&unavailable[l.gtin]!==undefined)out.push({gtin:l.gtin,status:'unavailable',detail:unavailable[l.gtin]||l.name});else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
+  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name,swapped:byName[l.name]&&byName[l.name].id===hit.id&&hit.name!==l.name?l.name+' \u2192 '+hit.name:undefined});}else if(l.gtin&&unavailable[l.gtin])out.push({gtin:l.gtin,status:'unavailable',detail:unavailable[l.gtin].name||l.name});else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   // The site's own helper (collect.js pluck('Quantity','C')) builds items as a MAP {itemId: quantity}.
   // Captured from the site itself (e2e/rl-cart-capture.mjs): quantities are strings with two
   // decimals and supplyAt is the current time as an ISO timestamp - null makes the backend hang.
   const items={};for(const id of Object.keys(qty))items[id]=Number(qty[id]).toFixed(2);
+  // A line this branch cannot supply, sitting in the cart from an earlier fill, is ours to take out:
+  // the family would meet it at checkout as 'חסר במלאי'. Only ids from THIS list are touched.
+  const removed=[];try{const inCartIds={};for(const it of ((st&&st.state&&st.state.cart&&st.state.cart.items)||[])){const c=it&&(it.C!=null?it.C:it.id);if(c!=null)inCartIds[String(c)]=true;}
+  for(const bc of Object.keys(unavailable)){const u=unavailable[bc];if(u&&u.id!=null&&inCartIds[String(u.id)]&&L.some(function(l){return l.gtin===bc;})){items[u.id]='0.00';removed.push(u.name||bc);}}}catch(e){}
   let supplyAt=new Date().toISOString();try{const sd=st&&st.getters&&st.getters['checkout/getSupplyDay'];if(sd&&typeof sd.supplyAt==='string')supplyAt=sd.supplyAt;}catch(e){}
   let cartStatus=0,via='';
   // The truth is the cart the person will see, not a helper's return value: the site's own helper can
@@ -267,7 +300,7 @@ export const RAMI_LEVY: Platform = {
   // Only a verified cart counts as added: the page's state holds the lines, or the server's answer does.
   if(!(inCart()||serverOk)){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk,removed}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
 };
 
