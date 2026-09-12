@@ -25,9 +25,14 @@ variable "github_repo_id" {
   type    = string
   default = "1358500626"
 }
+variable "github_owner" {
+  type    = string
+  default = "litansh"
+}
+# The exact shape adtech-lab's working roles use in this account: repo:<owner>@<owner id>/*@<repo id>:...
 locals {
-  github_sub_any  = "repo:*@${var.github_owner_id}/*@${var.github_repo_id}:*"
-  github_sub_main = "repo:*@${var.github_owner_id}/*@${var.github_repo_id}:ref:refs/heads/main"
+  github_sub_any  = "repo:${var.github_owner}@${var.github_owner_id}/*@${var.github_repo_id}:*"
+  github_sub_main = "repo:${var.github_owner}@${var.github_owner_id}/*@${var.github_repo_id}:ref:refs/heads/main"
 }
 
 resource "aws_iam_role" "github_deploy" {
