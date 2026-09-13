@@ -1,6 +1,7 @@
 import {
   resolveBrand,
   shekels,
+  sharesWordWithQuery,
   type Agorot,
   type ListLine,
   type ProductCandidate,
@@ -159,13 +160,22 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
     const byIndex = new Map(req.lines.map((l, i) => [i, l]));
 
     const quotes = (raw.plans ?? []).map<StorefrontQuote>((p) => {
-      const lines = (p.lines ?? []).map<QuotedLine>((l) => {
+      const lines = (p.lines ?? []).flatMap<QuotedLine>((l) => {
         const src = byIndex.get(l.itemIndex);
         // The line itself carries the canonical UUID; the GTIN is only in the
         // retailer deep link (?item=7290004131074). Memory keys on GTIN, so
         // recover it, preferring what the request already knew.
         const gtin = src?.gtin ?? /[?&]item=(\d{8,14})/.exec(l.link ?? '')?.[1];
-        return {
+        // The provider marks its own cross-chain resolution as "substituted: chain_equivalent" - that is
+        // the same product at this chain, not a swap. A swap is a different product (class_fallback etc.).
+        const substituted = l.substituted === true && !/^chain_equivalent/i.test(l.substitutionReason ?? '');
+        // This is the provider's own free-text fallback for a line whose barcode it does not
+        // carry — its search, not ours, picked whatever comes back. The mobile cart recipe
+        // already refuses this shape of guess (PICK_BY_NAME_JS's head-word rule); a swap that
+        // shares no real word with what the family asked for is not a substitute, it is an
+        // unrelated real product wearing our request, and must not be priced as an answer at all.
+        if (substituted && !sharesWordWithQuery(src?.query ?? '', l.name)) return [];
+        return [{
           lineId: src?.id ?? `idx-${l.itemIndex}`,
           query: src?.query ?? '',
           productName: l.name,
@@ -173,14 +183,12 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
           qty: l.qty,
           unitPrice: shekels(l.unitPrice),
           lineTotal: shekels(l.lineTotal),
-          // The provider marks its own cross-chain resolution as "substituted: chain_equivalent" - that is
-          // the same product at this chain, not a swap. A swap is a different product (class_fallback etc.).
-          substituted: l.substituted === true && !/^chain_equivalent/i.test(l.substitutionReason ?? ''),
+          substituted,
           ...(l.substitutionReason && !/^chain_equivalent/i.test(l.substitutionReason) ? { substitutionReason: l.substitutionReason } : {}),
           clubOnly: l.clubOnly === true,
           resolutionSource: src?.gtin ? 'gtin' : 'provider',
           ...(l.link ? { link: l.link } : {}),
-        };
+        }];
       });
 
       const fee = shekels(p.deliveryFee ?? 0);

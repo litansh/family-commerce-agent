@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { brandMatches, inferBrandFromName, nameSatisfiesQuery, normalizeBrand, resolveBrand } from '../src/brand.ts';
+import { brandMatches, inferBrandFromName, nameSatisfiesQuery, normalizeBrand, resolveBrand, sharesWordWithQuery } from '../src/brand.ts';
 
 test('collapses the ways the catalogue spells one firm', () => {
   // All three appeared in a single real search for "חלב 3%".
@@ -73,4 +73,11 @@ test('numbers in the query are constraints on the product name', () => {
 
 test('takes the longest brand match so a sub-string does not win', () => {
   assert.equal(inferBrandFromName('חלב רמי לוי 3%'), 'רמי לוי');
+});
+
+test('a name shares a real word with the query, or nothing in the query matches anything', () => {
+  assert.ok(sharesWordWithQuery('חלב 3%', 'חלב תנובה 3% 1 ליטר'), 'a shared word is enough');
+  assert.equal(sharesWordWithQuery('12345', 'לק קריסטל גלו 651 יח'), false, 'a bare number matching nothing');
+  assert.equal(sharesWordWithQuery('מיץ קקטוס קפוא נדיר מהחלל', 'ויויל-סוכריות ללא סוכר טעם לימון'), false, 'real words, none of them shared');
+  assert.equal(sharesWordWithQuery('', 'חלב 3%'), false, 'an empty query matches nothing, honestly');
 });

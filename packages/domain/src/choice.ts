@@ -12,7 +12,7 @@
  */
 
 import { agorot, subAgorot, type Agorot } from './money.ts';
-import { brandMatches, nameSatisfiesQuery, normalizeBrand } from './brand.ts';
+import { brandMatches, nameSatisfiesQuery, normalizeBrand, sharesWordWithQuery } from './brand.ts';
 import type {
   AlternativeRelation,
   ProductAlternative,
@@ -44,10 +44,16 @@ export function buildChoice(
   const priced = candidates.filter((c) => c.pricedAtChains > 0);
   if (priced.length === 0) return undefined;
 
+  // A candidate that shares no real word with the query was never an answer to
+  // what was typed, however the catalogue ranked it — no candidate, not a
+  // guessed one, when nothing in the query matches anything in the name.
+  const wordMatched = priced.filter((c) => sharesWordWithQuery(opts.query, c.name));
+  if (wordMatched.length === 0) return undefined;
+
   // Numbers in the query are constraints: "מידה 4" is not size 1, "3%" is not
   // 1%. Prefer candidates that honour them; fall back only if none do.
-  const satisfying = priced.filter((c) => nameSatisfiesQuery(opts.query, c.name));
-  const buyable = satisfying.length > 0 ? satisfying : priced;
+  const satisfying = wordMatched.filter((c) => nameSatisfiesQuery(opts.query, c.name));
+  const buyable = satisfying.length > 0 ? satisfying : wordMatched;
 
   const wantBrand = normalizeBrand(opts.requestedBrand);
 
