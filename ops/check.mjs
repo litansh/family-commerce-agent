@@ -41,6 +41,12 @@ const CHECKS = {
   // Everyday Hebrew groceries through the catalogue search, not the provider's own vocabulary
   // (ADR 0010, Compare's second rung): red when any one of them cannot be found.
   search: () => run('search', 'node ops/search-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).pop() })),
+  // "איך לקנות" is the screen the whole product is for, and every number on it must be one the family
+  // could recompute from the same response, with nothing standing beside a number it is not comparable
+  // with (docs/design/compare-accuracy.md; promises 2, 3, 4). Red when a store that is shut reads as one
+  // that delivers, when the answer names no saving, when a partial basket stands beside a full one
+  // without its completed total, or when a row speaks for its first leg instead of its whole option.
+  compare: () => run('compare', 'node --experimental-strip-types e2e/compare-accuracy.mjs', `${ROOT}/apps/mobile`, 300_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).pop() })),
   // Promise 1: מבצעים is every store's window, not one chain's; a placeholder icon on most cards
   // is the commonest "the app looks unfinished" (both from tonight's report).
   deals: () => run('deals', 'node ops/deals-health.mjs', ROOT, 60_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).slice(0, 2).join(' · ') })),
