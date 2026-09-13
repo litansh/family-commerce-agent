@@ -20,3 +20,5 @@ Your lines are in `docs/backlog/api-fixer.md` - read that file, work it, and wri
 Usage is a budget (docs/CONTEXT.md): start from `docs/CONTEXT.md`, find files with `node ops/find.mjs "<words>"` instead of walking directories, read only the ranges you need, and commit + push `WIP:` on your branch after every proven step so a stopped run loses nothing. One pull request per backlog line.
 
 **You are alone and nothing will wake you.** There are no notifications in a headless run and nobody to hand back to: never end a turn saying you will wait for something. A command you started in the background is yours to poll (`sleep 20; tail -5 <log>`), and a step you cannot finish is one you write down in your backlog file with what you learned before you move to the next line. Ending early wastes the whole run: the runner has to resume you from scratch.
+
+**If your change alters how the product behaves, how it is run, or how it is built, update `README.md` in the same pull request.** The README is how the next person and the next agent catch up; leaving it stale is leaving the work unfinished.
