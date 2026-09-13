@@ -6,6 +6,7 @@ import type { ProductCandidate } from '@fca/domain';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const candidate = (productId: string): ProductCandidate => ({ productId, name: productId, pricedAtChains: 1 });
+const unpriced = (productId: string): ProductCandidate => ({ productId, name: productId, pricedAtChains: 0 });
 
 const provider = (impl: CatalogProvider['searchProducts'], id = 'primary'): CatalogProvider => ({ id, searchProducts: impl });
 
@@ -50,4 +51,18 @@ test('a slow provider with no help from the fallback is still answered once it l
   const fallback = { searchProducts: async () => [] as ProductCandidate[] };
   const products = await new CatalogWithFallback(primary, fallback, 5).searchProducts({ query: 'x' });
   assert.deepEqual(products.map((p) => p.productId), ['primary-late']);
+});
+
+test('the provider naming real products but pricing none of them hands over to the chain catalogue (ביצים, סלמון, 2026-09-13)', async () => {
+  const primary = provider(async () => [unpriced('egg-1'), unpriced('egg-2')]);
+  const fallback = { searchProducts: async () => [candidate('rami-levy-egg')] };
+  const products = await new CatalogWithFallback(primary, fallback, 2_500).searchProducts({ query: 'ביצים' });
+  assert.deepEqual(products.map((p) => p.productId), ['rami-levy-egg']);
+});
+
+test('unpriced products from the provider are still returned if the fallback has nothing either', async () => {
+  const primary = provider(async () => [unpriced('egg-1')]);
+  const fallback = { searchProducts: async () => [] as ProductCandidate[] };
+  const products = await new CatalogWithFallback(primary, fallback, 2_500).searchProducts({ query: 'ביצים' });
+  assert.deepEqual(products.map((p) => p.productId), ['egg-1']);
 });
