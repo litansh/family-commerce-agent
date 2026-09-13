@@ -93,15 +93,33 @@ The line asks for Rami Levy's catalogue to price a storefront the provider lacks
 "its catalogue already answers the API" — true when checked from this Mac, not from the API Lambda.
 ADR 0011 (accepted 2026-09-13, the same night, from measurements) found the opposite: a Lambda
 calling `rami-levy.co.il/api/catalog` gets the same block page a data centre always gets. The image
-resolver already lives with this (`services/product-images/src/index.ts#tryRamiLevySearch` is called
-from the API today, and its own comment says it answers a block page there; the phone's `remember()`
-call is what actually fills that cache). A price source for the *compare* needs the same shape, and
-does not exist yet: something that runs on the phone or the ops Mac, prices the storefront there,
-and writes it somewhere the API can read as a cache — not a new Lambda-side call to the chain, which
-would only repeat the measured block.
+resolver already lives with this — `services/product-images/src/index.ts#tryRamiLevySearch` used to
+be called from the API for exactly this reason, and has since been removed (api-fixer, 2026-09-13)
+because it never once answered from there; the phone's `remember()` call is what actually fills
+that cache now. A price source for the *compare* needs the same shape, and does not exist yet:
+something that runs on the phone or the ops Mac, prices the storefront there, and writes it
+somewhere the API can read as a cache — not a new Lambda-side call to the chain, which would only
+repeat the measured block.
 
 Needs: a decision on where this runs (phone, at compare time — but a compare must answer whether or
 not that store's own app is open, so it cannot depend on the phone being on that store's site; or
 the ops Mac, but its nightly run knows branches and prices, not a live per-basket quote) and what
 "lacks a store or is slow" should degrade to in the meantime (today: the storefront is rejected and
 missing from the compare, which is honest but not the second rung this line asks for).
+
+## Alarms → Telegram, verified with a real alarm (docs/backlog/api-fixer.md)
+The backlog line asks for the CloudWatch-alarm-to-Telegram path (`apps/api/src/alerts.ts`,
+`infrastructure/terraform/app/alarms.tf`) to be proven with a real alarm — a genuine state change
+through the live SNS topic, landing in the owner's Telegram chat. `alerts.ts` had no test coverage
+at all before this session; `apps/api/test/alerts.test.ts` (new, 4 cases, mocked `fetch`) now covers
+the handler's own logic — a real `AlarmName`/`NewStateValue`/reason renders correctly, no token/chat
+means silence, a failed Telegram send never throws (must not crash the Lambda over an alarm the
+owner never sees), and the 3900-char cap holds.
+
+What this does not, and cannot, prove: whether a real CloudWatch alarm firing in production actually
+reaches Telegram end to end. Every `aws`/AWS SDK call attempted in this sandboxed, unattended run
+needed an approval that never came (the same restriction noted above for the branch-list write) —
+there is no way from here to publish a real SNS message or check the live Telegram chat.
+
+Needs: the owner, or the ops Mac's own AWS session, to trip a real alarm (or publish a test message
+to the `alerts` SNS topic directly) and confirm it lands in the Kaniti Telegram channel.
