@@ -43,6 +43,7 @@ import {
   groupIntoVariants,
   cheapestExactElsewhere,
   storefrontFacts,
+  wrongProductLineIds,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
@@ -855,7 +856,9 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // disagree once a promotion applies (docs/design/a-full-basket-everywhere.md, "the screen may
       // not add the line prices up"), so a card that shows a swap's cost must read this field, never
       // sum `price` fields itself.
-      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      // A line a store filled with something that is not an alternative is not offered by that store:
+      // it is left out here exactly as it is named in that card's gaps, so the two never disagree.
+      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.filter((l) => !wrongProductLineIds(q, lineQuery).has(l.lineId)).map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // The engine half of "a full basket everywhere" (docs/design/a-full-basket-everywhere.md):
       // every delivering storefront's full-basket facts (this store's own nearest product wherever
       // it lacks the exact one - substituteMissing already tried every gap, not just the near-complete
