@@ -44,7 +44,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, dropUnavailableHaziHinam, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -750,6 +750,22 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
             if (catalog instanceof CachedCatalog) void catalog.forget(droppedIds.map((id) => lineQueryFor.get(id) ?? '').filter(Boolean), household.address).catch(() => null);
             console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
+      }
+      // Hatzi Hinam: the same check, from a cache the ops Mac's nightly `refresh-hazi-hinam-stock.mjs`
+      // writes (ADR 0011: shop.hazi-hinam.co.il only answers a browser or this Mac, never the API's
+      // Lambda - PR #73 called it live from here and was reverted for that). A barcode the cache never
+      // checked, or hasn't caught up with yet, is not in the map - unknown stock drops nothing.
+      const hh = res.quotes.filter((q) => /hazi|hinam/i.test(q.storefrontId) || /חצי חינם/.test(q.brand));
+      if (hh.length) {
+        try {
+          const cached = (await readRow(TABLE, 'CATALOG', 'HH_STOCK')) as { stock?: Record<string, boolean> } | undefined;
+          const inStock = new Map(Object.entries(cached?.stock ?? {}));
+          const droppedNames: string[] = []; const droppedIds: string[] = [];
+          for (const q of hh) { const { kept, dropped } = dropUnavailableHaziHinam(q.lines, inStock); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
+          if (droppedIds.length) { branchStock['hazi-hinam'] = { branch: 0, lineIds: droppedIds };
+            if (catalog instanceof CachedCatalog) void catalog.forget(droppedIds.map((id) => lineQueryFor.get(id) ?? '').filter(Boolean), household.address).catch(() => null);
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'hazi-hinam', dropped: droppedNames })); }
+        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, store: 'hazi-hinam', error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price

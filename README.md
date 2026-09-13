@@ -43,8 +43,9 @@ Both were measured directly, not read:
   availability field; `Quantity` is the package size. Every product in the table above is built on
   this feed, so none of them can know whether a branch actually has an item.
 - **The chains themselves do know.** Rami Levy's own catalogue answers with `available_in` — the list
-  of branches carrying a barcode (25 of them for one tested product). It answers a phone and blocks a
-  data centre, which is why Kaniti reads it from the family's own device
+  of branches carrying a barcode (25 of them for one tested product); Hatzi Hinam answers `IsInStock`
+  per barcode the same way. Both answer a phone or this Mac and block a data centre, which is why
+  Kaniti reads them from the family's own device or the ops Mac's nightly refresh
   ([ADR 0011](docs/adr/0011-store-calls-run-on-the-device.md)) and nobody serving from a server can.
 
 So the honest claim is narrow and large at once: the comparison is a commodity, and **the shop
