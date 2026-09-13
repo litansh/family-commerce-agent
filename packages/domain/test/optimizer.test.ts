@@ -266,3 +266,27 @@ test('a basket missing a line is ranked as if completed at the cheapest price of
   assert.equal(b.missingEstimate, shekels(80), 'the salmon at A plus one top-up delivery');
   assert.equal(r.options[0]!.legs[0]!.storefrontId, 'a', 'A wins: ₪100 complete beats B ₪22 + ₪80 to complete');
 });
+
+test('a store that meets the coverage floor exactly is offered, not rejected', () => {
+  // 18 of 20 is exactly the 90 % floor. Binary floating point made 20 × (1 − 0.9) = 1.9999…, whose
+  // floor is 1, so two missing lines looked like one too many and real stores vanished from the
+  // compare. A family reported seeing only one store where several qualified.
+  const ids = Array.from({ length: 20 }, (_, i) => `l${i}`);
+  const store = (id: string, brand: string, priced: number): StorefrontQuote => ({
+    storefrontId: id, brand, chainId: id, serviceType: 'delivery',
+    itemsSubtotal: 20000 as Agorot, deliveryFee: 2000 as Agorot, deliveredTotal: 22000 as Agorot,
+    meetsMinimum: true, requestedLines: 20, pricedLines: priced,
+    lines: ids.slice(0, priced).map((l) => ({ lineId: l, productName: l, unitPrice: 1000 as Agorot, lineTotal: 1000 as Agorot, qty: 1 })),
+    deliveryTermsConfidence: 'verified', priceFeedStale: false,
+  });
+  const r = optimize({
+    quotes: [store('a', 'exactly the floor', 18), store('b', 'everything', 20)],
+    constants: DEFAULT_CONSTANTS,
+    requestedLineIds: ids,
+  });
+  assert.ok(r.options.some((o) => o.legs.some((l) => l.brand === 'exactly the floor')), 'a store at exactly 90% must be an option');
+  assert.ok(!r.rejected.some((x) => x.brand === 'exactly the floor'), 'and must not also be rejected');
+  // One below the floor is still rejected: the gate itself is not loosened.
+  const r2 = optimize({ quotes: [store('c', 'below the floor', 17), store('b', 'everything', 20)], constants: DEFAULT_CONSTANTS, requestedLineIds: ids });
+  assert.ok(r2.rejected.some((x) => x.brand === 'below the floor'), '17 of 20 is below the floor and stays rejected');
+});
