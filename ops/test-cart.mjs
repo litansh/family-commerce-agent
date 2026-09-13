@@ -185,7 +185,16 @@ const badCoverage = sfEntries.filter(([sid, sf]) => {
   const named = sf.fullBasket?.unfillableLineIds ?? [];
   return actuallyMissing.length !== named.length || actuallyMissing.some((id) => !named.includes(id));
 });
-check('no card is priced for a basket it cannot fill — every gap left is named', badCoverage.length === 0, badCoverage.length ? badCoverage.map(([sid]) => sid).join(', ') : `${sfEntries.length} storefronts, every gap named`);
+const coverageDetail = badCoverage.map(([sid, sf]) => {
+  const priced = new Set(Object.keys(q.storefrontLines?.[sid] ?? {}));
+  const miss = LIST.map((l) => l.id).filter((id) => !priced.has(id));
+  const named = sf.fullBasket?.unfillableLineIds ?? [];
+  const nameOf = (id) => LIST.find((l) => l.id === id)?.query ?? id;
+  const onlyMissing = miss.filter((id) => !named.includes(id)).map(nameOf);
+  const onlyNamed = named.filter((id) => !miss.includes(id)).map(nameOf);
+  return `${sid}: not offered but not named [${onlyMissing.join('|') || '-'}] · named but still offered [${onlyNamed.join('|') || '-'}]`;
+});
+check('no card is priced for a basket it cannot fill — every gap left is named', badCoverage.length === 0, badCoverage.length ? coverageDetail.join(' ;; ') : `${sfEntries.length} storefronts, every gap named`);
 
 // Promise 4 — in-store rows compare like with like: a partial branch never claims a saving against the full cart.
 const driveRows = q.drive?.branches ?? [];
