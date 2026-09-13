@@ -79,6 +79,17 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
   and an absent key is "nobody has looked" (no button). A button that does nothing is worse than no
   button, and this way the action lights up on its own the day the engine answers — no screen change.
   The unit tests cover both branches already.
+- **The first thing the finished card found was a bad substitute.** On the simulator run, Tiv Taam
+  swapped **לחם אחיד → לחם זיתים 540 גרם** — olive bread for plain sliced bread, which is not the same
+  kind of thing, and the family would have found it in the basket. It is on the card now, named, in
+  amber, with the ₪24.90 it costs and the two stores that have what was actually asked for. Naming
+  every swap is what surfaced it. The swap itself is **api-fixer / product-qa** ground: the
+  substitute-quality rule ("no pickles for cucumbers") does not catch bread.
+- **A store can substitute a line the family never pinned.** לחם אחיד carried no barcode and was still
+  marked `substituted`, by the store, not by Kaniti. So the design's "only a pinned line can be
+  swapped" is the rule for *Kaniti's* swaps; a store's own swap is always shown too, and the card
+  handles it — but the wording "את זה שביקשתם יש ב…" reads a little oddly for a free-text line and
+  would be worth a second pass if it turns out to be common.
 - **`buy-here.yaml` and `compare-shots.yaml` both had to move.** The compare's alternatives list now
   holds only *splits* (two stores, two deliveries); a single store is a card under
   "כל החנויות שמגיעות אליכם". A store that cannot fill the basket keeps its way to be bought from —

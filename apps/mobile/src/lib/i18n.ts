@@ -80,7 +80,7 @@ const he: Strings = {
   // A full basket at every store (docs/design/a-full-basket-everywhere.md). Nobody orders a partial
   // basket, so every store is offered with a complete one — and the family's exact basket is priced
   // beside it, with the difference in shekels. "עשה את זה זול יותר" is the owner's own phrasing.
-  fullBasketTitle: 'סל מלא', yourBasket: 'הסל שלך', exactBasket: 'הסל המדויק שלך', exactBasketAt: 'הסל המדויק שלך {x}',
+  fullBasketTitle: 'סל מלא', yourBasket: 'הסל שלך', whatTheyHave: 'מה שיש כאן', exactBasket: 'הסל המדויק שלך', exactBasketAt: 'הסל המדויק שלך {x}',
   exactTwoStops: 'ב-2 משלוחים מ{b}', exactAt: 'את זה שביקשתם יש ב{b}', exactNowhere: 'את זה שביקשתם אין באף חנות',
   swaps1: 'החלפה אחת', swapsN: '{n} החלפות', swapMissingWhy: 'החלפה — את זה שביקשתם אין כאן', swapCheaperWhy: 'זול יותר · {x} פחות',
   takeMine: 'קחו את שלי · +{x}', backToFull: 'חזרה לסל המלא · −{x}',
@@ -186,7 +186,7 @@ const en: Strings = {
   unavailable: 'Unavailable: {x}', deleted: '{x} removed', undo: 'Undo', swipeDelete: 'Delete', amount: 'Amount', removeFromList: 'Remove from the list', closeSheet: 'Close', oosTitle: '{x} — out of stock at your branch', oosInstead: 'Instead: {y}', oosNone: 'No close alternative. Pick another product, or drop the line.', oosPickOther: 'Another product', oosDrop: 'Drop from the list', twoDeliveries: 'Two deliveries', savesVs: 'Saves {x} vs everything at {b}', costsVs: '{x} more than the cheapest', savesVsApprox: 'Saves ≈{x} vs {b} once completed', legsLine: '{n} items at {b}', altTitle: 'Other ways to buy', buyHere: 'Buy here', itemsOnly: 'for the items it has', itemsOnlyN: 'for {n} items, no delivery', completedTotal: '≈{x} once completed', swapsLine: 'Substitute: {x}', missingHere: 'not here', noneAnywhere: 'No store has {x} today', removeIt: 'Remove from list', replaceIt: 'Replace', driveAll: 'All {n} items', tblMissing: 'Missing: {x}', toComplete: 'to complete elsewhere ≈{x} incl. delivery', coverage: '{p}% coverage', subs: '{n} substitutions', confirmOnce: 'Worth confirming once',
   confirmOnceSub: 'These items vary a lot in price between stores — probably matched to different products. Confirming a barcode once fixes it for good.',
   notOffered: 'Not offered — cannot supply enough of the list', estTotal: 'Estimated total', payAtStore: 'Payment happens on the store’s site. We prepare — you approve.',
-  fullBasketTitle: 'Full basket', yourBasket: 'Your basket', exactBasket: 'Your exact basket', exactBasketAt: 'Your exact basket {x}',
+  fullBasketTitle: 'Full basket', yourBasket: 'Your basket', whatTheyHave: 'What they have here', exactBasket: 'Your exact basket', exactBasketAt: 'Your exact basket {x}',
   exactTwoStops: '2 deliveries, with {b}', exactAt: 'The one you asked for is at {b}', exactNowhere: 'Nobody nearby has the one you asked for',
   swaps1: 'one substitution', swapsN: '{n} substitutions', swapMissingWhy: 'Substitute — they have not got yours', swapCheaperWhy: 'Cheaper · {x} less',
   takeMine: 'Take mine · +{x}', backToFull: 'Back to the full basket · −{x}',

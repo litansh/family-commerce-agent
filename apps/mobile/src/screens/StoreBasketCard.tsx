@@ -24,6 +24,10 @@ const short = (x: string) => (x.length > 30 ? x.slice(0, 29) + '…' : x);
 
 /** What a basket is called, so a number never sits on a card without saying what it buys. */
 function basketName(b: BasketPrice, card: StoreCardFacts): string {
+  // A store that cannot fill the list has no basket to name. Calling its number "הסל שלך" would claim
+  // the one thing this card exists to be honest about; it gets the only true name instead, and the
+  // note beside the price says how much of the list it is ("ל־3 מתוך 4 פריטים").
+  if (!card.complete) return tr('whatTheyHave');
   if (b.mode === 'cheap') return tr('cheapBasket');
   if (b.mode === 'exact') return tr('exactBasket');
   // A store that swapped nothing the family pinned is not offering them a "full basket" as opposed to
