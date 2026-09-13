@@ -117,6 +117,23 @@ cd apps/mobile && npm run web
 
 Fine for layout and copy. Stores cannot be connected here: a browser tab is not the person's phone.
 
+## Caching, and what is never cached
+
+A compare asks the catalogue for an alternative to every line a store cannot fill, and the same
+everyday words — חלב, לחם, ביצים — are on every list in the country. So catalogue answers are kept
+for a day under one key per question: **the words, the brand filter and the city**, never the
+household. A thousand families in one city asking for milk cost one lookup between them, and a
+nightly warm-up fills the day's words in advance so nobody pays for the first one.
+
+**Prices are never cached.** What is kept is a product's identity — barcode, name, brand, size — the
+things that change when a manufacturer changes a package, not when a shop changes a shelf label.
+Every number a family reads comes from the quote or a live price row. A stale entry can cost one
+substitution suggestion; it can never put an old price on a card.
+
+**Reality outranks the cache.** An item that turns out to be out of stock at the family's branch has
+its word forgotten at once, so the next family gets a fresh answer rather than the same
+disappointment.
+
 ## Checking it works
 
 ```bash
