@@ -44,6 +44,30 @@ the alternatives.
    is named only on the leg that actually buys that line; unfolding a split shows each leg with its
    own brand, its own money and its own products — the answer card's shape, reused.
 
+## What the family reads now
+The same compare as the table above, rendered through the new rules (real numbers, 2026-09-13):
+
+```
+[הכי זול] רמי לוי אונליין                                     ₪134.89
+  משלוח בחלון
+  חוסך ≈₪52.11 לעומת שופרסל ONLINE עם השלמה
+  חלופה: שמן זית → שמן זית מזוכך אופיר 750מ"ל
+  ▸ 8 פריטים ברמי לוי אונליין
+
+עוד דרכים לקנות
+  שופרסל ONLINE            [משלוח בחלון]   ₪173.10  ≈₪187.00 כולל השלמה · +₪52.11
+     חסר: פילה סלמון
+  מחסני השוק | רמת גן      [!נפתח ביום מחר בשעה 08:00]   ₪23.75  ל־3 פריטים, בלי משלוח
+     חסר: ביצים L, פילה סלמון, בננות…
+  קרפור אונליין            [משלוח בחלון]   ₪154.28  ל־8 פריטים, בלי משלוח
+     חסרים ₪45.72 למינימום הזמנה · חלופה: שמן זית → שמן זית כתית מעולה 750 מ"ל
+```
+
+The three numbers that were not on the phone yesterday: **₪52.11** (what Kaniti just saved them),
+**₪187.00** (what the second-best way really costs once the salmon is bought somewhere else), and
+**08:00** (the hour that shop opens). The `!` is the warn tone; a muted price is one that is not a
+delivered total.
+
 ## What is deliberately still out
 - **A per-store price per line.** `storefrontLines[sid][lineId].price` does not exist, so a row can
   name each store's product but not what that store charges for it. Backlog line, *api-fixer*; until

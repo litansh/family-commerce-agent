@@ -41,6 +41,12 @@ const CHECKS = {
   // Everyday Hebrew groceries through the catalogue search, not the provider's own vocabulary
   // (ADR 0010, Compare's second rung): red when any one of them cannot be found.
   search: () => run('search', 'node ops/search-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).pop() })),
+  // "איך לקנות" is the screen the whole product is for, and every number on it must be one the family
+  // could recompute from the same response, with nothing standing beside a number it is not comparable
+  // with (docs/design/compare-accuracy.md; promises 2, 3, 4). Red when a store that is shut reads as one
+  // that delivers, when the answer names no saving, when a partial basket stands beside a full one
+  // without its completed total, or when a row speaks for its first leg instead of its whole option.
+  compare: () => run('compare', 'node --experimental-strip-types e2e/compare-accuracy.mjs', `${ROOT}/apps/mobile`, 300_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).pop() })),
   // The shopper agent: a five-person family's week (about 35 lines) through resolve → compare → cart lines; cheap, fast, split, substitutes, in-store.
   shopper: () => run('shopper', `node ops/test-cart.mjs --json ${homedir()}/.kaniti/health/test-cart.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the test cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
   topup: () => run('topup', `node ops/test-cart.mjs --short --json ${homedir()}/.kaniti/health/test-cart-short.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the top-up cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
