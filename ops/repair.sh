@@ -30,6 +30,8 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   for n in $(gh pr list --state open --json number --jq '.[].number' 2>/dev/null); do ops/pr-review.sh "$n" 2>&1 | tail -1 | tee -a "$LOG"; done
   # The product review runs on green days too: a promise can be broken while every check passes.
   ops/qa.sh
+  # Nothing the owner opens should be unmergeable.
+  ops/unblock.sh 2>&1 | tee -a "$LOG"
   # Then the fleet works the backlog in two lanes; each lane is serial and resumes around a usage limit.
   ops/lanes.sh --wait
   exit 0
