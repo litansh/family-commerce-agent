@@ -70,15 +70,24 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
   appears only when a pinned line was swapped, and the cheapest full basket (Rami Levy ₪134.89)
   contains an oil the family did not choose while their own is at a store costing ₪173.10. That single
   line is the whole design in miniature and is worth keeping as the demo.
-- **A delivery fee is only in the response for stores that became options.** Every other card's number
-  is therefore items-only and says "+ משלוח" in muted ink. One field — `storefronts[sid].deliveryFee`
-  — turns eight of the twelve cards into delivered totals that may sit in one column. It is the
-  highest-value thing **api-fixer** can add for this screen, above the full/exact totals themselves.
-- **"עשה את זה זול יותר" is built but dark.** The card shows the action only when
-  `quote.cheaper[sid]` exists: an empty array is "the engine looked and found nothing" (a sentence),
-  and an absent key is "nobody has looked" (no button). A button that does nothing is worse than no
-  button, and this way the action lights up on its own the day the engine answers — no screen change.
-  The unit tests cover both branches already.
+- **The engine half landed mid-build (#116, #117) and the cards read it with no change.** The
+  contract this design wrote out — `storefronts[sid].{deliveryFee,minimumOrder,fullBasket,exactBasket}`
+  and `storefrontLines[…].lineTotal` — is what api-fixer shipped, field for field, so the exact
+  basket, its difference in shekels and its second delivery went live on the phone the moment main
+  merged. Writing the wire shape into the design before building it is what made that possible; it is
+  worth doing again.
+- **But the live contract exposed a real bug in the card, and it is the exact bug this module exists
+  to prevent.** The engine returns a `fullBasket.total` for *every* store it can price, and for a
+  store whose delivery fee it does not have, that total **is** the items subtotal — ויקטורי comes back
+  with `total` and `items` both ₪133.90 and no `deliveryFee` at all. The card read "a total arrived"
+  as "a delivered total arrived" and put an items-only number in the delivered column. `delivered` now
+  follows the **fee**, never the total, with a regression test naming ויקטורי. Lesson: a field being
+  present is not the same fact as the thing it is named after.
+- **"עשה את זה זול יותר" is `POST /households/:id/cheaper`, not a field on the quote.** So nobody has
+  looked until the family taps: the action is offered on any card with a basket to cheapen, says
+  `מחפשים זול יותר בחנות הזו…` while it asks, and reports `לא נמצא כאן זול יותר` in place when the
+  store had nothing of the same kind and size for less. The answer is kept per store so the undo and a
+  second tap cost nothing.
 - **The first thing the finished card found was a bad substitute.** On the simulator run, Tiv Taam
   swapped **לחם אחיד → לחם זיתים 540 גרם** — olive bread for plain sliced bread, which is not the same
   kind of thing, and the family would have found it in the basket. It is on the card now, named, in
