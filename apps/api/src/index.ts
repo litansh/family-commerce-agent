@@ -43,7 +43,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch, HaziHinamStock, dropUnavailableHaziHinam } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -701,6 +701,21 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
             console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
+      // Hatzi Hinam: the same check, from its own guest-session item lookup (no login, confirmed
+      // live 2026-09-13 - `/` then `/proxy/init` bootstrap the session `getItemByBarkod` needs).
+      // Its branch API answers 403 to a Lambda (services/branch-prices/src/portals.ts), so this
+      // reads whichever branch the guest session itself defaults to, not the family's own one;
+      // unknown stock drops nothing.
+      const hh = res.quotes.filter((q) => /hazi|hinam/i.test(q.storefrontId) || /חצי חינם/.test(q.brand));
+      if (hh.length) {
+        try {
+          const inStock = await haziHinamStock.inStock(hh.flatMap((q) => q.lines.map((l) => l.gtin ?? '')));
+          const droppedNames: string[] = []; const droppedIds: string[] = [];
+          for (const q of hh) { const { kept, dropped } = dropUnavailableHaziHinam(q.lines, inStock); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
+          if (droppedIds.length) { branchStock['hazi-hinam'] = { branch: 0, lineIds: droppedIds };
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'hazi-hinam', dropped: droppedNames })); }
+        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, store: 'hazi-hinam', error: e instanceof Error ? e.message : String(e) })); }
+      }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
@@ -825,6 +840,7 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
 const lambda = new LambdaClient({});
 const ramiLevyStock = new RamiLevyStock();
+const haziHinamStock = new HaziHinamStock();
 const COMPARE_TTL_S = 3600;
 
 /** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */
