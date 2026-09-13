@@ -43,7 +43,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch, HaziHinamStock, dropUnavailableHaziHinam } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -355,7 +355,11 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const { catalog } = requirePricing();
       const cached = (await readRow(TABLE, 'CATALOG', 'PROMOS')) as { promos?: Promotion[]; at?: string } | undefined;
       let promos: readonly Promotion[] = cached?.promos ?? [];
-      if (!promos.length || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
+      // A cache written before the round-robin fix (or from a feed minute that was itself lopsided)
+      // otherwise sits there for its full 6h doing the exact thing that fix was for: one chain's
+      // page. Never trust a cached spread that thin; only a fresh pull can widen it.
+      const cachedChains = new Set(promos.map((p) => p.chainName)).size;
+      if (!promos.length || cachedChains < 3 || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
         // The feed caps at 200, ordered by soonest end - the ones worth acting on this week.
         const fresh = catalog.listPromotions ? await catalog.listPromotions(200).catch(() => null) : null;
         if (fresh?.length) {
@@ -391,6 +395,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           promos = fresh.map((p) => byId.get(p.itemCodes.join(',') + p.chainName) ?? p);
           await writeRow(TABLE, 'CATALOG', 'PROMOS', { promos, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 2 * 86400 });
         }
+      }
+      // Second rung (docs/BACKLOG.md, ADR 0010): the provider's own promotions pull can still answer
+      // with real promotions from only one or two chains (ops/deals-health.mjs is what catches a feed
+      // that thin). The chains' own PromoFull files, read on the ops Mac never from this Lambda (ADR
+      // 0011: services/branch-prices/refresh-deals.mjs), fill in whichever chains the provider's pull
+      // missed - never replacing a chain the provider already covered, since a store's own file is a
+      // fallback, not a better source.
+      const coveredChains = new Set(promos.map((p) => p.chainName));
+      if (coveredChains.size < 3) {
+        const fromFiles = (await readRow(TABLE, 'CATALOG', 'PROMOS_FILES')) as { promos?: Promotion[] } | undefined;
+        const gapFillers = (fromFiles?.promos ?? []).filter((p) => !coveredChains.has(p.chainName));
+        if (gapFillers.length) promos = [...promos, ...gapFillers];
       }
       const memory = await repo.load();
       const usual = new Map(Object.values(memory.products).map((p) => [p.gtin, p]));
@@ -469,6 +485,16 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 
     // Pictures for a set of barcodes, resolved within a time budget so the
     // grid never waits on them. The app calls this right after rendering.
+    // What a phone learned from a chain's own catalogue (ADR 0011: the API may not ask the chain
+    // itself). Kept under the same key the resolver reads, so the next family member pays nothing.
+    if (method === 'POST' && rest === 'images/learned') {
+      const given = (typeof body['images'] === 'object' && body['images'] ? body['images'] : {}) as Record<string, unknown>;
+      const pairs = Object.entries(given).filter(([k, v]) => typeof k === 'string' && typeof v === 'string' && /^https:\/\//.test(v as string)).slice(0, 40) as [string, string][];
+      await Promise.all(pairs.map(([key, url]) => images.remember(key, url)));
+      console.log(JSON.stringify({ event: 'images-learned', hid, kept: pairs.length }));
+      return ok({ kept: pairs.length });
+    }
+
     if (method === 'POST' && rest === 'images') {
       // Barcodes, and names for the lines a family typed in their own words - those have no barcode,
       // and a drawn glyph where a photograph belongs is the commonest "the app looks unfinished".
@@ -503,7 +529,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
+      // A product nobody has priced yet is still a product the family wants on the list. Dropping it
+      // told them "there is no such thing" - production answered 0 products for ביצים and סלמון while
+      // the provider had eight of each, none priced through this path. Priced first, then the rest.
+      const memoryNow = await repo.load();
+      const priced = found.filter((c) => c.pricedAtChains > 0);
+      const unpriced = found.filter((c) => c.pricedAtChains === 0);
+      const buyable = [...rankForHousehold(priced, memoryNow), ...rankForHousehold(unpriced, memoryNow)].slice(0, 14);
+      if (priced.length === 0 && unpriced.length > 0) console.log(JSON.stringify({ event: 'search-unpriced-only', hid, q, found: unpriced.length }));
       const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       const products = buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null }));
       // Variants (docs/design/item-identity.md): the same size and defining attribute, priced by
@@ -687,6 +720,21 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
             console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
+      // Hatzi Hinam: the same check, from its own guest-session item lookup (no login, confirmed
+      // live 2026-09-13 - `/` then `/proxy/init` bootstrap the session `getItemByBarkod` needs).
+      // Its branch API answers 403 to a Lambda (services/branch-prices/src/portals.ts), so this
+      // reads whichever branch the guest session itself defaults to, not the family's own one;
+      // unknown stock drops nothing.
+      const hh = res.quotes.filter((q) => /hazi|hinam/i.test(q.storefrontId) || /חצי חינם/.test(q.brand));
+      if (hh.length) {
+        try {
+          const inStock = await haziHinamStock.inStock(hh.flatMap((q) => q.lines.map((l) => l.gtin ?? '')));
+          const droppedNames: string[] = []; const droppedIds: string[] = [];
+          for (const q of hh) { const { kept, dropped } = dropUnavailableHaziHinam(q.lines, inStock); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
+          if (droppedIds.length) { branchStock['hazi-hinam'] = { branch: 0, lineIds: droppedIds };
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'hazi-hinam', dropped: droppedNames })); }
+        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, store: 'hazi-hinam', error: e instanceof Error ? e.message : String(e) })); }
+      }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
       // the basket once more with it; a storefront that carries the substitute gets the line back,
@@ -708,7 +756,12 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
       const bestLines = substituted.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
-      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })));
+      // Not on the shared clock like substitutes and etas above, this defaulted to 20s of its own -
+      // on a five-person week (30+ lines, several cache misses) that alone could carry the whole
+      // request past API Gateway's 30s cutoff into the 503 a family saw with no picture to show for it
+      // either. A picture is worth having, not worth the compare itself; a miss here is cached for a
+      // day and self-heals on the next look, same as any other resolveMany caller.
+      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, 5_000);
       const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
       // (minutes, from Wolt's own feed for the family's address); the chains deliver in
@@ -806,6 +859,7 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
 const lambda = new LambdaClient({});
 const ramiLevyStock = new RamiLevyStock();
+const haziHinamStock = new HaziHinamStock();
 const COMPARE_TTL_S = 3600;
 
 /** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */

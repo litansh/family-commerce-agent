@@ -36,7 +36,18 @@ export function HomeScreen({ api, household, onAisle, onList, onMe }: { api: Api
   // A Hebrew carousel starts at its right edge, where the first card is.
   const dealsRef = useRef<ScrollView | null>(null);
   const usualsRef = useRef<ScrollView | null>(null);
-  useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
+  useEffect(() => {
+    api.deals(household.id).then(async (r) => {
+      setDeals(r.deals);
+      // /deals answers from the image cache only (fast); a card the cache has not warmed yet
+      // is a drawn glyph where a photograph belongs until this backfill runs — the same
+      // one-more-round-trip pattern List.tsx and Aisle.tsx already use for the same reason.
+      const missing = r.deals.filter((d) => !d.imageUrl && d.gtin).map((d) => d.gtin);
+      if (!missing.length) return;
+      const im = await api.images(household.id, missing).catch(() => null);
+      if (im) setDeals((xs) => xs.map((d) => (d.imageUrl || !im.images[d.gtin] ? d : { ...d, imageUrl: im.images[d.gtin] })));
+    }).catch(() => setDeals([]));
+  }, [api, household.id]);
   useEffect(() => { api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([])); }, [lines, api, household.id]);
 
   const onList_ = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);

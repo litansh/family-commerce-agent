@@ -129,6 +129,49 @@ export function parsePromoFull(xml: string): PromoIndex {
   return out;
 }
 
+/** One named deal from a PromoFull file, shaped for a deals feed rather than in-store price math (see `parsePromoFull`). */
+export interface PromoFeedItem {
+  readonly itemCodes: readonly string[];
+  readonly description: string;
+  readonly discountRate: number;
+  readonly discountedPrice: number;
+  readonly clubOnly: boolean;
+  readonly endTs: string;
+}
+
+/**
+ * A PromoFull file → named deals, for the מבצעים feed's second rung (docs/BACKLOG.md, "מבצעים from
+ * the chains' own promotion files"): when the pricing provider's own feed is thin or one-sided, these
+ * fill the gap from the chain's own published file instead. Same filters as `parsePromoFull`
+ * (coupons, weighed goods and unclear reward types skipped) plus the fields a feed needs to show
+ * (`PromotionDescription`, `PromotionEndDateTime`) that the in-store price index has no use for.
+ */
+export function parsePromoFeed(xml: string): PromoFeedItem[] {
+  const out: PromoFeedItem[] = [];
+  for (const p of xml.matchAll(/<Promotion>([\s\S]*?)<\/Promotion>/gi)) {
+    const promo = p[1]!;
+    if (tag(promo, 'AdditionalIsCoupon') === '1') continue;
+    const description = tag(promo, 'PromotionDescription');
+    const endTs = tag(promo, 'PromotionEndDateTime');
+    if (!description || !endTs) continue;
+    const clubId = tag(promo, 'ClubID');
+    const clubOnly = clubId !== '' && clubId !== '0';
+    for (const it of promo.matchAll(/<PromotionItem>([\s\S]*?)<\/PromotionItem>/gi)) {
+      const item = it[1]!;
+      const code = tag(item, 'ItemCode');
+      if (!/^\d{8,14}$/.test(code)) continue;
+      if (tag(item, 'bIsWeighted') === '1') continue;
+      const rewardType = tag(item, 'RewardType');
+      if (rewardType !== '1' && rewardType !== '3') continue;
+      const discountedPrice = Number(tag(item, 'DiscountedPrice'));
+      if (!(discountedPrice > 0)) continue;
+      const discountRate = Number(tag(item, 'DiscountRate')) || 0;
+      out.push({ itemCodes: [code], description, discountRate, discountedPrice, clubOnly, endTs });
+    }
+  }
+  return out;
+}
+
 /** The cheapest way to buy `qty` units, mixing one promo's bundles with the regular price for the rest. */
 export function bestDealTotal(deals: readonly PromoDeal[] | undefined, qty: number, regularUnit: number): { total: number; clubOnly: boolean } {
   let best = { total: regularUnit * qty, clubOnly: false };
