@@ -15,6 +15,13 @@ No agent picks its own priorities while an owner-reported line of its own is ope
 | a promise not kept, with real data | product-qa |
 | how anything is shown or decided on a screen | app-designer |
 
+## One file per agent
+
+The worklist is split: `docs/backlog/<agent>.md`. An agent reads its own file and writes only there,
+because two agents editing `docs/BACKLOG.md` at once made every second pull request unmergeable. The
+orchestrator moves a line that turns out to belong to someone else, and keeps `docs/BACKLOG.md` as
+the map.
+
 ## The evidence an agent is given
 
 A report reaches an agent with what was measured, not with an adjective: the call that failed and
