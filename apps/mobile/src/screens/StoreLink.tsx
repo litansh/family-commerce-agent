@@ -10,8 +10,8 @@ import { Pressable } from 'react-native';
 import { isRTL } from '../lib/i18n';
 import { BUILD } from '../lib/config';
 import { CloudConnect, SignupGuide } from './CloudConnect';
-import { captureSessionJs, parseCapturedSession, sessionSummary, signedInPollJs } from '../lib/session';
-import { CONSENT_JS, guardedJs, HISTORY_JS, OTP_JS, PROBE_JS } from '../lib/inject';
+import { captureSessionJs, hasAuthSession, parseCapturedSession, sessionSummary, signedInPollJs } from '../lib/session';
+import { CONSENT_JS, guardedJs, OTP_JS, PROBE_JS } from '../lib/inject';
 
 /**
  * Connect a store, entirely inside Kaniti.
@@ -127,16 +127,19 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     const got = parseCapturedSession(json);
     const sum = sessionSummary(got);
     // A single-page store can write its token a beat after it says "signed in": one more look.
-    if (sum.cookies + sum.tokens === 0 && captureTries.current < 2) { void report({ sessionCapture: { ...sum, empty: true, retry: true } }); setTimeout(capture, 2500); return; }
+    // Decorative cookies (analytics, ad ids) are on every page, signed in or not - "not empty"
+    // is not "has the store's own session", so the retry is keyed on the named session keys.
+    const authOk = hasAuthSession(got, store?.sessionKeys);
+    if (!authOk && captureTries.current < 2) { void report({ sessionCapture: { ...sum, empty: sum.cookies + sum.tokens === 0, authKeyMissing: true, retry: true } }); setTimeout(capture, 2500); return; }
     try {
       const r = await api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) });
       setSaved(r.connected);
-      void report({ sessionCapture: { ...sum, saved: r.connected } });
+      void report({ sessionCapture: { ...sum, authKeyMissing: !authOk, saved: r.connected } });
     } catch (e) {
       // The cloud copy failed (network, a 4xx): the store is still connected on this phone,
       // the panel says so, and the log says why the family's other devices will not see it.
       setSaved(false);
-      void report({ sessionCapture: { ...sum, saved: false, postError: String(e).slice(0, 200) } });
+      void report({ sessionCapture: { ...sum, authKeyMissing: !authOk, saved: false, postError: String(e).slice(0, 200) } });
     }
   };
   // The store's own page said yes (twice in a row), or the person did: connected. Capture the
@@ -149,7 +152,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     didImport.current = true;
     void report({ signedIn: how });
     raw(PROBE_JS); capture();
-    const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
+    const h = store?.historyJs;
     if (h) { setImporting(true); raw(h); }
   };
   const postHistory = async (json: string): Promise<void> => {

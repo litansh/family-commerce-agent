@@ -9,7 +9,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { captureSessionJs, GUARD_JS, MAX_TOKEN_CHARS, parseCapturedSession, sessionSummary, signedInPollJs } from '../src/lib/session.ts';
+import { captureSessionJs, GUARD_JS, hasAuthSession, MAX_TOKEN_CHARS, parseCapturedSession, sessionSummary, signedInPollJs } from '../src/lib/session.ts';
 import { guardedJs } from '../src/lib/inject.ts';
 import { STORES } from '../src/lib/stores.ts';
 
@@ -75,6 +75,20 @@ test('a page whose storage throws still posts, with the error named', () => {
   const got = session(posted);
   assert.equal(got.cookies.length, 1);
   assert.match(String(got.diag.skipped?.[0] ?? got.diag.error), /denied/);
+});
+
+test('hasAuthSession: decorative cookies are not a session - only the store\'s own named keys count', () => {
+  const rl = STORES['rami-levy']!;
+  // Every real page carries analytics/ad cookies whether or not anyone is signed in.
+  const decorativeOnly = session(runInPage(captureSessionJs(rl), { cookie: '_ga=GA1.1; AWSALB=x; _gid=y' }));
+  assert.equal(hasAuthSession(decorativeOnly, rl.sessionKeys), false, 'decorative cookies alone must not read as a session');
+  const withAuthCookie = session(runInPage(captureSessionJs(rl), { cookie: '_ga=GA1.1; auth._token.local=Bearer%20x' }));
+  assert.equal(hasAuthSession(withAuthCookie, rl.sessionKeys), true, 'the named cookie is enough, even alone');
+  const withAuthToken = session(runInPage(captureSessionJs(rl), { cookie: '_ga=GA1.1', ls: { 'auth._refresh_token.local': 'r1' } }));
+  assert.equal(hasAuthSession(withAuthToken, rl.sessionKeys), true, 'the named localStorage key is enough too');
+  // A store with no named keys (none defined yet): anything captured counts, same as before this check existed.
+  assert.equal(hasAuthSession(decorativeOnly, undefined), true);
+  assert.equal(hasAuthSession({ cookies: [], tokens: {}, diag: {} }, undefined), false);
 });
 
 test('a malformed report is an empty session with the error named, never a throw', () => {

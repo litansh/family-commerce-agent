@@ -43,7 +43,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch, HaziHinamStock, dropUnavailableHaziHinam } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -396,6 +396,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           await writeRow(TABLE, 'CATALOG', 'PROMOS', { promos, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 2 * 86400 });
         }
       }
+      // Second rung (docs/BACKLOG.md, ADR 0010): the provider's own promotions pull can still answer
+      // with real promotions from only one or two chains (ops/deals-health.mjs is what catches a feed
+      // that thin). The chains' own PromoFull files, read on the ops Mac never from this Lambda (ADR
+      // 0011: services/branch-prices/refresh-deals.mjs), fill in whichever chains the provider's pull
+      // missed - never replacing a chain the provider already covered, since a store's own file is a
+      // fallback, not a better source.
+      const coveredChains = new Set(promos.map((p) => p.chainName));
+      if (coveredChains.size < 3) {
+        const fromFiles = (await readRow(TABLE, 'CATALOG', 'PROMOS_FILES')) as { promos?: Promotion[] } | undefined;
+        const gapFillers = (fromFiles?.promos ?? []).filter((p) => !coveredChains.has(p.chainName));
+        if (gapFillers.length) promos = [...promos, ...gapFillers];
+      }
       const memory = await repo.load();
       const usual = new Map(Object.values(memory.products).map((p) => [p.gtin, p]));
       const now = Date.now();
@@ -517,7 +529,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
+      // A product nobody has priced yet is still a product the family wants on the list. Dropping it
+      // told them "there is no such thing" - production answered 0 products for ביצים and סלמון while
+      // the provider had eight of each, none priced through this path. Priced first, then the rest.
+      const memoryNow = await repo.load();
+      const priced = found.filter((c) => c.pricedAtChains > 0);
+      const unpriced = found.filter((c) => c.pricedAtChains === 0);
+      const buyable = [...rankForHousehold(priced, memoryNow), ...rankForHousehold(unpriced, memoryNow)].slice(0, 14);
+      if (priced.length === 0 && unpriced.length > 0) console.log(JSON.stringify({ event: 'search-unpriced-only', hid, q, found: unpriced.length }));
       const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       const products = buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null }));
       // Variants (docs/design/item-identity.md): the same size and defining attribute, priced by
@@ -645,7 +664,17 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 /** How long a compare may take: one try inside API Gateway's 30 s (the sync route), or several tries in the background job. */
 type CompareBudget = { tryMs: number; totalMs: number };
 const SYNC_BUDGET: CompareBudget = { tryMs: 26_000, totalMs: 26_000 };
-const JOB_BUDGET: CompareBudget = { tryMs: 40_000, totalMs: 110_000 };
+/**
+ * The background job's budget grows with the basket, because the work does: the provider takes at
+ * most fifty items in a call, so a sixty-line list is two calls a pass and two passes, plus the
+ * substitutes. A flat 110 s failed a real family's list at 113 s and gave them nothing (reproduced
+ * on production, 13 September). The phone waits on a row, not on a clock, so a longer wait is only
+ * a longer wait - and the copy on screen says so past 35 seconds.
+ */
+function jobBudget(lines: number): CompareBudget {
+  const chunks = Math.max(1, Math.ceil(lines / 50));
+  return { tryMs: Math.min(120_000, 45_000 * chunks), totalMs: Math.min(280_000, 90_000 + 45_000 * chunks) };
+}
 
 /**
  * The compare: the family's list priced at every store that delivers, substitutes for what a store
@@ -700,21 +729,6 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
           if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
             console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
-      }
-      // Hatzi Hinam: the same check, from its own guest-session item lookup (no login, confirmed
-      // live 2026-09-13 - `/` then `/proxy/init` bootstrap the session `getItemByBarkod` needs).
-      // Its branch API answers 403 to a Lambda (services/branch-prices/src/portals.ts), so this
-      // reads whichever branch the guest session itself defaults to, not the family's own one;
-      // unknown stock drops nothing.
-      const hh = res.quotes.filter((q) => /hazi|hinam/i.test(q.storefrontId) || /חצי חינם/.test(q.brand));
-      if (hh.length) {
-        try {
-          const inStock = await haziHinamStock.inStock(hh.flatMap((q) => q.lines.map((l) => l.gtin ?? '')));
-          const droppedNames: string[] = []; const droppedIds: string[] = [];
-          for (const q of hh) { const { kept, dropped } = dropUnavailableHaziHinam(q.lines, inStock); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
-          if (droppedIds.length) { branchStock['hazi-hinam'] = { branch: 0, lineIds: droppedIds };
-            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'hazi-hinam', dropped: droppedNames })); }
-        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, store: 'hazi-hinam', error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
@@ -779,12 +793,14 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
-      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
+      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
       // A substitution's reason is for people: "what you asked → what this store has". The provider's own
       // codes (confirmed_product_unavailable) never reach a card.
       const lineQuery = new Map(lines.map((l) => [l.id, l.query]));
       const reasonFor = (l: QuotedLine): string => (l.substitutionReason && l.substitutionReason.includes('→') ? l.substitutionReason : `${lineQuery.get(l.lineId) ?? ''} → ${l.productName}`);
-      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      // Per-store price per line (docs/design/item-identity.md: "רמי לוי ₪6.20 (תנובה 1 ל')" needs one):
+      // this store's own unit price, never the winner's or another store's.
+      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
       // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
@@ -840,7 +856,6 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
 const lambda = new LambdaClient({});
 const ramiLevyStock = new RamiLevyStock();
-const haziHinamStock = new HaziHinamStock();
 const COMPARE_TTL_S = 3600;
 
 /** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */
@@ -861,8 +876,11 @@ async function runCompareJob(job: CompareJob): Promise<void> {
     const region = regionOf(household.country);
     const providers = providersFor(region);
     if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
-    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, JOB_BUDGET);
-    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: fitRow(result), at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
+    const lineCount = Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0;
+    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, jobBudget(lineCount));
+    const kept = fitRow(result);
+    console.log(JSON.stringify({ event: 'compare-done', hid: job.hid, lines: Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0, ms: Date.now() - started, kb: Math.round(JSON.stringify(kept).length / 1024) }));
+    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: kept, at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
   } catch (e) {
     console.error(JSON.stringify({ event: 'compare-failed', hid: job.hid, id: job.id, ms: Date.now() - started, error: e instanceof Error ? e.message : String(e) }));
     await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'failed', error: e instanceof HttpError ? e.message : 'internal error', at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });

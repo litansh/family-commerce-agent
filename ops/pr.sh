@@ -11,6 +11,8 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 TITLE="$1"; BODY="${2:-}"; WAIT=1; [ "${3:-}" = "--no-wait" ] && WAIT=0
 [ -f "$BODY" ] && BODY="$(cat "$BODY")"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# Open on top of main, always: a pull request that cannot be merged wastes the owner's tap.
+git fetch -q origin main && git merge -q --no-edit origin/main >/dev/null 2>&1 || { echo "note: main does not merge cleanly into $BRANCH; resolve before opening"; git merge --abort 2>/dev/null; }
 [ "$BRANCH" != "main" ] || { echo "refusing: on main — create a branch first"; exit 1; }
 git push -u origin "$BRANCH" >/dev/null 2>&1
 # gh pr view returns the branch's most recent PR even once it is MERGED or CLOSED; editing that

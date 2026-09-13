@@ -18,9 +18,8 @@ import type { Api } from './lib/api';
 import { STORES } from './lib/stores';
 import { markLinked, markNeedsRelink, useLinked } from './lib/linked';
 import { confirmFromHistory } from './lib/pending';
-import { HISTORY_JS } from './lib/inject';
 import { BUILD } from './lib/config';
-import { captureSessionJs, GUARD_JS, parseCapturedSession, sessionSummary } from './lib/session';
+import { captureSessionJs, GUARD_JS, hasAuthSession, parseCapturedSession, sessionSummary } from './lib/session';
 
 const EVERY_MS = 6 * 3600_000;
 const KEY = (id: string) => `fca.keepalive.${id}`;
@@ -80,7 +79,10 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             // that finds a session and posts nothing is exactly the failure nobody would see.
             const got = parseCapturedSession(d.slice(12)); const sum = sessionSummary(got);
             const done = (extra: Record<string, unknown>) => api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { sessionCapture: { ...sum, ...extra } } }).catch(() => null);
-            if (sum.cookies + sum.tokens === 0) { void done({ empty: true }); return; }
+            // Decorative cookies (analytics, ad ids) are on every page, signed in or not - a capture
+            // without the store's own session key is never posted: it would clobber a good sealed
+            // session with a hollow one instead of just leaving it be.
+            if (!hasAuthSession(got, store.sessionKeys)) { void done({ empty: sum.cookies + sum.tokens === 0, authKeyMissing: true }); return; }
             void api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) }).then((r) => done({ saved: r.connected }), (e: unknown) => done({ saved: false, postError: String(e).slice(0, 200) }));
             return;
           }
@@ -91,7 +93,7 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             ref.current?.injectJavaScript(capture);
             // Signed in: read the store's own orders too - the memory learns from what was really
             // bought, and a cart Kaniti filled earlier is confirmed without asking anyone.
-            const h = store.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
+            const h = store.historyJs;
             if (h) { ref.current?.injectJavaScript(h); setTimeout(() => finish('in'), 12_000); } else finish('in');
           }
           // "Out" only when three looks agree AND the store is actually showing its sign-in: a page still
