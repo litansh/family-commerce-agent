@@ -11,7 +11,7 @@ import { isRTL } from '../lib/i18n';
 import { BUILD } from '../lib/config';
 import { CloudConnect, SignupGuide } from './CloudConnect';
 import { captureSessionJs, parseCapturedSession, sessionSummary, signedInPollJs } from '../lib/session';
-import { CONSENT_JS, guardedJs, HISTORY_JS, OTP_JS, PROBE_JS } from '../lib/inject';
+import { CONSENT_JS, guardedJs, OTP_JS, PROBE_JS } from '../lib/inject';
 
 /**
  * Connect a store, entirely inside Kaniti.
@@ -149,7 +149,7 @@ export function StoreLink({ storeId, api, householdId, onClose, onLinked }: { st
     didImport.current = true;
     void report({ signedIn: how });
     raw(PROBE_JS); capture();
-    const h = store?.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
+    const h = store?.historyJs;
     if (h) { setImporting(true); raw(h); }
   };
   const postHistory = async (json: string): Promise<void> => {

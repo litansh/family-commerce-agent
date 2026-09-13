@@ -14,6 +14,8 @@
  * once, at the first purchase from that store. The detectors below flip
  * "connected" automatically, and the person can always confirm by hand.
  */
+import { HISTORY_JS } from './inject.ts';
+
 export interface StoreDef {
   readonly id: string;
   readonly name: string;
@@ -351,6 +353,10 @@ export const SHUFERSAL: Platform = {
   group: 'hybris', loginKind: 'password',
   searchUrl: (q) => `https://www.shufersal.co.il/online/he/search?text=${encodeURIComponent(q)}`,
   signedInCheck: `fetch('/online/he/my-account/orders',{credentials:'include'}).then(r=>r.ok&&!/\\/login/.test(r.url)).catch(()=>false)`,
+  // Past orders: the site's own Hybris account API (inject.ts's generic HISTORY_JS was written for
+  // it), with an HTML-scrape fallback. Was a hardcoded storeId==='shufersal' check in SessionKeeper
+  // and StoreLink instead of a StoreDef field - every other store's history recipe lives here.
+  historyJs: HISTORY_JS,
   prefillEmailJs: (email) => setInput('input[name="j_username"],input[type="email"],input[placeholder*="מייל"]', email),
   forgotJs: `(()=>{const a=[...document.querySelectorAll('a')].find(x=>/שכחתי/.test(x.textContent));if(a)a.click();})();true;`,
   // Plain form post, no captcha — but from AWS the site serves a 441-byte block page
