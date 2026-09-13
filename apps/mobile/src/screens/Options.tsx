@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { PurchaseOption } from '@fca/domain';
-import type { Api, Household, QuoteResult } from '../lib/api';
+import type { Api, CheaperSwap, Household, QuoteResult } from '../lib/api';
 import { removeLine, type Line } from '../lib/store';
-import { Button, Chip, Header, Loading, S, Skeleton, t } from '../ui';
+import { Button, Chip, Header, Loading, PriceCol, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
 import type { SearchHit } from '../lib/api';
 import { isRTL, money, reasonT, t as tr } from '../lib/i18n';
@@ -12,6 +12,8 @@ import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
 import { orderLineAt, productAt } from '../lib/quote';
 import { etaRank, etaTone, exceptionsOf, opensAt, rowsFor, savingOf, type CompareLike, type CompareRow } from '../lib/compare';
+import { cardsFor, type BasketLike, type BasketMode } from '../lib/fullBasket';
+import { StoreBasketCard } from './StoreBasketCard';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
 import { OrderOnDevice } from './OrderOnDevice';
@@ -83,21 +85,6 @@ function StoreLineList({ lines, storeLines, ids }: { lines: QuoteResult['lines']
         );
       })}
     </>
-  );
-}
-
-/**
- * The price column of a row: the number with its note wrapping under it. Bounded so the name column
- * keeps its width; hugging the card's outer edge so the prices read as one column down the list.
- */
-function PriceCol({ price, note, color }: { price: string; note?: string; color?: string }) {
-  const s = S(); const rtl = isRTL();
-  const edge = rtl ? ('left' as const) : ('right' as const);
-  return (
-    <View style={{ maxWidth: '45%', alignItems: rtl ? 'flex-start' : 'flex-end' }}>
-      <Text style={[s.price, { fontSize: 18, color: color ?? t.ink, textAlign: edge }]}>{price}</Text>
-      {note ? <Text style={[s.faint, { fontSize: 11, textAlign: edge }]}>{note}</Text> : null}
-    </View>
   );
 }
 
@@ -196,8 +183,30 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // it is within a few percent of the cheapest split, else the cheapest.
   const [strategy, setStrategyState] = useState<'cheap' | 'balanced' | 'fast'>(getMode());
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
-  // Which row (or the answer's legs) is unfolded.
+  // Which row, card or the answer's legs is unfolded.
   const [open, setOpen] = useState<string | null>(null);
+  // Which basket each store's card is showing — the exact one, the cheapened one, or whichever leads.
+  // Per store, and reversible in one tap: the family asked for a different basket at this shop, not
+  // for a different screen (docs/design/a-full-basket-everywhere.md).
+  const [modeAt, setModeAt] = useState<Record<string, BasketMode>>({});
+  // "עשה את זה זול יותר" is one store's question, asked when the family taps it. The answer is kept
+  // so the undo, and a second tap, cost nothing — and an empty answer is kept too, because "this shop
+  // had nothing cheaper" is a sentence worth not asking twice.
+  const [cheaper, setCheaper] = useState<Record<string, CheaperSwap[]>>({});
+  const [cheapBusy, setCheapBusy] = useState<string | null>(null);
+  // The partial-offer section starts folded: it is below the answers on purpose, and it is not one.
+  const [partialOpen, setPartialOpen] = useState(false);
+  const makeCheaper = async (sid: string) => {
+    if (modeAt[sid] === 'cheap') { setModeAt(({ [sid]: _off, ...rest }) => rest); return; }
+    if (cheaper[sid]) { setModeAt((m) => ({ ...m, [sid]: 'cheap' })); return; }
+    setCheapBusy(sid);
+    try {
+      const swaps = await api.cheaper(household.id, sid, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l));
+      setCheaper((c) => ({ ...c, [sid]: swaps }));
+      if (swaps.length) setModeAt((m) => ({ ...m, [sid]: 'cheap' }));
+    } catch { setCheaper((c) => ({ ...c, [sid]: [] })); }
+    finally { setCheapBusy(null); }
+  };
   const [attempt, setAttempt] = useState(0);
   // Past half a minute the loading copy says why it is taking longer, so nobody thinks it is stuck.
   const [slow, setSlow] = useState(false);
@@ -306,15 +315,44 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
     const when = o ? whenOf(o) : etaText(view.storefrontId);
     return { view, title: view.brands.map((b) => b.brand).join(' + '), when: when || null, whenTone: etaTone(q.etas?.[view.storefrontId]), ...(priceNote ? { priceNote } : {}), second };
   });
+  // A split — two stores, two deliveries — is a *way* to buy the list rather than a store, so it keeps
+  // the row shape. Every single store now gets its own basket card instead of a row.
+  const splitRows = rows.filter((r) => r.view.brands.length > 1);
+  /**
+   * Every store that delivers, each with the basket it can fill (docs/design/a-full-basket-everywhere.md).
+   * The answer's own store is left out: it is already the card at the top of the screen, with a bigger
+   * number and the same facts, and showing it twice would be two headlines for one decision.
+   */
+  const answerSid = answer && answer.legs.length === 1 ? answer.legs[0]!.storefrontId : null;
+  // The compare plus whatever "עשה את זה זול יותר" has been told about each store, so the cards read
+  // one object and `lib/fullBasket.ts` stays the single place a basket's facts are decided.
+  const basketQuote = { ...q, cheaper } as unknown as BasketLike;
+  const allCards = cardsFor(basketQuote).filter((c) => c.storefrontId !== answerSid);
+  /**
+   * "אין סל חלקי" (the owner, 13 September evening): an offer is a complete shop at one store, with
+   * that store's own alternatives where it lacks the exact product. Only complete offers stand among
+   * the answers — comparing them is apples to apples. A store that cannot fill a line even with a
+   * stand-in is not hidden; it simply stops pretending to be an answer, and waits in its own section.
+   */
+  const basketCards = allCards.filter((c) => c.complete);
+  const partialCards = allCards.filter((c) => !c.complete);
+  /**
+   * Buy this store's own basket. When the compare already priced it as an option, that option is what
+   * is ordered — the numbers on the card are its numbers. Otherwise the lines this store priced are
+   * made into one leg, so a store the compare set aside is still a store the family may buy from.
+   */
+  const buyStore = (sid: string, title: string, price?: number) => {
+    const asOption = q.options.find((o) => o.legs.length === 1 && o.legs[0]!.storefrontId === sid);
+    if (asOption) { void orderBest(asOption, q, { pinnable: false }); return; }
+    const sl = q.storefrontLines?.[sid] ?? {};
+    const items = price ?? q.rejected.find((r) => r.storefrontId === sid)?.itemsSubtotal ?? 0;
+    const ids = Object.keys(sl);
+    const pseudo = { kind: 'single_delivered', label: title, legs: [{ storefrontId: sid, brand: title, itemsSubtotal: items, deliveryFee: 0, lineIds: ids }], itemsSubtotal: items, fees: 0, cashCost: items, timeCost: 0, coverageRatio: q.lines.length ? ids.length / q.lines.length : 0, unpricedLineIds: q.lines.filter((l) => !sl[l.id]).map((l) => l.id), substitutedLineCount: Object.values(sl).filter((l) => l.substituted).length, explanation: { reason: '', savingVsBaseline: 0, baselineLabel: '', extraStores: 0, notes: [] } } as unknown as PurchaseOption;
+    void orderBest(pseudo, q, { pinnable: false });
+  };
   const buyRow = (view: CompareRow) => {
     if (view.option) { void orderBest(view.option as unknown as PurchaseOption, q, { pinnable: false }); return; }
-    // A store the compare rejected is still a store the family may buy from: order what it has.
-    const sid = view.storefrontId;
-    const title = view.brands[0]!.brand;
-    const sl = q.storefrontLines?.[sid] ?? {};
-    const ids = Object.keys(sl);
-    const pseudo = { kind: 'single_delivered', label: title, legs: [{ storefrontId: sid, brand: title, itemsSubtotal: view.price, deliveryFee: 0, lineIds: ids }], itemsSubtotal: view.price, fees: 0, cashCost: view.price, timeCost: 0, coverageRatio: q.lines.length ? ids.length / q.lines.length : 0, unpricedLineIds: q.lines.filter((l) => !sl[l.id]).map((l) => l.id), substitutedLineCount: Object.values(sl).filter((l) => l.substituted).length, explanation: { reason: '', savingVsBaseline: 0, baselineLabel: '', extraStores: 0, notes: [] } } as unknown as PurchaseOption;
-    void orderBest(pseudo, q, { pinnable: false });
+    buyStore(view.storefrontId, view.brands[0]!.brand, view.price);
   };
 
   return (
@@ -405,15 +443,68 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
           );
         })() : <View style={s.card}><Text style={s.body}>{tr('noneCover')}</Text></View>}
 
-        {/* Every other store, the same sentence: price · when · what it lacks. Tap for its lines and "buy here". */}
-        {rows.length ? (
+        {/* Another *way* to buy the list — two stores, two deliveries — is not a store, so it keeps the
+            old row shape. A single store's own basket is a card below instead. */}
+        {splitRows.length ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
             <Text style={[s.title, { fontSize: 16, paddingVertical: 8 }]}>{tr('altTitle')}</Text>
-            {/* Already ordered by what the family would really pay (lib/compare.ts#rowsFor): options
-                first, by their completed totals, so a partial basket never jumps a full one. */}
-            {rows.map((row) => (
+            {splitRows.map((row) => (
               <StoreRow key={row.view.key} row={row} open={open === row.view.key} onToggle={() => setOpen(open === row.view.key ? null : row.view.key)} quote={q} onBuy={() => buyRow(row.view)} />
             ))}
+          </View>
+        ) : null}
+
+        {/* Every store that delivers, each with a whole basket (docs/design/a-full-basket-everywhere.md).
+            Nobody orders a partial basket, so coverage is a fact printed on a card here and never a
+            reason a card is missing: the only store without one is a store that does not deliver. */}
+        {basketCards.length ? (
+          <View>
+            <Text style={[s.title, { fontSize: 16, paddingVertical: 10 }]}>{tr('everyStore')}</Text>
+            {basketCards.map((card) => (
+              <StoreBasketCard
+                key={card.storefrontId}
+                card={card}
+                quote={basketQuote}
+                open={open === `b-${card.storefrontId}`}
+                mode={modeAt[card.storefrontId] ?? null}
+                busy={cheapBusy === card.storefrontId}
+                when={etaText(card.storefrontId)}
+                whenTone={etaTone(q.etas?.[card.storefrontId])}
+                onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
+                onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
+                onCheaper={() => void makeCheaper(card.storefrontId)}
+                onBuy={() => buyStore(card.storefrontId, card.brand)}
+                nameOf={nameOf}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* "אין סל חלקי — וזה חייב להיות בסקשן אחר": the offers that do not cover the whole list, below
+            and folded away. Nobody is hidden, and opening it says exactly what each one is missing. */}
+        {partialCards.length ? (
+          <View testID="partial-offers">
+            <Pressable onPress={() => setPartialOpen((v) => !v)} style={[s.row, { paddingVertical: 14, borderTopWidth: 1, borderColor: t.line }]} testID="partial-offers-toggle">
+              <Text style={[s.small, { flex: 1 }]}>{partialCards.length === 1 ? tr('partialOffer1') : tr('partialOffers', { n: partialCards.length })}</Text>
+              <Text style={[s.small, { color: t.accent }]}>{partialOpen ? '▾' : '‹'}</Text>
+            </Pressable>
+            {partialOpen ? partialCards.map((card) => (
+              <StoreBasketCard
+                key={card.storefrontId}
+                card={card}
+                quote={basketQuote}
+                open={open === `b-${card.storefrontId}`}
+                mode={modeAt[card.storefrontId] ?? null}
+                busy={cheapBusy === card.storefrontId}
+                when={etaText(card.storefrontId)}
+                whenTone={etaTone(q.etas?.[card.storefrontId])}
+                onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
+                onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
+                onCheaper={() => void makeCheaper(card.storefrontId)}
+                onBuy={() => buyStore(card.storefrontId, card.brand)}
+                nameOf={nameOf}
+              />
+            )) : null}
           </View>
         ) : null}
 

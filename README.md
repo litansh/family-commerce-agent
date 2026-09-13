@@ -259,6 +259,44 @@ Option B — ויקטורי אונליין      items ₪878.80 + fee ₪35.90  
 That ₪247 spread on chain choice alone, about ₪12,800 a year, is why the product exists. A later
 39-line run splits the basket across two stores for ₪838 against ₪980 at the best single store.
 
+### A full basket at every store
+
+Nobody orders a partial basket, so coverage is not a reason to hide a shop — it is a fact printed on
+that shop's card. **Every store that delivers is offered with a complete basket**, using its own
+nearest product wherever it lacks the exact one, with every alternative named beside what was asked
+for, and the family's own exact basket priced next to it with the difference in shekels. The design,
+and the state of every card, is `docs/design/a-full-basket-everywhere.md`.
+
+The reason it matters, measured on a real compare of an eight-line list for the test family
+(`node apps/mobile/e2e/compare-capture.mjs`, kept as `apps/mobile/e2e/lab/compare.json`): twelve
+storefronts answered, and only **two** were offered. Three of the ten set aside — ויקטורי ₪133.90,
+טיב טעם ₪133.09, קרפור ₪154.28 — price **every line of the list**, and were held back by an order
+minimum rather than by anything missing. A minimum is an honest reason, and it stays; it belongs on
+the card, in shekels ("חסר ₪45.72 למינימום של ₪200"), not as a reason a family never sees the shop.
+
+On the card: the store and when it delivers, one headline in cash with the basket it buys **named**,
+the other basket beside it with the difference — and that line is the tap that switches to it —
+the swap list a tap below, then `קנו כאן` and `עשה את זה זול יותר`. The engine half is the
+`storefronts[sid]` contract described above; the screen half is
+`apps/mobile/src/lib/fullBasket.ts` (pure, the decisions) and
+`apps/mobile/src/screens/StoreBasketCard.tsx` (the Hebrew).
+
+Two rules make the numbers safe to put side by side:
+
+- **The screen never adds line prices up.** `storefrontLines[…].price` is a shelf price; a store's
+  subtotal carries its promotions, and on that capture the two differ by ₪8–₪21 at every chain.
+  Totals come from the engine or the card shows none — `lib/fullBasket.ts` cannot produce one on its
+  own.
+- **A number that is not items + delivery never looks like one that is.** Whether it is a delivered
+  total is decided by whether a delivery fee is known, never by whether a total arrived: the engine
+  returns a `fullBasket.total` for every store it can price, and for one whose fee it lacks that total
+  is the items subtotal. A number without a fee behind it stays in muted ink with a note saying what
+  it covers ("+ משלוח", "ל־7 מתוך 8 פריטים").
+
+Proved by `node apps/mobile/e2e/full-basket.mjs` (the same functions the screen uses, run over a real
+compare), `apps/mobile/test/fullBasket.test.ts` for the states one compare cannot contain, and
+`./maestro/run.sh full-basket` on the simulator.
+
 ## Connecting a store (ADR 0008)
 
 Kaniti is three apps from one codebase — web, iOS, Android — and connecting a store is one

@@ -98,12 +98,20 @@ to reduce a store to a grey row with a number that is not a basket. That is the 
 confirmed against production: **the full basket exists at more stores than the screen admits.**
 
 **Two — the exact basket only means something for a line the family pinned.** Of the eight lines,
-exactly one carried a barcode: `שמן זית`, gtin `7290017334479`. It is the only line any store marked
-`substituted`, and **all twelve stores substituted it** — Rami Levy to "שמן זית מזוכך אופיר 750מ״ל"
-₪14.90, Carrefour to "שמן זית כתית מעולה 750 מ״ל כשר לפסח" ₪29.90, Hatzi Hinam to "שמן זית 750 מ״ל
-OLIO" ₪19.90. The other seven lines are free text; each store resolves "חלב 3%" its own way (a 2 ℓ
+exactly one carried a barcode: `שמן זית אליעד`, gtin `7290017334479`. It is the only line any store
+marked `substituted`. Eleven of the twelve storefronts priced it; **one — שופרסל — has the family's
+actual bottle**, and the other ten put their own oil behind it: Rami Levy "שמן זית מזוכך אופיר
+750מ״ל" ₪14.90, Carrefour "שמן זית כתית מעולה 750 מ״ל כשר לפסח" ₪29.90, Hatzi Hinam "שמן זית 750
+מ״ל OLIO" ₪19.90. The other seven lines are free text; each store resolves "חלב 3%" its own way (a 2 ℓ
 bottle here, a 1 ℓ bag there) and no store ever "failed" to give the family what they asked for,
 because they did not ask for a product — they asked for milk.
+
+That one line is the whole design in miniature. The cheapest full basket is Rami Levy's ₪134.89, and
+it contains a bottle of oil the family did not choose. Their exact bottle exists — at Shufersal, whose
+own full basket is ₪173.10. So the honest card at Rami Levy does not say "unavailable" and does not
+quietly hand them the Ofir: it says **סל מלא ₪134.89**, names the swap, and offers the exact bottle
+with what it really costs — a second delivery from Shufersal. That is design state 4, and it is
+reachable from production today.
 
 So the two prices are not two prices on every card. **A line the family never pinned has no exact
 version, and nothing to charge extra for.** The rule the cards keep:
@@ -139,6 +147,16 @@ Read order — first, second, third:
 4. **What was swapped, and what nobody has.** (what I am agreeing to) — a tap unfolds.
 5. **The two actions.** (buy it · make it cheaper)
 
+**The switch is the second line itself, not a third button.** The agreement's own sketch had
+`[ קח את שלי, +₪18 ]` as a button beside `[ החלף הכל ]`; building it showed that two buttons plus a
+line naming the other basket is three controls for two things, on a card that already carries a price,
+a minimum, a gap and a swap count. So the line that names the other basket *is* the tap that switches
+to it, and the same tap comes back. `קנו כאן` and `עשה את זה זול יותר` stay as the two actions.
+
+And the line names the basket it actually is. When the exact basket leads (state 3) the second line is
+the **full** basket; calling it "הסל המדויק שלך" there would print the headline's own name twice, on
+the one card whose whole job is telling two baskets apart.
+
 ### The resting card — a store that fills the basket with one alternative
 
 ```
@@ -146,7 +164,7 @@ Read order — first, second, third:
 │ רמי לוי אונליין                    סל מלא        │
 │ משלוח בחלון · מחר                     ₪134.89   │
 │ ──────────────────────────────────────────────── │
-│ ▸ החלפה אחת · הסל המדויק שלך — לא זמין באף חנות │
+│ ▸ החלפה אחת · הסל המדויק שלך — בשופרסל            │
 │                                                  │
 │ [        קנו כאן · ₪134.89        ]              │
 │ [      עשה את זה זול יותר         ]              │
@@ -154,13 +172,16 @@ Read order — first, second, third:
 ```
 
 Unfolded (▾), the swap list — each line as *what you asked → what this store gives*, with that line's
-cost inside this basket:
+cost inside this basket, and where the family's own one actually is:
 
 ```
 │ ▾ החלפה אחת                                      │
 │    שמן זית  →  שמן זית מזוכך אופיר 750מ״ל  ₪14.90│
-│       החלפה — את זה שביקשתם אין כאן              │
+│       החלפה — את זה שביקשתם יש בשופרסל           │
 ```
+
+Once the engine prices the exact basket, that second line grows its number and its honesty about the
+second van: `הסל המדויק שלך ₪151.40 (+₪16.51) · ב-2 משלוחים משופרסל`.
 
 ### A store the compare hides today
 
@@ -184,18 +205,23 @@ orderable, in shekels. That is information, not a rejection.
 
 ```
 ┌──────────────────────────────────────────────────┐
-│ מחסני השוק | רמת גן (וולט)         ל־3 מתוך 8    │
-│ משלוח ב-45 דק׳                        ₪23.75    │
+│ מחסני השוק | רמת גן (וולט)       מה שיש כאן      │
+│ משלוח ב-45 דק׳          ₪23.75 · ל־3 מתוך 8     │
 │ ──────────────────────────────────────────────── │
-│ אין כאן חלופה ל: ביצים L, קוטג׳ 5%, פילה סלמון…  │
+│ אין כאן חלופה ל: ביצים L, פילה סלמון, בננות…     │
+│           קנו כאן את 3 הפריטים שיש               │
 └──────────────────────────────────────────────────┘
 ```
 
 It keeps its number, in muted ink, labelled for what it covers — it is not a basket, so it may not sit
-in the same column as one (promise 4, `docs/design/compare-accuracy.md`). No "buy here" primary: there
-is nothing here to buy the list from. This state is the **only** honest gap the design allows, and
-every card in it is a line for *api-fixer*: a store with no alternative for ביצים is a lookup that did
-not run, not a store without eggs.
+in the same column as one (promise 4, `docs/design/compare-accuracy.md`), and it is not called one
+either. No primary "קנו כאן · ₪23.75", which would offer a basket this store has not got; but the way
+to buy what it *does* have stays, as a quiet link, because a card that names a store is a store the
+family may buy from (promises 1 and 6). Moved and sized, never removed.
+
+This state is the **only** honest gap the design allows, and every card in it is a line for
+*api-fixer*: a store with no alternative for ביצים is a lookup that did not run, not a store without
+eggs.
 
 ### "עשה את זה זול יותר"
 
@@ -236,8 +262,8 @@ is not.
 | 2 | Every line, a pinned line swapped | `סל מלא` headline; `הסל המדויק שלך ₪Y (+₪Z)`; `N החלפות ▾`; both actions |
 | 3 | The exact basket is the cheaper of the two (Z < 0) | the exact basket becomes the headline; the full basket is the second line, with `−₪Z` |
 | 4 | The exact basket needs another store | second line reads `+₪Z · ב-2 משלוחים מ{brand}` — never a single number hiding a second delivery |
-| 5 | Nobody nearby has the pinned product | no exact-basket line at all; the swap row says `את זה שביקשתם אין באף חנות` (today's capture: שמן זית, 0 of 12 stores) |
-| 6 | The store cannot fill some line, even with an alternative | number in muted ink, labelled `ל־{n} מתוך {m}`, the lines named, **no** primary buy action |
+| 5 | Nobody nearby has the pinned product | no exact-basket line at all; the swap row says `את זה שביקשתם אין באף חנות` — the only gap the design calls honest |
+| 6 | The store cannot fill some line, even with an alternative | number in muted ink, named `מה שיש כאן` — never `הסל שלך`, which would claim the one thing this card exists to be honest about — labelled `ל־{n} מתוך {m}`, the lines named, and the buy action demoted to a quiet `קנו כאן את {n} הפריטים שיש` |
 | 7 | Basket complete, under the store's minimum | complete number + `חסר ₪X למינימום של ₪Y`; the primary action says what would fix it |
 | 8 | Made cheaper | headline = cheaper total, chip `מוזל`, `חסכתם ₪X`, every swap in accent, `בטלו את ההוזלה` |
 | 9 | "Cheaper" found nothing at this store | the action reports once, in place: `לא נמצא כאן זול יותר`, and stays tappable |
@@ -245,8 +271,10 @@ is not.
 | 11 | Store closed | unchanged: the when-chip warns and the store ranks after every open one (`lib/compare.ts#etaRank`) |
 | 12 | A completion price rests on an estimate | `≈` in front of it, everywhere, every time |
 
-States 1, 2, 5, 6, 7, 10 and 11 are all reachable from the captured compare; 3, 4, 8, 9 and 12 need
-the engine line below.
+States 2, 4, 6, 7, 10 and 11 are reachable from the captured compare and are asserted by
+`e2e/full-basket.mjs` against it. States 3, 8, 9 and 12 need the engine line below. States 1 and 5 are
+the two the eight-line capture happens not to contain — 1 needs a list with nothing pinned (the
+ordinary case, and the reason the rule exists), 5 a pinned product no store nearby carries.
 
 ## The words
 
@@ -257,14 +285,13 @@ Hebrew is the product; English is kept in step in the same commit (`lib/i18n.ts`
 | `fullBasket` | סל מלא | Full basket |
 | `yourBasket` | הסל שלך | Your basket |
 | `exactBasket` | הסל המדויק שלך | Your exact basket |
-| `exactBasketAt` | הסל המדויק שלך {x} | Your exact basket {x} |
+| `whatTheyHave` | מה שיש כאן | What they have here |
 | `exactTwoStops` | ב-2 משלוחים מ{b} | 2 deliveries, with {b} |
 | `exactNowhere` | את זה שביקשתם אין באף חנות | Nobody nearby has the one you asked for |
 | `swapsN` / `swaps1` | {n} החלפות / החלפה אחת | {n} substitutions / one substitution |
 | `swapMissingWhy` | החלפה — את זה שביקשתם אין כאן | Substitute — they do not have yours |
 | `swapCheaperWhy` | זול יותר · {x} פחות | Cheaper · {x} less |
-| `takeMine` | קחו את שלי · +{x} | Take mine · +{x} |
-| `backToFull` | חזרה לסל המלא · −{x} | Back to the full basket · −{x} |
+| `buyWhatItHas` | קנו כאן את {n} הפריטים שיש | Buy the {n} items they have |
 | `makeCheaper` | עשה את זה זול יותר | Make it cheaper |
 | `undoCheaper` | בטלו את ההוזלה | Undo |
 | `cheapBasket` | סל מוזל | Cheaper basket |

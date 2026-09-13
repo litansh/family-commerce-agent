@@ -34,8 +34,11 @@ appId: com.litansh.kaniti
 - takeScreenshot: maestro/shots/compare-answer
 - tapOn: { id: "answer-card" }
 - takeScreenshot: maestro/shots/compare-answer-open
+# Every store that delivers, each with a whole basket (docs/design/a-full-basket-everywhere.md).
+# "עוד דרכים לקנות" now holds only splits — two stores, two deliveries — and a list with no split has
+# none, so the section that is always there is the stores themselves.
 - scrollUntilVisible:
-    element: { text: "עוד דרכים לקנות" }
+    element: { text: "כל החנויות שמגיעות אליכם" }
     direction: DOWN
     timeout: 20000
 - takeScreenshot: maestro/shots/compare-rows

@@ -39,5 +39,85 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
 - **Metro on 8082 is shared and is whatever checkout started it.** It was serving the main checkout
   while this worktree's flows ran, so the app under test had none of the changes. Check with
   `lsof -a -p $(lsof -ti tcp:8082) -d cwd -Fn` before believing a sim result from a worktree.
-- [ ] **A full basket at every store** (docs/design/a-full-basket-everywhere.md), the owner's central ask: every store priced for the whole list using its own alternatives, the family's exact basket priced beside it with the difference in shekels, and a 'make it cheaper' action. Coverage becomes a fact on the card, not a reason to hide a store. *app-designer*
-- [ ] **Complete offers only, partial ones in their own section** (docs/design/a-full-basket-everywhere.md, the owner's 13 September refinement): every offer covers the whole basket with that store's alternatives; a store that cannot fill a line even with its nearest alternative moves to a collapsed "הצעות חלקיות ב-N חנויות" section; inside an offer a difference is one quiet line, "במקום X — Y, ₪n במקום ₪m". *app-designer*
+- [x] **A full basket at every store** (docs/design/a-full-basket-everywhere.md), the owner's central ask: every store priced for the whole list using its own alternatives, the family's exact basket priced beside it with the difference in shekels, and a 'make it cheaper' action. Coverage becomes a fact on the card, not a reason to hide a store. *app-designer* — two PRs.
+      **PR #114, the design**: the card, the read order, the three modes, the twelve states, the words,
+      the engine contract, and what is left out. Drawn against a real compare captured first
+      (`apps/mobile/e2e/lab/compare.json`), which changed it three times over.
+      **PR (branch `app-designer/full-basket-cards`), the build**: `src/lib/fullBasket.ts` (pure),
+      `src/screens/StoreBasketCard.tsx`, the compare screen wired to it, 24 strings in both languages,
+      `PriceCol` lifted into `ui.tsx`. Proof: `node apps/mobile/e2e/full-basket.mjs` (185 checks green
+      over the real compare), `apps/mobile/test/fullBasket.test.ts` (9 tests, suite 243 → 252),
+      `npm run typecheck` clean, `./maestro/run.sh full-basket`.
+
+## What the build taught, for whoever picks up next
+
+- **The screen may never sum `storefrontLines[…].price`.** It is the provider's `unitPrice`; a store's
+  own subtotal is built from `lineTotal`, which carries promotions. On the captured compare the
+  difference is ₪8.41 at Rami Levy (₪107.40 summed against the engine's ₪98.99), ₪10.11 at Tiv Taam,
+  ₪14.46 at Carrefour, ₪20.81 at Victory — and **zero at all four Wolt venues**, which is what points
+  at promotions rather than at a bug. `lib/fullBasket.ts` is written so it cannot produce a total of
+  its own, and `e2e/full-basket.mjs` asserts the gap on every card. **api-fixer**: carrying
+  `lineTotal` per storefront line is the fix, and it is small.
+- **Three stores priced every line of an eight-line list and were still not offered** — ויקטורי
+  ₪133.90, טיב טעם ₪133.09, קרפור ₪154.28 — all three held back by an **order minimum**, not by
+  coverage. That is an honest reason and it stays; it is now a sentence on the card in shekels. The
+  design's "stores rejected for coverage had 0–2 alternatives for 9–11 missing lines" is still true of
+  the Wolt venues (3–4 of 8 lines, no alternatives offered) — those gaps are a lookup that did not
+  run, and they are **api-fixer's** line, not a store without eggs.
+- **The exact basket is meaningless for a line the family never pinned.** Of the eight lines exactly
+  one carried a barcode (שמן זית אליעד); it is the only line any store marked `substituted`. Eleven
+  storefronts priced it and **one — שופרסל — has the family's actual bottle**. So the second number
+  appears only when a pinned line was swapped, and the cheapest full basket (Rami Levy ₪134.89)
+  contains an oil the family did not choose while their own is at a store costing ₪173.10. That single
+  line is the whole design in miniature and is worth keeping as the demo.
+- **The engine half landed mid-build (#116, #117) and the cards read it with no change.** The
+  contract this design wrote out — `storefronts[sid].{deliveryFee,minimumOrder,fullBasket,exactBasket}`
+  and `storefrontLines[…].lineTotal` — is what api-fixer shipped, field for field, so the exact
+  basket, its difference in shekels and its second delivery went live on the phone the moment main
+  merged. Writing the wire shape into the design before building it is what made that possible; it is
+  worth doing again.
+- **But the live contract exposed a real bug in the card, and it is the exact bug this module exists
+  to prevent.** The engine returns a `fullBasket.total` for *every* store it can price, and for a
+  store whose delivery fee it does not have, that total **is** the items subtotal — ויקטורי comes back
+  with `total` and `items` both ₪133.90 and no `deliveryFee` at all. The card read "a total arrived"
+  as "a delivered total arrived" and put an items-only number in the delivered column. `delivered` now
+  follows the **fee**, never the total, with a regression test naming ויקטורי. Lesson: a field being
+  present is not the same fact as the thing it is named after.
+- **"עשה את זה זול יותר" is `POST /households/:id/cheaper`, not a field on the quote.** So nobody has
+  looked until the family taps: the action is offered on any card with a basket to cheapen, says
+  `מחפשים זול יותר בחנות הזו…` while it asks, and reports `לא נמצא כאן זול יותר` in place when the
+  store had nothing of the same kind and size for less. The answer is kept per store so the undo and a
+  second tap cost nothing.
+- **The first thing the finished card found was a bad substitute.** On the simulator run, Tiv Taam
+  swapped **לחם אחיד → לחם זיתים 540 גרם** — olive bread for plain sliced bread, which is not the same
+  kind of thing, and the family would have found it in the basket. It is on the card now, named, in
+  amber, with the ₪24.90 it costs and the two stores that have what was actually asked for. Naming
+  every swap is what surfaced it. The swap itself is **api-fixer / product-qa** ground: the
+  substitute-quality rule ("no pickles for cucumbers") does not catch bread.
+- **A store can substitute a line the family never pinned.** לחם אחיד carried no barcode and was still
+  marked `substituted`, by the store, not by Kaniti. So the design's "only a pinned line can be
+  swapped" is the rule for *Kaniti's* swaps; a store's own swap is always shown too, and the card
+  handles it — but the wording "את זה שביקשתם יש ב…" reads a little oddly for a free-text line and
+  would be worth a second pass if it turns out to be common.
+- **`buy-here.yaml` and `compare-shots.yaml` both had to move.** The compare's alternatives list now
+  holds only *splits* (two stores, two deliveries); a single store is a card under
+  "כל החנויות שמגיעות אליכם". A store that cannot fill the basket keeps its way to be bought from —
+  as a quiet link reading "קנו כאן את N הפריטים שיש", never a primary button offering a basket it has
+  not got (promises 1 and 6; the charter's "move it, size it, but keep it reachable").
+- [x] **Complete offers only, partial ones in their own section** (docs/design/a-full-basket-everywhere.md, the owner's 13 September refinement): every offer covers the whole basket with that store's alternatives; a store that cannot fill a line even with its nearest alternative moves to a collapsed "הצעות חלקיות ב-N חנויות" section; inside an offer a difference is one quiet line, "במקום X — Y, ₪n במקום ₪m". *app-designer* — in the same PR as the cards, since it changes them. Proof: `e2e/full-basket.mjs` asserts every offer among the answers covers the whole list and that each difference states both prices; `maestro/full-basket.yaml` opens the folded section and checks what is inside it.
+
+## What the refinement taught
+
+- **It arrived mid-build, and it was right to override.** The cards were already green when #119
+  merged the owner's own words. Two of the things it settles are things the build had got *wrong*, not
+  merely differently: partial offers were sitting in the same list as complete ones (so the eye
+  compared ₪100.51 for three lines against ₪103.95 for four), and every ordinary substitution was
+  amber — the colour that says "deal with this" — when a different size of egg is just a fact about
+  that store. Ordering and colour are the two things a card says before anyone reads a word of it.
+- **The second price needs a place, and it is another shop.** "₪14.90 במקום ₪49.90" only works
+  because the engine's `exactBasket.elsewhere[]` prices the family's own product at the store that
+  *has* it. So the line names that store: a number from somewhere else may never look like this
+  shop's. Where the engine has not priced it, the line simply stops after the first price.
+- **The card had no "when it delivers" at all** until this pass, though it is step one of the design's
+  own read order. Worth a habit: draw the read order, then check each step off against the built
+  screen, because the ones that carry no data are the ones that quietly never get built.
