@@ -14,7 +14,7 @@ const quote = {
   },
   storefrontLines: {
     'shufersal-online': {
-      a: { gtin: '7290110115005', productName: 'חלב 3% שומן שקית 1 ליטר פיקוח', link: 'https://www.shufersal.co.il/online/he/p/P_7290110115005' },
+      a: { gtin: '7290110115005', productName: 'חלב 3% שומן שקית 1 ליטר פיקוח', price: 590, link: 'https://www.shufersal.co.il/online/he/p/P_7290110115005' },
       b: { gtin: '7290004102098', productName: 'ביצים אומגה L 30 יחידות' },
       c: { gtin: '7290000042909', productName: 'לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח' },
       d: { gtin: '7290004127152', productName: "קוטג' תנובה 5% שומן 250 ג' בד\"צ" },
@@ -81,4 +81,16 @@ test("an order leg falls back to the shared resolution's barcode only when its o
 test("an order leg falls back to the household's own confirmed gtin when neither store nor compare named one", () => {
   const line = { query: 'משהו נדיר', gtin: '7290000000001' };
   assert.equal(orderLineAt(quote, 'no-such-store', 'zzz', line).gtin, '7290000000001');
+});
+
+// docs/backlog/api-fixer.md: "A per-store price per line in the quote" — `storefrontLines[sid][lineId].price`
+// so `רמי לוי ₪6.20 (תנובה 1 ל')` (docs/design/item-identity.md) is no longer half a sentence.
+test("a store's own price for a line it priced itself", () => {
+  assert.equal(productAt(quote, 'shufersal-online', 'a').price, 590);
+});
+
+test('no price when a store never priced the line itself — a shared resolution has none to fall back to', () => {
+  assert.equal(productAt(quote, 'victory-online', 'a').price, undefined);
+  assert.equal(productAt(quote, 'victory-online', 'c').price, undefined);
+  assert.equal(productAt(quote, 'shufersal-online', 'b').price, undefined);
 });

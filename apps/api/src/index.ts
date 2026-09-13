@@ -798,12 +798,14 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
-      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
+      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
       // A substitution's reason is for people: "what you asked → what this store has". The provider's own
       // codes (confirmed_product_unavailable) never reach a card.
       const lineQuery = new Map(lines.map((l) => [l.id, l.query]));
       const reasonFor = (l: QuotedLine): string => (l.substitutionReason && l.substitutionReason.includes('→') ? l.substitutionReason : `${lineQuery.get(l.lineId) ?? ''} → ${l.productName}`);
-      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      // Per-store price per line (docs/design/item-identity.md: "רמי לוי ₪6.20 (תנובה 1 ל')" needs one):
+      // this store's own unit price, never the winner's or another store's.
+      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
       // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
