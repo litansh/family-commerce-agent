@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { productAt } from '../src/lib/quote.ts';
+import { orderLineAt, productAt } from '../src/lib/quote.ts';
 
 // A real compare for the test family (apps/mobile/e2e/split-naming.mjs, 2026-09-13): the shared
 // resolution followed Rami Levy — a 2 ℓ bottle of יטבתה, M eggs, a 750 g loaf — while Shufersal
@@ -60,4 +60,25 @@ test('a store that did not price the line at all falls back to the compare, and 
 
 test('an unknown store or line does not throw, it just names nothing', () => {
   assert.deepEqual(productAt(quote, 'no-such-store', 'zzz'), { own: false });
+});
+
+// Options.tsx#legsFor used to send `quotedLines`' gtin — the compare's shared resolution, i.e.
+// whichever store won — to every leg's order line, the same mix-up `productAt` exists to stop one
+// layer up (docs/backlog/api-fixer.md: "Ordering through Kaniti uses the leg's own barcode").
+test("an order leg gets its own store's barcode, not the winner's", () => {
+  const line = { query: 'חלב 3%', gtin: undefined };
+  const shufersal = orderLineAt(quote, 'shufersal-online', 'a', line);
+  assert.equal(shufersal.gtin, '7290110115005');
+  assert.notEqual(shufersal.gtin, quote.quotedLines.a.gtin);
+});
+
+test("an order leg falls back to the shared resolution's barcode only when its own store named none", () => {
+  const line = { query: 'חלב 3%', gtin: undefined };
+  const victory = orderLineAt(quote, 'victory-online', 'a', line);
+  assert.equal(victory.gtin, quote.quotedLines.a.gtin);
+});
+
+test("an order leg falls back to the household's own confirmed gtin when neither store nor compare named one", () => {
+  const line = { query: 'משהו נדיר', gtin: '7290000000001' };
+  assert.equal(orderLineAt(quote, 'no-such-store', 'zzz', line).gtin, '7290000000001');
 });

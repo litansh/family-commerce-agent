@@ -10,7 +10,7 @@ import { isRTL, money, reasonT, t as tr } from '../lib/i18n';
 import { markLinked, useLinked } from '../lib/linked';
 import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
-import { productAt } from '../lib/quote';
+import { orderLineAt, productAt } from '../lib/quote';
 import { etaRank, etaTone, exceptionsOf, opensAt, rowsFor, savingOf, type CompareLike, type CompareRow } from '../lib/compare';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
@@ -39,7 +39,9 @@ function legsFor(option: PurchaseOption, quote: QuoteResult) {
   const lineOf = (id: string) => quote.lines.find((l) => l.id === id);
   return option.legs.filter((leg) => retailerOf(leg.storefrontId) !== undefined).map((leg) => ({
     retailer: retailerOf(leg.storefrontId)!,
-    lines: leg.lineIds.flatMap((id) => { const l = lineOf(id); const ql = quote.quotedLines[id]; return l ? [{ query: l.query, ...(ql?.gtin ? { gtin: ql.gtin } : l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) }] : []; }),
+    // This store's own product and barcode, exactly as `cartLinesFor` and the leg's own row name it;
+    // the shared resolution only as a fallback (`lib/quote.ts#orderLineAt`) — never another store's pick.
+    lines: leg.lineIds.flatMap((id) => { const l = lineOf(id); return l ? [orderLineAt(quote, leg.storefrontId, id, l)] : []; }),
   }));
 }
 
