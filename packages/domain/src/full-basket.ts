@@ -87,6 +87,18 @@ export function isRealAlternative(requested: string, offered: string): boolean {
   return want.some((w) => got.some((g) => g === w || g.startsWith(w) || w.startsWith(g)));
 }
 
+/**
+ * The lines a store filled with something that is not an alternative at all. One source of truth:
+ * the compare must not offer such a line under that store anywhere, and must name it as a gap.
+ */
+export function wrongProductLineIds(quote: StorefrontQuote, lineQuery: ReadonlyMap<string, string>): ReadonlySet<string> {
+  return new Set(
+    quote.lines
+      .filter((l) => l.substituted && !isRealAlternative(lineQuery.get(l.lineId) ?? '', l.productName))
+      .map((l) => l.lineId),
+  );
+}
+
 export function storefrontFacts(
   quote: StorefrontQuote,
   requestedLineIds: readonly string[],
@@ -97,11 +109,7 @@ export function storefrontFacts(
 ): StorefrontFacts {
   // A line "filled" with a product that is not an alternative is not filled. The store simply cannot
   // complete it, which the card says plainly instead of pricing the wrong thing into a full basket.
-  const wrongProduct = new Set(
-    quote.lines
-      .filter((l) => l.substituted && !isRealAlternative(lineQuery.get(l.lineId) ?? '', l.productName))
-      .map((l) => l.lineId),
-  );
+  const wrongProduct = wrongProductLineIds(quote, lineQuery);
   const priced = new Set(quote.lines.filter((l) => !wrongProduct.has(l.lineId)).map((l) => l.lineId));
   const fullBasket: FullBasketFacts = {
     total: quote.deliveredTotal,
