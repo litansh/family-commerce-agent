@@ -11,7 +11,7 @@
  * pinning a barcode on every tap is what made "חלב" mean one brand's carton at every
  * store, and a comparison of a 1 ℓ carton against a 2 ℓ bottle look like a saving.
  */
-import { formatSize, normalizeBrand } from '@fca/domain';
+import { agorot, formatSize, normalizeBrand, sizeFromName, type Agorot } from '@fca/domain';
 import type { SearchHit, SearchVariant } from './api';
 import type { Line } from './store';
 
@@ -66,9 +66,12 @@ export function lineFromVariant(v: SearchVariant): Omit<Line, 'id'> {
   };
 }
 
+/** The pack as a person says it: the catalogue's own fields, the product's name when it has none. */
+const packOf = (h: SearchHit): string | undefined => formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name);
+
 /** A **מותג מקובע** line: one product, one barcode, the same everywhere. */
 export function lineFromHit(h: SearchHit): Omit<Line, 'id'> {
-  const size = formatSize(h.sizeQty, h.sizeUnit);
+  const size = packOf(h);
   return {
     query: h.name,
     productName: h.name,
@@ -85,9 +88,13 @@ export interface BrandGroup {
   readonly products: readonly SearchHit[];
   /** The one this brand would be bought as: its cheapest priced product. */
   readonly cheapest: SearchHit;
-  readonly priceMin?: number;
-  readonly priceMax?: number;
+  readonly priceMin?: Agorot;
+  readonly priceMax?: Agorot;
 }
+
+/** Every price a set of candidates was seen at. Money is integer agorot, never a float. */
+const pricesOf = (hits: readonly SearchHit[]): Agorot[] =>
+  hits.flatMap((h) => (h.fromPrice !== undefined ? [h.fromPrice] : []));
 
 /**
  * The brands behind one line's candidates, each with its own price range — the sheet's rows.
@@ -106,10 +113,10 @@ export function brandGroups(hits: readonly SearchHit[]): BrandGroup[] {
     .map(([brand, products]): BrandGroup | null => {
       const cheapest = cheapestOf(products);
       if (!cheapest) return null;
-      const prices = products.map((p) => p.fromPrice).filter((p): p is number => p !== undefined);
+      const prices = pricesOf(products);
       return {
         brand, products, cheapest,
-        ...(prices.length ? { priceMin: Math.min(...prices), priceMax: Math.max(...prices) } : {}),
+        ...(prices.length ? { priceMin: agorot(Math.min(...prices)), priceMax: agorot(Math.max(...prices)) } : {}),
       };
     })
     .filter((g): g is BrandGroup => g !== null)
@@ -117,9 +124,9 @@ export function brandGroups(hits: readonly SearchHit[]): BrandGroup[] {
 }
 
 /** The whole span "כל מותג" spends across, for the sheet's first row. */
-export function spanOf(hits: readonly SearchHit[]): { min: number; max: number } | undefined {
-  const prices = hits.map((h) => h.fromPrice).filter((p): p is number => p !== undefined);
-  return prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : undefined;
+export function spanOf(hits: readonly SearchHit[]): { min: Agorot; max: Agorot } | undefined {
+  const prices = pricesOf(hits);
+  return prices.length ? { min: agorot(Math.min(...prices)), max: agorot(Math.max(...prices)) } : undefined;
 }
 
 /**
@@ -129,7 +136,7 @@ export function spanOf(hits: readonly SearchHit[]): { min: number; max: number }
  */
 export function pinBrand(line: Line, g: BrandGroup): Line {
   const h = g.cheapest;
-  const size = formatSize(h.sizeQty, h.sizeUnit) ?? line.size;
+  const size = packOf(h) ?? line.size;
   return {
     ...line,
     productName: h.name,

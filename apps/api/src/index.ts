@@ -6,7 +6,7 @@
  *   POST /households/{hid}/invites             → { code }
  *   POST /invites/{code}/accept
  *   GET  /households/{hid}/memory
- *   POST /households/{hid}/memory/confirm      { phrase, gtin, productName, brand? }
+ *   POST /households/{hid}/memory/confirm      { phrase, gtin, productName, brand?, substitution? }
  *   POST /households/{hid}/memory/shop         { bought: PurchasedLine[] }
  *   POST /households/{hid}/suggest             { lines }   → what did we forget
  *   POST /households/{hid}/resolve             { lines }   → brand/size choices per line
@@ -39,6 +39,7 @@ import {
   applyCoupons,
   type Coupon,
   type StorefrontQuote,
+  type SubstitutionPolicy,
   groupIntoVariants,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
@@ -569,6 +570,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           gtin: str(body['gtin'], 'gtin'),
           productName: str(body['productName'], 'productName'),
           ...(typeof body['brand'] === 'string' ? { brand: body['brand'] } : {}),
+          // What the brand chip means next time: a pinned brand is 'never', "כל מותג" is
+          // 'cheapest' (docs/design/item-identity.md). An unknown value is not a policy.
+          ...(SUBSTITUTION.includes(body['substitution'] as SubstitutionPolicy) ? { substitution: body['substitution'] as SubstitutionPolicy } : {}),
         }),
       );
       return ok({ version: saved.version, product: saved.products[Object.keys(saved.products).at(-1) ?? ''] });
@@ -936,6 +940,7 @@ const JSON_H = { 'content-type': 'application/json' };
 const ok = (data: unknown, status = 200): APIGatewayProxyResultV2 => ({ statusCode: status, headers: JSON_H, body: JSON.stringify(data) });
 const str = (v: unknown, name: string): string => { if (typeof v !== 'string' || v.trim() === '') throw new HttpError(400, `${name} is required`); return v.trim(); };
 const arr = <T>(v: unknown, name: string): T[] => { if (!Array.isArray(v)) throw new HttpError(400, `${name} must be an array`); return v as T[]; };
+const SUBSTITUTION: readonly SubstitutionPolicy[] = ['never', 'same_brand', 'equivalent', 'cheapest'];
 const toLines = (v: unknown): ListLine[] =>
   arr<Partial<ListLine>>(v, 'lines').map((l, i) => {
     const query = str(l.query, `lines[${i}].query`);

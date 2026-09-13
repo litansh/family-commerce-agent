@@ -1,10 +1,14 @@
-import { formatSize, sizeFromName } from '@fca/domain';
+import { formatSize, memoryKey, normalizeBrand, sizeFromName } from '@fca/domain';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain';
-import type { Api, Deal, Household, SearchHit } from '../lib/api';
+import type { Api, Deal, Household, SearchHit, SearchVariant } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
+import {
+  brandGroups, carriedNearby, cheapestOf, lineFromHit, lineFromVariant, pinBrand,
+  soleProduct, spanOf, unpin, variantId, variantWords, type BrandGroup,
+} from '../lib/choice';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
 import { newId, setLines, useList, type Line } from '../lib/store';
 import { carouselProps } from '../lib/gesture';
@@ -12,7 +16,7 @@ import { MODES, setMode, useMode } from '../lib/prefs';
 import { ProductImage } from '../ProductImage';
 import { imageByName } from '../lib/storeImages';
 import { Scanner } from '../Scanner';
-import { Button, Chip, Empty, Header, Icon, Input, S, t, Toast } from '../ui';
+import { Button, Chip, Empty, Header, Icon, Input, Loading, S, t, Toast } from '../ui';
 
 const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
@@ -33,6 +37,11 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   const mode = useMode();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[] | null>(null);
+  // What a family chooses between is the variant — "חלב 3% · 1 ליטר · 12 מותגים" — not two
+  // hundred products (docs/design/item-identity.md). The flat list stays one tap away for the
+  // rare exact hunt, and is the whole answer when the API has not grouped (an older API).
+  const [variants, setVariants] = useState<SearchVariant[] | null>(null);
+  const [flat, setFlat] = useState(false);
   // "We could not ask the stores" is not "the stores do not have it". A family told the second when
   // the first is true stops trusting the list: they think Kaniti does not know what tofu is.
   const [searchFailed, setSearchFailed] = useState(false);
@@ -58,19 +67,24 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
   // Debounced search while typing. Only where a catalogue exists.
   useEffect(() => {
     const q = query.trim();
-    if (!pricing || q.length < 2) { setHits(null); setSearching(false); return; }
+    if (!pricing || q.length < 2) { setHits(null); setVariants(null); setSearching(false); return; }
     const mine = ++seq.current;
-    setSearching(true);
+    setSearching(true); setFlat(false);
     const h = setTimeout(() => {
       api.search(household.id, q).then(async (r) => {
         if (mine !== seq.current) return;
-        setHits(r.products); setSearchFailed(false); setSearching(false);
+        setHits(r.products); setVariants(r.variants ?? null); setSearchFailed(false); setSearching(false);
         const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
         const unnamed = r.products.filter((h) => !h.imageUrl && !h.gtin).map((h) => h.name);
         if (missing.length === 0 && unnamed.length === 0) return;
         const im = await api.images(household.id, missing, unnamed).catch(() => null);
-        if (im && mine === seq.current) setHits((xs) => (xs ?? []).map((h) => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; }));
-      }).catch(() => { if (mine === seq.current) { setHits([]); setSearchFailed(true); setSearching(false); } });
+        if (!im || mine !== seq.current) return;
+        const withImage = (h: SearchHit): SearchHit => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; };
+        setHits((xs) => (xs ?? []).map(withImage));
+        // The variant cards borrow their picture from the products behind them, so they have
+        // to be patched too — otherwise the grouped view is the only one with drawn glyphs.
+        setVariants((vs) => vs && vs.map((v) => ({ ...v, products: v.products.map(withImage) })));
+      }).catch(() => { if (mine === seq.current) { setHits([]); setVariants(null); setSearchFailed(true); setSearching(false); } });
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);
@@ -112,7 +126,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       .sort((a, b) => Number(due.has(b.key)) - Number(due.has(a.key)) || b.orderCount - a.orderCount)
       .slice(0, 16), [memory, onList, due]);
 
-  const addLine = (l: Omit<Line, 'id'>) => { tap(); setLines((xs) => [...xs, { id: newId(), ...l }]); setQuery(''); setHits(null); say(tr('added')); };
+  const addLine = (l: Omit<Line, 'id'>) => { tap(); setLines((xs) => [...xs, { id: newId(), ...l }]); setQuery(''); setHits(null); setVariants(null); say(tr('added')); };
   const lineFromPref = (p: ProductPreference): Omit<Line, 'id'> => ({
     query: p.phrase, productName: p.productName, gtin: p.gtin, ...(p.brand ? { brand: p.brand } : {}),
     ...(p.defaultAmount !== undefined && p.defaultUnit ? { amount: p.defaultAmount, unit: p.defaultUnit } : {}),
@@ -128,7 +142,11 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     say(tr('addedN', { n: picks.length }));
   };
   const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
-  const addHit = (h: SearchHit) => { const size = formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name); addLine({ query: h.name, productName: h.name, ...(h.gtin ? { gtin: h.gtin } : {}), ...(h.brand ? { brand: h.brand } : {}), ...(size ? { size } : {}), imageUrl: h.imageUrl }); };
+  // Two ways in, and they mean different things. A product is "this one" — a barcode pinned.
+  // A variant card is "כל מותג": the variant's own words, no barcode, and every store prices
+  // its own cheapest of that variant, named per store on the compare.
+  const addHit = (h: SearchHit) => addLine(lineFromHit(h));
+  const addVariant = (v: SearchVariant) => { const sole = soleProduct(v); sole ? addHit(sole) : addLine(lineFromVariant(v)); };
   const addUsual = (p: ProductPreference) => addLine(lineFromPref(p));
   // Nothing leaves the list without a way back: a delete keeps the line and its place for a few
   // seconds and the bar at the foot puts it back. A list a family built cannot cost one careless tap.
@@ -147,12 +165,17 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     setLines((xs) => { const next = [...xs]; next.splice(Math.min(u.at, next.length), 0, u.line); return next; });
   };
   const [detail, setDetail] = useState<Line | null>(null);
+  const [choosing, setChoosing] = useState<Line | null>(null);
   const bump = (id: string, d: number) => { tap(); setLines((xs) => xs.map((x) => x.id !== id ? x : (x.amount !== undefined && x.unit) ? { ...x, amount: Math.max(0.5, x.amount + d) } : { ...x, packQty: Math.max(1, (x.packQty ?? 1) + d) })); };
 
   const qtyLabel = (l: Line) => (l.amount !== undefined && l.unit ? `${l.amount} ${l.unit}` : `×${l.packQty ?? 1}`);
   const locale = currentRegion().locale === 'he' ? 'he' : 'en';
   const groups = AISLES.map((a) => ({ a, items: lines.filter((l) => aisleOf(l.query) === a.key) })).filter((g) => g.items.length > 0);
   const showSearch = query.trim().length >= 2 && pricing;
+  // Grouping is worth showing only when it actually collapses something: if every variant holds
+  // one product, the cards *are* the flat list and the toggle would be a choice about nothing.
+  const canGroup = !!variants && !!hits && variants.length > 0 && variants.length < hits.length;
+  const grouped = canGroup && !flat;
 
   return (
     <View style={s.screen}>
@@ -179,7 +202,8 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         {showSearch ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
             {searching && !hits ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('searching')}</Text> : null}
-            {(hits ?? []).map((h) => (
+            {grouped ? variants!.map((v) => <VariantRow key={variantId(v)} v={v} onAdd={() => addVariant(v)} />) : null}
+            {grouped ? null : (hits ?? []).map((h) => (
               <Pressable key={h.productId} onPress={() => addHit(h)} style={({ pressed }) => [s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }, pressed && { opacity: 0.6 }]}>
                 <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
                   <ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={52} />
@@ -203,6 +227,12 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                 <Pressable onPress={() => { setSearchFailed(false); setQuery((q) => q + ' '); setTimeout(() => setQuery((q) => q.trimEnd()), 50); }} hitSlop={8}><Text style={s.link}>{tr('tryAgain')}</Text></Pressable>
               </View>
             ) : hits && hits.length === 0 ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('noResults')}</Text> : null}
+            {/* The flat list never goes away — it is one tap under the choices, for the rare exact hunt. */}
+            {canGroup ? (
+              <Pressable onPress={() => { tap(); setFlat((f) => !f); }} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, alignItems: 'center' }}>
+                <Text style={s.link}>{flat ? tr('showVariants') : tr('showAllProducts', { n: hits!.length })}</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={addTyped} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }}><Text style={s.link}>{tr('addAsTyped', { q: query.trim() })}</Text></Pressable>
           </View>
         ) : null}
@@ -275,8 +305,12 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                   <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
                   <View style={{ flex: 1 }}>
                     <Text style={[s.body, { fontSize: 16 }]} numberOfLines={1}>{item.query}</Text>
-                    {/* Brand and pack size under the name: "תנובה · 1 ליטר", so two milks are never the same line. */}
-                    {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); const bits = [item.brand, sz].filter(Boolean); return bits.length ? <Text style={s.faint}>{bits.join(' · ')}</Text> : null; })()}
+                    {/* The pack size, then the choice. The chip is the only place brand is ever
+                        asked, and it is on every line: "חלב 3%  1 ליטר  [ כל מותג ▾ ]". */}
+                    <View style={[s.rowStart, { marginTop: 3, gap: 7 }]}>
+                      {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); return sz ? <Text style={s.faint}>{sz}</Text> : null; })()}
+                      <ChoiceChip line={item} onPress={() => { tap(); setChoosing(item); }} />
+                    </View>
                   </View>
                 </Pressable>
                 <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
@@ -296,7 +330,14 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
           <Pressable onPress={undoRemove} hitSlop={10}><Text style={{ color: t.card, fontWeight: '700' }}>{tr('undo')}</Text></Pressable>
         </View>
       ) : null}
-      {detail ? <ItemSheet item={detail} onClose={() => setDetail(null)} onBump={(d) => bump(detail.id, d)} onDelete={() => remove(detail.id)} lines={lines} /> : null}
+      {detail ? <ItemSheet item={detail} onClose={() => setDetail(null)} onBump={(d) => bump(detail.id, d)} onDelete={() => remove(detail.id)} onChoose={() => { setDetail(null); setChoosing(detail); }} lines={lines} /> : null}
+      {choosing ? (
+        <BrandSheet
+          api={api} household={household} line={choosing} memory={memory}
+          onClose={() => setChoosing(null)}
+          onPick={(next, saved) => { setLines((xs) => xs.map((x) => (x.id === next.id ? next : x))); setChoosing(null); say(saved ? tr('brandSaved') : tr('added')); if (saved) api.memory(household.id).then(setMemory).catch(() => null); }}
+        />
+      ) : null}
 
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: Platform.OS === 'web' ? 96 : 88, backgroundColor: t.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, borderTopWidth: 1, borderColor: t.line, shadowColor: '#0E2E1F', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: -6 } }}>
         {query.trim() ? (
@@ -315,6 +356,145 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       </View>
       <Toast text={toast} />
     </View>
+  );
+}
+
+/**
+ * A variant card: what it is, its size, and how many brands stand behind it —
+ * "חלב 3% · 1 ליטר / 12 מותגים · ₪5.90–8.40". One tap puts it on the list as כל מותג.
+ *
+ * The card's job is *which thing*, not how much: the span is a secondary line on purpose,
+ * because a single headline price here would be a promise the compare has not made yet.
+ */
+function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
+  const s = S();
+  const sole = soleProduct(v);
+  const pic = cheapestOf(v.products);
+  const span = spanOf(v.products);
+  const here = carriedNearby(v);
+  const title = sole ? sole.name : variantWords(v);
+  return (
+    <Pressable testID={`variant-${variantId(v)}`} onPress={onAdd} style={({ pressed }) => [s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, (pressed || !here) && { opacity: here ? 0.6 : 0.55 }]}>
+      <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
+        <ProductImage url={pic?.imageUrl ?? null} gtin={pic?.gtin} name={pic?.name ?? title} size={52} />
+        <View style={{ flex: 1 }}>
+          <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={2}>{title}</Text>
+          {/* A variant no store that reaches the family carries is named and greyed, never dropped. */}
+          {!here ? <Text style={[s.faint, { color: t.amber, marginTop: 2 }]}>{tr('notNearby')}</Text> : (
+            <View style={[s.rowStart, { marginTop: 3, gap: 6 }]}>
+              <Text style={s.faint}>{sole ? sole.brand ?? '' : v.brandCount > 1 ? tr('nBrands', { n: v.brandCount }) : tr('oneBrand')}</Text>
+              {span ? <Text style={[s.priceSmall, { color: t.ink }]}>{span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`}</Text> : null}
+            </View>
+          )}
+        </View>
+      </View>
+      <Icon name="plus" size={18} color={t.accent} />
+    </Pressable>
+  );
+}
+
+/** The choice, on every line, as a control: "[ כל מותג ▾ ]" or "[ תנובה ▾ ]". */
+function ChoiceChip({ line, onPress }: { line: Line; onPress: () => void }) {
+  const pinned = !!line.gtin;
+  const label = pinned ? line.brand ?? line.productName ?? line.query : tr('anyBrand');
+  return (
+    <Pressable testID={`choice-${line.id}`} onPress={onPress} hitSlop={8}
+      style={({ pressed }) => [{
+        flexDirection: isRTL() ? 'row-reverse' : 'row', alignItems: 'center', gap: 4,
+        backgroundColor: pinned ? t.accentSoft : t.inkSoft, borderRadius: 999,
+        paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: pinned ? '#CCE9D8' : t.line, maxWidth: 190,
+      }, pressed && { opacity: 0.6 }]}>
+      <Text numberOfLines={1} style={{ color: pinned ? t.accent : t.muted, fontSize: 12, fontWeight: '700', flexShrink: 1 }}>{label}</Text>
+      <Text style={{ color: pinned ? t.accent : t.faint, fontSize: 9 }}>▾</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * The brand sheet — the only place brand is ever asked (docs/design/item-identity.md).
+ *
+ * כל מותג is first and is the default, because for most lines brand does not matter and
+ * letting each store bring its own cheapest is what makes a split cart pay. Each row carries
+ * its own span so the cost of having a side is visible before the family takes one. "תמיד"
+ * is what turns a choice for this shop into a choice the family never makes again.
+ */
+function BrandSheet({ api, household, line, memory, onClose, onPick }: {
+  api: Api; household: Household; line: Line; memory: HouseholdMemory | null;
+  onClose: () => void; onPick: (next: Line, saved: boolean) => void;
+}) {
+  const s = S();
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [sel, setSel] = useState<string | null>(normalizeBrand(line.brand) ?? line.brand ?? null);
+  const [always, setAlways] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api.search(household.id, line.query).then((r) => setHits(r.products)).catch(() => setHits([])); }, [api, household.id, line.query]);
+
+  const groups = useMemo(() => brandGroups(hits ?? []), [hits]);
+  const span = spanOf(hits ?? []);
+  const remembered = memory?.products[memoryKey(line.query)];
+  const chosen = groups.find((g) => g.brand === sel);
+  // There is only something to remember when a barcode can carry it: a brand to pin, or a
+  // pin already in memory that כל מותג now loosens.
+  const canRemember = chosen ? !!chosen.cheapest.gtin : !!remembered?.gtin;
+  const rangeOf = (g: BrandGroup) => (g.priceMin === undefined ? null : g.priceMin === g.priceMax ? money(g.priceMin) : `${money(g.priceMin)}–${money(g.priceMax!)}`);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const next = chosen ? pinBrand(line, chosen) : unpin(line);
+      let saved = false;
+      if (always && canRemember) {
+        // The chip's meaning, kept: a pinned brand is "never substitute", כל מותג is "cheapest".
+        const c = chosen
+          ? { phrase: line.query, gtin: chosen.cheapest.gtin!, productName: chosen.cheapest.name, brand: chosen.brand, substitution: 'never' as const }
+          : { phrase: line.query, gtin: remembered!.gtin, productName: remembered!.productName, ...(remembered!.brand ? { brand: remembered!.brand } : {}), substitution: 'cheapest' as const };
+        await api.confirm(household.id, c).then(() => { saved = true; }).catch(() => null);
+      }
+      onPick(next, saved);
+    } finally { setBusy(false); }
+  };
+
+  const Row = ({ label, sub, price, on, onPress }: { label: string; sub?: string; price?: string | null; on: boolean; onPress: () => void }) => (
+    <Pressable onPress={() => { tap(); onPress(); }} style={[s.row, { paddingVertical: 13, borderTopWidth: 1, borderColor: t.line }]}>
+      <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
+        <View style={{ width: 21, height: 21, borderRadius: 11, borderWidth: 2, borderColor: on ? t.accent : t.line, alignItems: 'center', justifyContent: 'center' }}>
+          {on ? <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: t.accent }} /> : null}
+        </View>
+        <View style={{ flexShrink: 1 }}>
+          <Text style={[s.body, { fontWeight: on ? '800' : '500' }]} numberOfLines={1}>{label}</Text>
+          {sub ? <Text style={s.faint}>{sub}</Text> : null}
+        </View>
+      </View>
+      {price ? <Text style={s.priceSmall}>{price}</Text> : null}
+    </Pressable>
+  );
+
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: '#0006' }} onPress={onClose} />
+      <View style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 30, maxHeight: '80%' }}>
+        <Text style={[s.title, { marginBottom: 2 }]}>{tr('whichBrand')}</Text>
+        <Text style={[s.small, { marginBottom: 8 }]} numberOfLines={1}>{line.query}</Text>
+        {!hits ? <Loading label={tr('searching')} /> : (
+          <ScrollView style={{ flexGrow: 0 }}>
+            <Row label={tr('anyBrand')} sub={tr('anyBrandSub')} on={!sel}
+              price={span ? (span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`) : null}
+              onPress={() => setSel(null)} />
+            {groups.map((g) => <Row key={g.brand} label={g.brand} price={rangeOf(g)} on={sel === g.brand} onPress={() => setSel(g.brand)} />)}
+          </ScrollView>
+        )}
+        {canRemember ? (
+          <Pressable testID="brand-always" onPress={() => { tap(); setAlways((a) => !a); }} style={[s.rowStart, { gap: 10, paddingVertical: 14, borderTopWidth: 1, borderColor: t.line }]}>
+            <View style={{ width: 21, height: 21, borderRadius: 6, borderWidth: 2, borderColor: always ? t.accent : t.line, backgroundColor: always ? t.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              {always ? <Icon name="check" size={13} color="#fff" /> : null}
+            </View>
+            <Text style={[s.body, { flexShrink: 1 }]} numberOfLines={1}>{chosen ? tr('alwaysThisBrand', { b: chosen.brand }) : tr('alwaysCheapest')}</Text>
+          </Pressable>
+        ) : null}
+        <Text style={[s.faint, { marginTop: 6, marginBottom: 12 }]}>{tr('pricesAtCompare')}</Text>
+        <Button testID="brand-save" title={tr('saveChoice')} onPress={save} disabled={busy || !hits} />
+      </View>
+    </Modal>
   );
 }
 
@@ -356,7 +536,7 @@ function SwipeRow({ children, onDelete, label }: { children: React.ReactNode; on
  * do with it - change the amount, or take it off the list. Deleting from here is deliberate, and
  * still undoable from the bar.
  */
-function ItemSheet({ item, onClose, onBump, onDelete, lines }: { item: Line; onClose: () => void; onBump: (d: number) => void; onDelete: () => void; lines: readonly Line[] }) {
+function ItemSheet({ item, onClose, onBump, onDelete, onChoose, lines }: { item: Line; onClose: () => void; onBump: (d: number) => void; onDelete: () => void; onChoose: () => void; lines: readonly Line[] }) {
   const s = S();
   const live = lines.find((l) => l.id === item.id) ?? item;
   const size = live.size ?? sizeFromName(live.productName ?? live.query);
@@ -372,6 +552,14 @@ function ItemSheet({ item, onClose, onBump, onDelete, lines }: { item: Line; onC
             {[live.brand, size].filter(Boolean).length ? <Text style={[s.faint, { marginTop: 2 }]}>{[live.brand, size].filter(Boolean).join(' · ')}</Text> : null}
             {live.gtin ? <Text style={[s.faint, { marginTop: 2, fontSize: 11 }]}>{live.gtin}</Text> : null}
           </View>
+        </View>
+        {/* The same chip as the row, and the same sheet behind it: one place brand is asked. */}
+        <View style={[s.row, { marginTop: 18 }]}>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={s.body}>{tr('whichBrand')}</Text>
+            <Text style={s.faint}>{live.gtin ? tr('pinnedNote') : tr('anyNote')}</Text>
+          </View>
+          <ChoiceChip line={live} onPress={onChoose} />
         </View>
         <View style={[s.row, { marginTop: 18 }]}>
           <Text style={s.body}>{tr('amount')}</Text>
