@@ -1,14 +1,16 @@
 /**
- * Substitutes: a store that lacks a line must not vanish from the compare.
+ * Substitutes: a store that lacks a line must not vanish from the compare
+ * (docs/design/a-full-basket-everywhere.md — coverage is a fact, never a gate).
  */
-import { PARTIAL_LEG_MIN_COVERAGE, type Agorot, type ListLine, type QuotedLine } from '@fca/domain';
+import { type Agorot, type ListLine, type QuotedLine } from '@fca/domain';
 import type { CatalogProvider, QuoteRequest, QuoteResponse } from '@fca/retailer-connectors';
 
 /**
- * Substitutes for the lines a near-complete storefront lacks. For each missing line (across the
- * storefronts that price at least PARTIAL_LEG_MIN_COVERAGE of the list) the catalogue's closest
- * product is chosen; one more quote with those products prices them at every storefront; a
- * storefront that carries a substitute gets the line back, flagged as substituted with the reason.
+ * Substitutes for the lines a delivering storefront lacks, however much of the list it lacks -
+ * every store gets its own shot at a full basket, not just the near-complete ones. For each
+ * missing line the catalogue's closest product is chosen; one more quote with those products
+ * prices them at every storefront; a storefront that carries a substitute gets the line back,
+ * flagged as substituted with the reason.
  */
 /**
  * The closest product of the SAME KIND. The catalogue's first hit for "עגבניות" is a can of
@@ -37,9 +39,9 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   /** How many distinct missing lines to look up. The sync route has seconds; the background job has minutes. */
   maxSearches = 12,
 ): Promise<QuoteResponse> {
-  const nearly = res.quotes.filter((q) => q.serviceType === 'delivery' && q.requestedLines > 0 && q.pricedLines < q.requestedLines && q.pricedLines / q.requestedLines >= PARTIAL_LEG_MIN_COVERAGE);
+  const missingSome = res.quotes.filter((q) => q.serviceType === 'delivery' && q.requestedLines > 0 && q.pricedLines < q.requestedLines);
   const missing = new Map<string, ListLine>();
-  for (const q of nearly) { const have = new Set(q.lines.map((l) => l.lineId)); for (const l of lines) if (!have.has(l.id)) missing.set(l.id, l); }
+  for (const q of missingSome) { const have = new Set(q.lines.map((l) => l.lineId)); for (const l of lines) if (!have.has(l.id)) missing.set(l.id, l); }
   if (missing.size === 0) return res;
   // One catalogue search per distinct missing line, up to `maxSearches`: a ten-line list with four near-complete
   // stores must not bail out because their gaps differ - that left every alternative unpriced.
@@ -58,7 +60,7 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   if (picks.size === 0) return res;
   const again = await qp.quoteBasket({ lines: [...picks].map(([id, p]) => { const l = missing.get(id)!; return { ...l, gtin: p.gtin, query: p.name }; }), address, serviceType: 'delivery' });
   const quotes = res.quotes.map((q) => {
-    if (!nearly.includes(q)) return q;
+    if (!missingSome.includes(q)) return q;
     const have = new Set(q.lines.map((l) => l.lineId));
     const extra = (again.quotes.find((x) => x.storefrontId === q.storefrontId)?.lines ?? []).filter((l) => !have.has(l.lineId) && picks.has(l.lineId) && !l.substituted).map<QuotedLine>((l) => ({ ...l, substituted: true, substitutionReason: `${missing.get(l.lineId)?.query ?? ''} → ${l.productName}`, resolutionSource: 'search' }));
     if (extra.length === 0) return q;

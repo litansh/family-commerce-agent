@@ -22,15 +22,25 @@ test('a store missing the salmon gets the closest salmon it does carry, flagged 
   assert.equal(out.quotes.find((q) => q.storefrontId === 'shufersal')!.pricedLines, 3);
 });
 
-test('nothing missing, or too much missing, means no extra quote', async () => {
+test('nothing missing means no extra quote', async () => {
   let calls = 0;
   const qp = { quoteBasket: async () => { calls++; return { quotes: [], assumptions: [] }; } } as never;
   const catalog = { searchProducts: async () => [] } as never;
   const full = quote('s', [line('a', 'חלב', 1), line('b', 'לחם', 1), line('c', 'סלמון', 1)], 3);
   await substituteMissing(qp, catalog, { quotes: [full], assumptions: [] } as never, lines, 'x');
-  const thin = quote('t', [line('a', 'חלב', 1)], 3); // 1 of 3 — below the partial-leg floor
-  await substituteMissing(qp, catalog, { quotes: [thin], assumptions: [] } as never, lines, 'x');
   assert.equal(calls, 0);
+});
+
+// Coverage is a fact, never a gate (docs/design/a-full-basket-everywhere.md): a store missing
+// almost everything still gets a full-basket try, not a silent skip for being too empty.
+test('a store missing almost everything still gets a full-basket try, not a coverage floor', async () => {
+  const thin = quote('t', [line('a', 'חלב', 500)], 3); // 1 of 3 — no partial-coverage floor stops it now
+  const catalog = { searchProducts: async () => [{ productId: 'p1', gtin: '7290000000001', name: 'פילה סלמון נורבגי', pricedAtChains: 3 }, { productId: 'p2', gtin: '7290000000002', name: 'לחם אחיד', pricedAtChains: 3 }] } as never;
+  const qp = { quoteBasket: async () => ({ quotes: [quote('t', [line('b', 'לחם אחיד', 700, { gtin: '7290000000002' }), line('c', 'פילה סלמון נורבגי', 5500, { gtin: '7290000000001' })], 2)], assumptions: [] }) } as never;
+  const out = await substituteMissing(qp, catalog, { quotes: [thin], assumptions: [] } as never, lines, 'x');
+  const r = out.quotes.find((q) => q.storefrontId === 't')!;
+  assert.equal(r.pricedLines, 3);
+  assert.ok(r.lines.every((l) => l.lineId !== 'a' || !l.substituted));
 });
 
 test('a substitute is the same kind of product: no pickles for cucumbers, no smoked for fresh salmon, no can for fresh tomatoes', () => {
