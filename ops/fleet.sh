@@ -23,7 +23,12 @@ until_reset() {
   local when; when=$(grep -o 'resets [0-9]\{1,2\}:[0-9]\{2\}[ap]m' "$1" | tail -1 | awk '{print $2}')
   [ -n "$when" ] || { echo 1800; return; }
   local now target; now=$(date +%s); target=$(LC_ALL=C date -j -f "%Y-%m-%d %I:%M%p" "$(date +%Y-%m-%d) $when" +%s 2>/dev/null || echo $((now + 1800)))
-  [ "$target" -le "$now" ] && target=$((target + 86400))
+  # The message is written the moment the run dies, so its clock time means the NEXT such moment.
+  # Just passed (within the hour) means the limit has already lifted: go now. Long passed means the
+  # same time tomorrow ("resets 4am" read at 23:00).
+  if [ "$target" -le "$now" ]; then
+    if [ "$target" -gt $((now - 3600)) ]; then target=$((now + 60)); else target=$((target + 86400)); fi
+  fi
   local s=$((target - now + 60)); [ "$s" -gt 21600 ] && s=21600; echo "$s"
 }
 
@@ -50,14 +55,14 @@ for A in "${AGENTS[@]}"; do
     ( cd "$WT" && claude -p "$PROMPT" "${ARGS[@]}" --model "$MODEL" --permission-mode acceptEdits --max-turns 140 \
         --allowedTools "Read,Grep,Glob,Edit,Write,Bash(node *),Bash(npx *),Bash(npm *),Bash(git *),Bash(gh *),Bash(./ops/*),Bash(ops/*),Bash(bash ops/*),Bash(./maestro/*),Bash(bash maestro/*),Bash(aws logs *),Bash(aws dynamodb get-item *),Bash(aws dynamodb scan *),Bash(curl *),Bash(ls *),Bash(cat *),Bash(sed *),Bash(head *),Bash(tail *),Bash(wc *)" ) > "$OUT" 2>&1
     # A run killed from outside (a stray pkill, the OS) or ended without its report is resumed, not skipped.
+    if grep -q "hit your session limit\|rate_limit" "$OUT"; then
+      S=$(until_reset "$OUT"); echo "   limit reached; resuming in $((S / 60)) min" | tee -a "$LOG"; tg "🛒 fleet · $A paused by the usage limit, resumes in $((S / 60)) min"
+      sleep "$S"; ARGS=(--resume "$SID"); PROMPT="Continue exactly where you stopped; your WIP is committed on $BR. Nothing will notify you and nobody will answer: poll your own background work and keep going until your lines are done or written down."; [ "$ATTEMPT" -lt 8 ] && continue
+    fi
     # Ended early: killed from outside, or the agent stopped to "wait" for something that never comes.
     if grep -qE "Killed: 9|Terminated: 15|Reached max turns|I.ll wait|waiting for|will notify" "$OUT" || [ "$(wc -c < "$OUT")" -lt 200 ]; then
       echo "   run ended early ($(tail -c 120 "$OUT" | tr '\n' ' ')); resuming in 2 min" | tee -a "$LOG"
       sleep 120; ARGS=(--resume "$SID"); PROMPT="Continue exactly where you stopped; your WIP is committed on $BR. Nothing will notify you and nobody will answer: poll your own background work and keep going until your lines are done or written down."; [ "$ATTEMPT" -lt 8 ] && continue
-    fi
-    if grep -q "hit your session limit\|rate_limit" "$OUT"; then
-      S=$(until_reset "$OUT"); echo "   limit reached; resuming in $((S / 60)) min" | tee -a "$LOG"; tg "🛒 fleet · $A paused by the usage limit, resumes in $((S / 60)) min"
-      sleep "$S"; ARGS=(--resume "$SID"); PROMPT="Continue exactly where you stopped; your WIP is committed on $BR. Nothing will notify you and nobody will answer: poll your own background work and keep going until your lines are done or written down."; [ "$ATTEMPT" -lt 8 ] && continue
     fi
     break
   done
