@@ -9,15 +9,22 @@
  *   node --experimental-strip-types e2e/cart-recipe-lab.mjs [rami-levy shufersal]
  *
  * It adds a couple of real barcodes and prints what the store's own cart did.
+ *
+ * Both real barcodes are shelf-stable dry goods, not dairy: a branch's fresh-milk stock
+ * turns over daily and made this basket flaky (2026-09-13, milk absent from branch 331's
+ * own `available_in` — a real, honest `unavailable` from the recipe, not a bug in it; see
+ * `e2e/rl-stock-probe.mjs`). The recipe already reports a branch shortfall correctly
+ * (promise 9); it is this lab's fixed pair that needs to survive one item's stock, not
+ * the recipe.
  */
 import { webkit, devices } from 'playwright';
 import { STORES } from '../src/lib/stores.ts';
 
 const FAKE_GTIN = '9999999999999'; // deliberately absent — must never resolve to a real product
 const BASKET = [
-  { gtin: '7290004131074', name: 'חלב תנובה 3%', qty: 2 },   // milk
-  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas
-  { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },               // deliberately absent
+  { gtin: '7290000072753', name: "קפה נמס טייסטרס צ'ויס", qty: 2 }, // instant coffee
+  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 },       // canned peas
+  { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },                     // deliberately absent
 ];
 
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['rami-levy'];
