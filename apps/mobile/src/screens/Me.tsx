@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import type { Api, Household } from '../lib/api';
 import { t as tr } from '../lib/i18n';
@@ -91,6 +91,10 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         </View>
         <Button title={tr('showIntro')} kind="quiet" onPress={onShowIntro} />
         <Button title={tr('signOut')} kind="quiet" onPress={onSignOut} />
+        {/* Reachable from inside the app, which Apple requires and anyone wondering what we keep deserves. */}
+        <Pressable onPress={() => void Linking.openURL('https://d3lykvs28o7qrc.cloudfront.net/privacy.html')} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 10 }}>
+          <Text style={[s.small, { color: t.muted, textDecorationLine: 'underline' }]}>{tr('privacy')}</Text>
+        </Pressable>
         {/* Deleting is a person's right and must be reachable without asking anyone, but never by one
             stray tap: the sheet says exactly what goes, and only then does anything happen. */}
         <Pressable onPress={() => setAsking(true)} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 14 }}>

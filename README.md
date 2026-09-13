@@ -178,6 +178,16 @@ substitution suggestion; it can never put an old price on a card.
 its word forgotten at once, so the next family gets a fresh answer rather than the same
 disappointment.
 
+## The number that decides everything
+
+```bash
+node ops/families.mjs            # per family, per week: did they finish a shop
+```
+
+Not opens, not compares — those rise while nothing changes in a kitchen. A shop counts when a
+purchase was **confirmed from the store's own order history**, the one event nobody can produce by
+tapping around. Collect it from the first family onwards: a week that passed unmeasured cannot be
+measured later.
 ## Putting it in a family's hands
 
 The order that avoids a wasted week: **TestFlight first, the App Store after there is something to
@@ -198,7 +208,6 @@ cd apps/mobile
 eas build --platform ios --profile production     # a signed build
 eas submit --platform ios --latest                # to App Store Connect, then TestFlight
 ```
-
 ## Checking it works
 
 ```bash
