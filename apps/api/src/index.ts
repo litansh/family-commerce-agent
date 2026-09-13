@@ -865,7 +865,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const pinnedLineIds = new Set(lines.filter((l) => l.gtin).map((l) => l.id));
       const elsewhereByLine = cheapestExactElsewhere(couponed);
       const storefronts = Object.fromEntries(
-        couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, storefrontFacts(q, lines.map((l) => l.id), pinnedLineIds, elsewhereByLine)]),
+        couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, storefrontFacts(q, lines.map((l) => l.id), pinnedLineIds, elsewhereByLine, new Map(lines.map((l) => [l.id, l.query])))]),
       );
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.

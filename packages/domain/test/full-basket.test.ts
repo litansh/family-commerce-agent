@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { shekels, type Agorot } from '../src/money.ts';
-import { cheapestExactElsewhere, storefrontFacts } from '../src/full-basket.ts';
+import { cheapestExactElsewhere, storefrontFacts, isRealAlternative } from '../src/full-basket.ts';
 import type { QuotedLine, StorefrontQuote } from '../src/types.ts';
 
 const line = (id: string, total: number, over: Partial<QuotedLine> = {}): QuotedLine => ({
@@ -96,4 +96,18 @@ test('cheapestExactElsewhere ignores substituted lines and takes the cheapest re
   const c = quote('c', 'ג', [line('l0', 3, { substituted: true })], 0, 1);
   const cheapest = cheapestExactElsewhere([a, b, c]);
   assert.deepEqual(cheapest.get('l0'), { lineId: 'l0', storefrontId: 'b', brand: 'ב', lineTotal: shekels(7) });
+});
+
+test('a substitution that is not really an alternative does not fill its line', () => {
+  // Production, 13 September: the provider answered "אבקת כביסה" with "אל אמ קליק קפסולה חפיסה".
+  assert.equal(isRealAlternative('אבקת כביסה', 'אל אמ קליק קפסולה חפיסה'), false);
+  // A real alternative keeps the noun and changes the rest; plurals and final letters must not hide it.
+  assert.equal(isRealAlternative("קוטג' תנובה 5%", "קוטג' טרה 5% 250 גרם"), true);
+  assert.equal(isRealAlternative('ביצים XL 12', 'ביצה L ארוזה 12'), true);
+  assert.equal(isRealAlternative('', 'anything'), true);
+
+  // And it leaves the line unfillable rather than pricing the wrong product into a full basket.
+  const q = quote('v', 'ויקטורי', [line('l0', 24, { productName: 'אל אמ קליק קפסולה חפיסה', substituted: true })], 5, 1);
+  const facts = storefrontFacts(q, ['l0'], new Set(), new Map(), new Map([['l0', 'אבקת כביסה']]));
+  assert.deepEqual(facts.fullBasket.unfillableLineIds, ['l0'], 'the wrong product does not count as filled');
 });

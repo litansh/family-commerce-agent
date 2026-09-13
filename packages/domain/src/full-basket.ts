@@ -64,19 +64,51 @@ export function cheapestExactElsewhere(quotes: readonly StorefrontQuote[]): Read
  * One storefront's full and exact basket facts. Coverage is a fact here, never a gate: every
  * delivering storefront gets a full-basket total, whatever it lacks.
  */
+/**
+ * Is this substitution actually an alternative to what was asked for?
+ *
+ * A full basket is a promise that the shop is done, so every line in it must be the thing the family
+ * wanted or a genuine stand-in. A swap sharing no word with the request is neither: production
+ * answered "אבקת כביסה" with "אל אמ קליק קפסולה חפיסה" on 13 September — not another brand of
+ * laundry powder, a different product. Counting it prices a basket nobody asked for and calls the
+ * shop done.
+ *
+ * Generous otherwise: one shared meaningful word is enough, because a real alternative keeps the
+ * noun and changes the rest ("קוטג' תנובה" → "קוטג' טרה"). Hebrew finals and plurals are folded so
+ * ביצים still matches ביצה.
+ */
+const altFinals = (w: string) => w.replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ');
+const altStem = (w: string) => { const x = altFinals(w); return x.length > 4 ? x.replace(/(יות|ות|ימ|ינ|יה|ה|ת)$/u, '') : x; };
+const altWords = (s: string) => (s.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []).map(altStem);
+export function isRealAlternative(requested: string, offered: string): boolean {
+  const want = altWords(requested);
+  if (want.length === 0) return true;
+  const got = altWords(offered);
+  return want.some((w) => got.some((g) => g === w || g.startsWith(w) || w.startsWith(g)));
+}
+
 export function storefrontFacts(
   quote: StorefrontQuote,
   requestedLineIds: readonly string[],
   pinnedLineIds: ReadonlySet<string>,
   elsewhereByLine: ReadonlyMap<string, ExactElsewhere>,
+  /** What each line asked for in the family's own words, so a swap can be judged against it. */
+  lineQuery: ReadonlyMap<string, string> = new Map(),
 ): StorefrontFacts {
-  const priced = new Set(quote.lines.map((l) => l.lineId));
+  // A line "filled" with a product that is not an alternative is not filled. The store simply cannot
+  // complete it, which the card says plainly instead of pricing the wrong thing into a full basket.
+  const wrongProduct = new Set(
+    quote.lines
+      .filter((l) => l.substituted && !isRealAlternative(lineQuery.get(l.lineId) ?? '', l.productName))
+      .map((l) => l.lineId),
+  );
+  const priced = new Set(quote.lines.filter((l) => !wrongProduct.has(l.lineId)).map((l) => l.lineId));
   const fullBasket: FullBasketFacts = {
     total: quote.deliveredTotal,
     items: quote.itemsSubtotal,
     unfillableLineIds: requestedLineIds.filter((id) => !priced.has(id)),
   };
-  const swappedPinned = quote.lines.filter((l) => l.substituted && pinnedLineIds.has(l.lineId));
+  const swappedPinned = quote.lines.filter((l) => l.substituted && pinnedLineIds.has(l.lineId) && !wrongProduct.has(l.lineId));
   const elsewhere = swappedPinned
     .map((l) => elsewhereByLine.get(l.lineId))
     .filter((e): e is ExactElsewhere => e !== undefined);
