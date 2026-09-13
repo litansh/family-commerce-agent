@@ -10,6 +10,7 @@ import { newId, setLines, useList, type Line } from '../lib/store';
 import { carouselProps } from '../lib/gesture';
 import { MODES, setMode, useMode } from '../lib/prefs';
 import { ProductImage } from '../ProductImage';
+import { imageByName } from '../lib/storeImages';
 import { Scanner } from '../Scanner';
 import { Button, Chip, Empty, Header, Icon, Input, S, t, Toast } from '../ui';
 
@@ -83,13 +84,24 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     for (const l of want) askedImages.current.add(l.id);
     const gtins = want.filter((l) => l.gtin).map((l) => l.gtin!);
     const names = want.filter((l) => !l.gtin).map((l) => l.productName ?? l.query);
-    void api.images(household.id, gtins, names).then((im) => {
+    void (async () => {
+      const found = await api.images(household.id, gtins, names).then((im) => im.images).catch(() => ({} as Record<string, string | null>));
+      // What the API could not answer, this phone asks the chain itself: a data centre gets a block
+      // page where a phone gets JSON (ADR 0011). What it learns goes back to the API for next time.
+      const learned: Record<string, string> = {};
+      for (const l of want) {
+        const key = l.gtin ?? l.productName ?? l.query;
+        if (found[key]) continue;
+        const hit = await imageByName(l.productName ?? l.query);
+        if (hit) { found[key] = hit.url; learned[key] = hit.url; }
+      }
       setLines((xs) => xs.map((l) => {
         if (l.imageUrl) return l;
-        const u = (l.gtin && im.images[l.gtin]) || im.images[l.productName ?? l.query];
+        const u = found[l.gtin ?? ''] ?? found[l.productName ?? l.query];
         return u ? { ...l, imageUrl: u } : l;
       }));
-    }).catch(() => null);
+      if (Object.keys(learned).length) void api.learnImages(household.id, learned).catch(() => null);
+    })();
   }, [lines, api, household.id]);
 
   const onList = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);

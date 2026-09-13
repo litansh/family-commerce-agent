@@ -17,7 +17,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dyn
 
 export interface ImageRef {
   readonly url: string;
-  readonly source: 'rami-levy' | 'off' | 'shufersal' | 'rami-levy-search';
+  readonly source: 'rami-levy' | 'off' | 'shufersal' | 'rami-levy-search' | 'phone';
 }
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
@@ -100,6 +100,8 @@ export class ImageResolver {
 
     let ref: ImageRef | undefined;
     if (p.gtin) ref = (await tryRamiLevy(p.gtin)) ?? (await tryOff(p.gtin));
+    // The chain's own catalogue is tried from here too, but it answers a data centre with a block
+    // page (ADR 0011); the phone's `remember` is what actually fills this cache for typed lines.
     if (!ref && p.name) ref = (await tryRamiLevySearch(p.name)) ?? (await tryShufersal(p.name));
 
     const ttl = Math.floor(Date.now() / 1000) + (ref ? TTL_DAYS : MISS_TTL_DAYS) * 86_400;
@@ -107,6 +109,18 @@ export class ImageResolver {
       .send(new PutCommand({ TableName: this.#table, Item: { PK: `IMG#${key}`, SK: 'IMG', ttl, ...(ref ? { url: ref.url, source: ref.source } : { miss: true }) } }))
       .catch(() => undefined);
     return ref ?? null;
+  }
+
+  /**
+   * A picture a phone found at a chain's own catalogue (ADR 0011: the API may not ask the chain
+   * itself, it is answered with a block page). Kept under the key the resolver reads, so the rest of
+   * the household, and the compare's cards, get it without asking anyone.
+   */
+  async remember(key: string, url: string): Promise<void> {
+    const k = /^\d{8,14}$/.test(key) ? `G#${key}` : `N#${key.trim().toLowerCase().slice(0, 120)}`;
+    await this.#doc
+      .send(new PutCommand({ TableName: this.#table, Item: { PK: `IMG#${k}`, SK: 'IMG', url, source: 'phone', ttl: Math.floor(Date.now() / 1000) + TTL_DAYS * 86_400 } }))
+      .catch(() => undefined);
   }
 
   /** Cache lookups only - what is already known, instantly. */
