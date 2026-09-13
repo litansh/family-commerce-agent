@@ -6,6 +6,11 @@
 import { BranchPrices } from './branches.ts';
 import { geocode } from '@fca/branch-prices';
 import { RamiLevyStock } from '@fca/retailer-connectors';
+import { CachedCatalog } from './cached-catalog.ts';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { providersFor } from './providers.ts';
+import { regionOf } from '@fca/domain';
 import { readRow, writeRow } from './orders.ts';
 
 const svc = new BranchPrices(process.env['TABLE_NAME'] ?? 'fca-main', process.env['BRANCH_BUCKET'] ?? '', '');
@@ -40,12 +45,64 @@ async function placeRamiLevyBranches(): Promise<number> {
   return placed.filter((b) => typeof b.lat === 'number').length;
 }
 
+/**
+ * Fill the catalogue cache once a night, so no family pays for the first lookup of the day.
+ *
+ * The words are the ones families actually use: every line in every household's memory, plus the
+ * staples that are on every list in the country. One pull each, four at a time, and the answers are
+ * then shared by everyone who asks that day (`CachedCatalog`). A family reporting an item out of
+ * stock throws its word away immediately; this only refills what nobody has contradicted.
+ */
+const STAPLES = ['חלב', 'לחם', 'ביצים', 'קוטג', 'יוגורט', 'חמאה', 'גבינה צהובה', 'שמנת', 'אורז', 'פסטה', 'קמח', 'סוכר', 'שמן זית', 'טונה', 'עגבניות', 'מלפפון', 'בצל', 'תפוחי אדמה', 'גזר', 'בננות', 'תפוחים', 'עוף', 'שניצל', 'בשר טחון', 'סלמון', 'שוקולד', 'עוגיות', 'קפה', 'תה', 'נייר טואלט', 'מגבונים', 'סבון', 'שמפו', 'אבקת כביסה', 'שקיות אשפה', 'במבה', 'טופו'];
+
+/** Every household that has told us where it lives: the addresses the day's lookups should be warm for. */
+async function householdsWithAddress(table: string): Promise<{ id: string; address: string; country?: string }[]> {
+  const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+  const out: { id: string; address: string; country?: string }[] = [];
+  let ExclusiveStartKey: Record<string, unknown> | undefined;
+  do {
+    const r = await doc.send(new ScanCommand({
+      TableName: table, FilterExpression: 'SK = :sk', ExpressionAttributeValues: { ':sk': 'META' },
+      ProjectionExpression: 'PK, address, country', ...(ExclusiveStartKey ? { ExclusiveStartKey } : {}),
+    }));
+    for (const it of r.Items ?? []) {
+      if (typeof it['address'] === 'string') out.push({ id: String(it['PK']).replace(/^HOUSEHOLD#/, ''), address: it['address'], ...(typeof it['country'] === 'string' ? { country: it['country'] } : {}) });
+    }
+    ExclusiveStartKey = r.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (ExclusiveStartKey);
+  return out;
+}
+
+async function warmCatalogCache(): Promise<{ warmed: number; households: number }> {
+  const table = process.env['TABLE_NAME'] ?? 'fca-main';
+  const metas = await householdsWithAddress(table).catch(() => [] as { id: string; address: string; country?: string }[]);
+  const words = new Set<string>(STAPLES);
+  for (const m of metas) {
+    const mem = await readRow(table, m.id, 'MEMORY').catch(() => undefined) as { products?: Record<string, { query?: string }> } | undefined;
+    for (const p of Object.values(mem?.products ?? {})) if (p.query) words.add(p.query);
+  }
+  const address = metas[0]?.address ?? 'תל אביב';
+  const providers = providersFor(regionOf(metas[0]?.country));
+  if (!providers) return { warmed: 0, households: metas.length };
+  const catalog = new CachedCatalog(providers.catalog, table);
+  const list = [...words];
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, list.length) }, async () => {
+    for (let i = next++; i < list.length; i = next++) {
+      await catalog.searchProducts({ query: list[i]!, limit: 16, location: address }).catch(() => []);
+    }
+  }));
+  return { warmed: list.length, households: metas.length };
+}
+
 export async function handler(event: { hid?: string } | undefined): Promise<{ refreshed: string[] }> {
   if (event?.hid) {
     const row = await svc.refreshHousehold(event.hid);
     console.log(`refreshed ${event.hid}: ${row.status}, ${row.branches.length} branches`);
     return { refreshed: [event.hid] };
   }
+  const warm = await warmCatalogCache().catch((e: unknown) => { console.warn('catalogue cache not warmed', e instanceof Error ? e.message : String(e)); return { warmed: 0, households: 0 }; });
+  console.log(JSON.stringify({ event: 'catalog-warmed', ...warm }));
   const placed = await placeRamiLevyBranches().catch((e: unknown) => { console.warn('rami-levy branches not placed', e instanceof Error ? e.message : String(e)); return 0; });
   console.log(`rami-levy online branches on the map: ${placed}`);
   const done = await svc.refreshAll();

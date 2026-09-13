@@ -39,3 +39,4 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
 - **Metro on 8082 is shared and is whatever checkout started it.** It was serving the main checkout
   while this worktree's flows ran, so the app under test had none of the changes. Check with
   `lsof -a -p $(lsof -ti tcp:8082) -d cwd -Fn` before believing a sim result from a worktree.
+- [ ] **A full basket at every store** (docs/design/a-full-basket-everywhere.md), the owner's central ask: every store priced for the whole list using its own alternatives, the family's exact basket priced beside it with the difference in shekels, and a 'make it cheaper' action. Coverage becomes a fact on the card, not a reason to hide a store. *app-designer*
