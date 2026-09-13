@@ -9,6 +9,13 @@
  *   node --experimental-strip-types e2e/cart-recipe-lab.mjs [rami-levy shufersal]
  *
  * It adds a couple of real barcodes and prints what the store's own cart did.
+ *
+ * Both real barcodes are shelf-stable dry goods, not dairy: a branch's fresh-milk stock
+ * turns over daily and made this basket flaky (2026-09-13, milk absent from branch 331's
+ * own `available_in` — a real, honest `unavailable` from the recipe, not a bug in it; see
+ * `e2e/rl-stock-probe.mjs`). The recipe already reports a branch shortfall correctly
+ * (promise 9); it is this lab's fixed pair that needs to survive one item's stock, not
+ * the recipe.
  */
 import { webkit, devices } from 'playwright';
 import { STORES } from '../src/lib/stores.ts';
