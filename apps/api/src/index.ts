@@ -223,6 +223,17 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       return { ...providers, catalog: new CachedCatalog(providers.catalog, TABLE) };
     };
 
+    // Deleting the household erases everything Kaniti knows about this family. Apple requires an app
+    // that creates accounts to offer this from inside it, and it is right regardless: a family's
+    // shopping history should be erasable on a whim, without asking anybody. Only an owner may.
+    if (method === 'DELETE' && rest === '') {
+      const membership = await households.requireMember(hid, caller.userId);
+      if (membership.role !== 'owner') throw new HttpError(403, 'only the household owner can delete it');
+      const { rowsDeleted } = await households.eraseHousehold(hid);
+      console.log(JSON.stringify({ event: 'household-erased', hid, rowsDeleted, by: caller.userId }));
+      return ok({ deleted: true, rowsDeleted });
+    }
+
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
 
     // --- connecting stores (ADR 0008) ------------------------------------

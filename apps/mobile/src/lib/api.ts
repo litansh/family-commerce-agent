@@ -130,6 +130,8 @@ export class Api {
   me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
   createHousehold = (h: { name: string; address: string; country: string; retailers: string[]; fulfillment: 'delivery' | 'pickup' | 'either'; language: string; addressDetails: Record<string, unknown> }) => this.#call<Household>('POST', '/households', h);
   suggestAddress = (q: string) => this.#call<{ suggestions: { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }[] }>('GET', `/geo/suggest?q=${encodeURIComponent(q)}`);
+  /** Erase this household and everything Kaniti learned about it. Owner only; there is no undo. */
+  deleteHousehold = (hid: string) => this.#call<{ deleted: boolean; rowsDeleted: number }>('DELETE', `/households/${hid}`);
   household = (hid: string) => this.#call<Household>('GET', `/households/${hid}`);
   importHistory = (hid: string, retailer: string, orders: { at: string; lines: { name: string; code?: string; qty: number }[] }[], diag?: Record<string, unknown>) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/import-history`, { retailer, orders, ...(diag ? { diag } : {}) });
   search = (hid: string, q: string) => this.#call<{ products: SearchHit[]; variants?: SearchVariant[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);

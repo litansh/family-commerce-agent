@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { randomBytes } from 'node:crypto';
 import { HttpError } from './auth.ts';
 
@@ -61,6 +61,37 @@ export class HouseholdStore {
     await this.#doc.send(new PutCommand({ TableName: this.#table, Item: { PK: `HOUSEHOLD#${id}`, SK: 'META', ...household } }));
     await this.#putMember({ householdId: id, userId, role: 'owner', ...(email ? { email } : {}), joinedAt: now });
     return household;
+  }
+
+  /**
+   * Erase a household and everything Kaniti learned about it: the memory, the sealed store sessions,
+   * the order history it read, the compares, the branch indexes, the members.
+   *
+   * Apple requires an app that creates accounts to let a person delete one from inside it, and a
+   * family's shopping history is the kind of thing that should be erasable on a whim, without an
+   * e-mail to anybody. Everything for a household lives under one partition key, so this is a query
+   * and a delete, with no possibility of leaving a stray row behind holding what they bought.
+   */
+  async eraseHousehold(id: string): Promise<{ rowsDeleted: number }> {
+    let deleted = 0;
+    let ExclusiveStartKey: Record<string, unknown> | undefined;
+    do {
+      const page = await this.#doc.send(
+        new QueryCommand({
+          TableName: this.#table,
+          KeyConditionExpression: 'PK = :pk',
+          ExpressionAttributeValues: { ':pk': `HOUSEHOLD#${id}` },
+          ProjectionExpression: 'PK, SK',
+          ...(ExclusiveStartKey ? { ExclusiveStartKey } : {}),
+        }),
+      );
+      for (const it of page.Items ?? []) {
+        await this.#doc.send(new DeleteCommand({ TableName: this.#table, Key: { PK: it['PK'], SK: it['SK'] } }));
+        deleted += 1;
+      }
+      ExclusiveStartKey = page.LastEvaluatedKey as Record<string, unknown> | undefined;
+    } while (ExclusiveStartKey);
+    return { rowsDeleted: deleted };
   }
 
   async listForUser(userId: string): Promise<Household[]> {
