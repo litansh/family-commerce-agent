@@ -10,22 +10,46 @@ Israel already has at least eight grocery price-comparison products, and a free 
 resolves products across 16 chains, prices a whole basket per address, and knows every storefront's
 verified delivery terms. Building another price engine would mean arriving ninth.
 
-Comparing a whole basket is **not** what sets Kaniti apart: most of those eight optimise a full basket
-and three of them split it across two to four stores. Four things are genuinely missing from all of
-them, every claim verified live in [`docs/product-landscape.md`](docs/product-landscape.md):
+Comparing a whole basket is **not** what sets Kaniti apart: every serious product in this market
+already does it, and several split a basket across stores. What none of them does is **finish the
+shop**.
 
-| | The market | Kaniti |
-|---|---|---|
-| **Actually buying** | nobody builds a cart on a retailer's site — every product ends at "here is the cheapest, now go type in your forty items" | fills the store's own cart from the family's phone, as the family; payment stays with the store |
-| **Family memory** | a saved list at best, single user | preferred brand per product, acceptable alternatives, what is never bought, what runs out when |
-| **Driving vs delivery** | the free price layer prices online storefronts only | the same basket priced at the branches you could drive to, from the published price files |
-| **Real availability** | the transparency feed carries no stock data at all | per-branch stock read from the chains' own APIs, so a line missing at *your* branch is missing before you shop |
+### What each product actually does — checked live on 13 September 2026
 
-The only proof anyone has that the first is even possible is a hobby script that drives Shufersal's
-wishlist. The rest end at the comparison.
+| | Compares a basket | Splits across stores | Builds the store's cart | Household memory | Real per-branch stock |
+|---|---|---|---|---|---|
+| [CHP](https://chp.co.il) | yes | no | **no** — comparison and error reports only | no | no |
+| [Kach](https://kach.co.il) | yes | **yes**, cheapest split | **no** — ends at "which shop is cheapest" | no | no |
+| [Savy](https://savy.co.il) | yes | no | **no** | no | no |
+| [IsraBis](https://israbis.com) | yes, 49 chains | no | **no** — barcode scan and a list | no | no, location filter only |
+| [Zap Market](https://www.zapmarket.co.il) | yes | no | **no** — build a basket, compare, save | no | no |
+| PriceZ, SuperCompare, Cheapersal, SuperGET | yes | some | no | no | no |
+| **Kaniti** | yes | yes | **yes — fills the chain's own cart from the phone** | **yes** | **yes** |
 
-Measured on this household's real 36-line weekly basket: the same list costs **₪836 at Rami Levy and ₪1,083
-at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
+*Method: each site above was read on 13 September 2026 and the row says what its own pages claim.
+PriceZ and Zap Market refuse automated requests (HTTP 403); their rows come from their own
+descriptions and app-store listings, not from reading the product, and are marked as the weaker
+evidence they are. No competitor was signed into or tested as a user.*
+
+### The two facts underneath the last two columns
+
+Both were measured directly, not read:
+
+- **The national price feed carries no stock data.** A real Shufersal `PriceFull` file pulled on
+  13 September 2026, covering 416 branches, gives exactly these fields per product: `ItemCode`,
+  `ItemName`, `ManufactureName`, `ManufactureCountry`, `ManufactureItemDescription`, `UnitQty`,
+  `Quantity`, `UnitOfMeasure`, `bIsWeighted`, `QtyInPackage`, `ItemPrice`, `UnitOfMeasurePrice`,
+  `AllowDiscount`, `PriceUpdateTime`, `LastSaleDateTime`, `ItemType`. There is no stock, inventory or
+  availability field; `Quantity` is the package size. Every product in the table above is built on
+  this feed, so none of them can know whether a branch actually has an item.
+- **The chains themselves do know.** Rami Levy's own catalogue answers with `available_in` — the list
+  of branches carrying a barcode (25 of them for one tested product). It answers a phone and blocks a
+  data centre, which is why Kaniti reads it from the family's own device
+  ([ADR 0011](docs/adr/0011-store-calls-run-on-the-device.md)) and nobody serving from a server can.
+
+So the honest claim is narrow and large at once: the comparison is a commodity, and **the shop
+itself — a full cart at the chain, built from what this family buys, out of what their branch
+actually has — is not something any of them can do today.**
 
 ## Documents
 
