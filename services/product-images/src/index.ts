@@ -1,13 +1,15 @@
 /**
  * Product images.
  *
- * No aggregator gives us pictures, but three sources do, in order of hit
- * rate on Israeli barcodes:
- *   1. Rami Levy's image host, keyed by GTIN — one URL, no lookup
- *   2. Rami Levy's own catalogue, keyed by NAME — the picture the chain shows, and the only source
- *      that answers for a line the family typed in their own words ("קפה שחור") with no barcode
- *   3. Open Food Facts, keyed by GTIN — global, free, needs one JSON call
- *   4. Shufersal's search, keyed by name — Cloudinary URL per product
+ * Two sources are called from here, by GTIN only:
+ *   1. Rami Levy's image host — one static URL, no lookup, no login wall
+ *   2. Open Food Facts — global, free, needs one JSON call
+ * Neither is a chain's own dynamic site, so both are safe to call from the API Lambda
+ * (ADR 0011). A line typed with no barcode ("קפה שחור") needs a chain's own catalogue or
+ * search by NAME to find a picture — Rami Levy's `/api/catalog`, Shufersal's search — and
+ * those are exactly the calls ADR 0011 measured as blocked from here (a data-centre gets the
+ * same block page a scraper does). That lookup belongs on the person's device, which `remember()`
+ * below exists to receive; it does not run from this resolver.
  *
  * Results are cached in the main table under IMG#<key> with a 30-day TTL so
  * a household's usual forty items cost one lookup each, ever.
@@ -17,7 +19,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dyn
 
 export interface ImageRef {
   readonly url: string;
-  readonly source: 'rami-levy' | 'off' | 'shufersal' | 'rami-levy-search' | 'phone';
+  readonly source: 'rami-levy' | 'off' | 'phone';
 }
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
@@ -42,32 +44,6 @@ async function tryOff(gtin: string): Promise<ImageRef | undefined> {
   const d = (await res.json().catch(() => null)) as { status?: number; product?: { image_front_small_url?: string } } | null;
   const url = d?.product?.image_front_small_url;
   return d?.status === 1 && url ? { url, source: 'off' } : undefined;
-}
-
-/**
- * Rami Levy's catalogue, by name. Its rows carry the picture the chain itself shows, so a line with
- * no barcode — the commonest reason a family sees a drawn glyph instead of a photo — still gets one.
- */
-async function tryRamiLevySearch(name: string): Promise<ImageRef | undefined> {
-  const res = await withTimeout(fetch('https://www.rami-levy.co.il/api/catalog?', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json;charset=utf-8', accept: 'application/json', 'user-agent': UA },
-    body: JSON.stringify({ q: name, size: 5 }),
-  }), 2500).catch(() => undefined);
-  if (!res?.ok) return undefined;
-  const d = (await res.json().catch(() => null)) as { data?: { images?: { small?: string; trim?: string } }[] } | null;
-  const path = d?.data?.find((r) => r.images?.small ?? r.images?.trim)?.images;
-  const url = path?.small ?? path?.trim;
-  return url ? { url: url.startsWith('http') ? url : `https://img.rami-levy.co.il${url}`, source: 'rami-levy-search' } : undefined;
-}
-
-async function tryShufersal(name: string): Promise<ImageRef | undefined> {
-  const q = encodeURIComponent(`${name}:relevance`);
-  const res = await withTimeout(fetch(`https://www.shufersal.co.il/online/he/search/results?q=${q}&limit=1`, { headers: { 'user-agent': UA, accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' } }), 2500).catch(() => undefined);
-  if (!res?.ok) return undefined;
-  const d = (await res.json().catch(() => null)) as { results?: { images?: { format?: string; url?: string }[] }[] } | null;
-  const url = d?.results?.[0]?.images?.find((i) => i.format === 'product' || i.format === 'thumbnail')?.url;
-  return url ? { url, source: 'shufersal' } : undefined;
 }
 
 export class ImageResolver {
@@ -98,11 +74,9 @@ export class ImageResolver {
       return it.miss ? null : it.url && it.source ? { url: it.url, source: it.source } : null;
     }
 
-    let ref: ImageRef | undefined;
-    if (p.gtin) ref = (await tryRamiLevy(p.gtin)) ?? (await tryOff(p.gtin));
-    // The chain's own catalogue is tried from here too, but it answers a data centre with a block
-    // page (ADR 0011); the phone's `remember` is what actually fills this cache for typed lines.
-    if (!ref && p.name) ref = (await tryRamiLevySearch(p.name)) ?? (await tryShufersal(p.name));
+    // A name with no GTIN needs a chain's own catalogue or search, which ADR 0011 forbids calling
+    // from here; nothing to try until the phone's `remember` fills this key.
+    const ref: ImageRef | undefined = p.gtin ? (await tryRamiLevy(p.gtin)) ?? (await tryOff(p.gtin)) : undefined;
 
     const ttl = Math.floor(Date.now() / 1000) + (ref ? TTL_DAYS : MISS_TTL_DAYS) * 86_400;
     await this.#doc
