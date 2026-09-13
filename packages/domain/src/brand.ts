@@ -219,3 +219,27 @@ export function nameSatisfiesQuery(query: string, name: string): boolean {
     return new RegExp(`(^|[^\\d])${esc}([^\\d]|$)`).test(hay);
   });
 }
+
+/**
+ * A floor beneath the numeric constraint above: at least one real word (or
+ * number) the family typed must appear, whole, in a candidate's name — or
+ * nothing in the catalogue actually answers what was typed. A bare number, an
+ * emoji-only line, or a fictitious item ("rare frozen cactus juice from space")
+ * must resolve to nothing, never to whatever real product a fuzzy search or a
+ * store's own free-text fallback happened to rank first.
+ */
+export function sharesWordWithQuery(query: string, name: string): boolean {
+  // Below three characters a "word" is usually a particle ("לא", "עם", "של") that
+  // would make "לא קיים" ("does not exist") match anything containing the word
+  // "not" — the same length floor apps/mobile/src/lib/stores.ts's PICK_BY_NAME_JS
+  // already applies to a store's own name-matching, for the same reason.
+  const words = (s: string): string[] =>
+    s
+      .replace(/["'׳״]/g, '')
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((w) => w.length >= 3);
+  const queryWords = words(query);
+  if (queryWords.length === 0) return false;
+  const nameWords = new Set(words(name));
+  return queryWords.some((w) => nameWords.has(w));
+}

@@ -601,6 +601,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // what turns a healthy provider into `internal_error` (seen in production, HTTP 500, 0/39).
       const LINE_BUDGET_MS = 6_000;
       await mapLimit(applied, 4, async ({ line, fromMemory }) => {
+        // A blank row — a cleared name, a bad paste, voice-to-text — has nothing to search for;
+        // it is unresolved by definition, not a reason to spend a catalogue call or crash the batch.
+        if (line.query.trim() === '') { choices[line.id] = null; unresolved.push(line.id); return; }
         try {
           const [branded, open] = await withDeadline(Promise.all([
             line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
@@ -613,6 +616,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
             ...(line.gtin ? { requestedGtin: line.gtin } : {}),
           });
           choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
+          // A line that came back neither chosen nor thrown must still be told apart from one
+          // never sent: `null` with no `unresolved` entry satisfies neither reader downstream.
+          if (!c) unresolved.push(line.id);
         } catch (e) {
           console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, lineId: line.id, query: line.query, error: e instanceof Error ? e.message.slice(0, 120) : String(e) }));
           choices[line.id] = null;
@@ -689,7 +695,10 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const { quoteProvider, catalog, repo, region } = deps;
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
-      const lines = applied.map((a) => a.line);
+      // A blank query with no confirmed barcode has nothing to quote — sending it to the vendor
+      // risks the same whole-batch failure a blank line already caused at /resolve; it is simply
+      // left out here, same as /resolve leaves it unresolved (docs/BACKLOG.md).
+      const lines = applied.map((a) => a.line).filter((l) => l.query.trim() !== '' || l.gtin);
       // The provider has 22 s per call. The sync route (the ops checks) gives the whole quote one
       // try inside API Gateway's 30 s; the background job (what the phone uses) tries again on a
       // slow answer until its budget is spent - a slow minute at the stores is never the family's.
@@ -942,6 +951,9 @@ const arr = <T>(v: unknown, name: string): T[] => { if (!Array.isArray(v)) throw
 const SUBSTITUTION: readonly SubstitutionPolicy[] = ['never', 'same_brand', 'equivalent', 'cheapest'];
 const toLines = (v: unknown): ListLine[] =>
   arr<Partial<ListLine>>(v, 'lines').map((l, i) => {
-    const query = str(l.query, `lines[${i}].query`);
+    // A blank query — a cleared name, a bad paste, voice-to-text — is a row a family's own list
+    // produces far more easily than a rejected barcode; one such row must never 400 the other 38
+    // (docs/BACKLOG.md). It carries through as an empty query, unresolved by whoever reads lines.
+    const query = typeof l.query === 'string' ? l.query.trim() : '';
     return { id: l.id ?? `l${i}`, query, ...(l.gtin ? { gtin: l.gtin } : {}), ...(l.brand ? { brand: l.brand } : {}), ...(l.amount !== undefined ? { amount: l.amount } : {}), ...(l.unit ? { unit: l.unit } : {}), ...(l.packQty !== undefined ? { packQty: l.packQty } : {}) };
   });

@@ -139,6 +139,24 @@ test('refuses to claim a percentage when unit prices are implausibly far apart',
   assert.match(alt.reason, /not comparable/);
 });
 
+test('a bare number never silently becomes an unrelated real product', () => {
+  // Real bug: "12345" resolved to a nail polish sharing zero words with the query.
+  const unrelated = [p('polish', 'דניה קוסמטיקס', 'לק קריסטל גלו 651 יח', 1, 20, 20, 3)];
+  assert.equal(buildChoice(unrelated, { lineId: 'l0', query: '12345' }), undefined);
+});
+
+test('a query for something no store carries resolves to nothing, not to candy', () => {
+  // Real bug: a fictitious "rare frozen cactus juice from space" resolved to sugar-free lemon candy.
+  const unrelated = [p('candy', 'מורז', 'ויויל-סוכריות ללא סוכר טעם לימון', 1, 8, 8, 3)];
+  assert.equal(buildChoice(unrelated, { lineId: 'l0', query: 'מיץ קקטוס קפוא נדיר מהחלל' }), undefined);
+});
+
+test('a query that does share a real word with the catalogue still resolves normally', () => {
+  const c = buildChoice(MILK, { lineId: 'l0', query: 'חלב קר' }); // "cold milk" — no candidate names "קר", but all share "חלב"
+  assert.ok(c);
+  assert.match(c.chosen.name, /חלב/);
+});
+
 test('honours a size stated in the query over a better unit price', () => {
   const size1 = { ...p('s1', 'פמפרס', 'חיתולי פמפרס פרימיום מידה 1 44 יח', 44, 37.9, 0.86, 3), sizeUnit: 'unit', unitBasis: 'per_piece' };
   const size4 = { ...p('s4', 'פמפרס', 'חיתולי פמפרס בייבי דריי מידה 4 29 יח', 29, 36.9, 1.27, 3), sizeUnit: 'unit', unitBasis: 'per_piece' };
