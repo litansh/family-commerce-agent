@@ -22,9 +22,9 @@ import { STORES } from '../src/lib/stores.ts';
 
 const FAKE_GTIN = '9999999999999'; // deliberately absent — must never resolve to a real product
 const BASKET = [
-  { gtin: '7290000072753', name: "קפה נמס טייסטרס צ'ויס", qty: 2 }, // instant coffee
-  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 },       // canned peas
-  { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },                     // deliberately absent
+  { gtin: '7290001794852', name: 'חלב טרי 3%', qty: 2 },     // milk - the guest default branch's own private label, not a chain brand that branch may not carry
+  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas
+  { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },               // deliberately absent
 ];
 
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['rami-levy'];
