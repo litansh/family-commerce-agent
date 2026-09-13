@@ -4,13 +4,13 @@
  * answers a barcode lookup with `IsInStock`, the same field the cart recipe already checks at fill
  * time (apps/mobile/src/lib/stores.ts).
  *
- * Not wired into the compare (ADR 0011: no call to a chain's own site runs from the API or any
- * Lambda). This class is meant for the ops Mac's nightly refresher - the same place Rami Levy's own
- * branch list and geocoding are moving to - to write a cached stock row the API only reads; it is
- * not yet called from there. It also does not yet pick the family's own branch: no branch-selecting
- * call was found in a GET-only probe (`getItemByBarkod` ignored every branch query param tried), so
- * it answers for whichever branch the guest session defaults to. Unknown stock (no answer, or the
- * wrong branch) should drop nothing wherever this ends up wired in.
+ * Called from `refresh-hazi-hinam-stock.mjs`, run nightly on this Mac (ADR 0011: no call to a
+ * chain's own site runs from the API or any Lambda) - the same place Rami Levy's own branch list
+ * and geocoding are refreshed from. It writes HOUSEHOLD#CATALOG / HH_STOCK, which
+ * `apps/api/src/index.ts` only ever reads. It also does not yet pick the family's own branch: no
+ * branch-selecting call was found in a GET-only probe (`getItemByBarkod` ignored every branch query
+ * param tried), so it answers for whichever branch the guest session defaults to. Unknown stock (no
+ * answer, or the wrong branch) drops nothing.
  */
 const SITE = 'https://shop.hazi-hinam.co.il';
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';

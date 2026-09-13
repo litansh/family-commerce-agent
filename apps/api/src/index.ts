@@ -46,7 +46,7 @@ import {
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
-import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
+import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, dropUnavailableHaziHinam } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
 import { providersFor } from './providers.ts';
@@ -744,29 +744,32 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         }
       }
       // Branch stock: an item Rami Levy's branch for this family does not carry is "out of stock" at
-      // its checkout, which for a family equals "does not exist" - so it is missing there already here,
-      // and the substitutes and the other stores take over. Unknown stock drops nothing.
+      // its checkout, which for a family equals "does not exist" (promise 9). This used to check it
+      // here with a live per-request call to `rami-levy.co.il/api/catalog` (and `/api/stores` as a
+      // branch-lookup fallback) — exactly the call ADR 0011 forbids from a Lambda and measured as
+      // blocked there (`branch-stock-skipped: Unexpected token '<'`, every time, in production): the
+      // try/catch below always landed in its catch, so this filter has never actually applied to a
+      // real compare. Removed rather than left silently doing nothing (docs/BACKLOG.md); the real
+      // fix is the same move as Hatzi Hinam's branch stock (ADR 0011's second place: the ops Mac's
+      // nightly refresher, or the device, writing a cache the API only reads) — not built yet, so
+      // `branchStock` stays honestly empty until it is.
       const branchStock: Record<string, { branch: number; lineIds: string[] }> = {};
       const lineQueryFor = new Map(lines.map((l) => [l.id, l.query]));
-      const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
-      if (rl.length) {
+      // Hatzi Hinam: the same check, from a cache the ops Mac's nightly `refresh-hazi-hinam-stock.mjs`
+      // writes (ADR 0011: shop.hazi-hinam.co.il only answers a browser or this Mac, never the API's
+      // Lambda - PR #73 called it live from here and was reverted for that). A barcode the cache never
+      // checked, or hasn't caught up with yet, is not in the map - unknown stock drops nothing.
+      const hh = res.quotes.filter((q) => /hazi|hinam/i.test(q.storefrontId) || /חצי חינם/.test(q.brand));
+      if (hh.length) {
         try {
-          // The branch the family's basket will actually be filled from - not a guess, when we can help it.
-          const ad = (household.addressDetails ?? {}) as { city?: string; lat?: number; lng?: number };
-          const known = household.branches?.['rami-levy'];
-          const geoList = known ? [] : ((await readRow(TABLE, 'CATALOG', 'RL_BRANCHES')) as { branches?: RamiLevyBranch[] } | undefined)?.branches ?? [];
-          const near = known ? undefined : typeof ad.lat === 'number' && typeof ad.lng === 'number' ? nearestBranch(geoList, { lat: ad.lat, lng: ad.lng }) : undefined;
-          const branch = known ?? near?.id ?? branchForCity(await ramiLevyStock.branches(), ad.city) ?? RAMI_LEVY_DEFAULT_BRANCH;
-          const branchFrom = known ? 'household' : near ? 'nearest' : 'city-or-default';
-          const av = await ramiLevyStock.availableIn(rl.flatMap((q) => q.lines.map((l) => l.gtin ?? '')), branch);
+          const cached = (await readRow(TABLE, 'CATALOG', 'HH_STOCK')) as { stock?: Record<string, boolean> } | undefined;
+          const inStock = new Map(Object.entries(cached?.stock ?? {}));
           const droppedNames: string[] = []; const droppedIds: string[] = [];
-          for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
-          if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
-            // Reality disagreed with what the catalogue told us, so stop repeating it: the next family
-            // asking these words gets a fresh answer instead of the same out-of-stock suggestion.
+          for (const q of hh) { const { kept, dropped } = dropUnavailableHaziHinam(q.lines, inStock); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
+          if (droppedIds.length) { branchStock['hazi-hinam'] = { branch: 0, lineIds: droppedIds };
             if (catalog instanceof CachedCatalog) void catalog.forget(droppedIds.map((id) => lineQueryFor.get(id) ?? '').filter(Boolean), household.address).catch(() => null);
-            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
-        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
+            console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'hazi-hinam', dropped: droppedNames })); }
+        } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, store: 'hazi-hinam', error: e instanceof Error ? e.message : String(e) })); }
       }
       // A store that lacks a line (no salmon at Rami Levy) must not vanish from the compare. For the
       // lines the near-complete storefronts miss, find the closest product in the catalogue and price
@@ -910,7 +913,6 @@ async function tellTelegram(retailer: string, diag: unknown): Promise<void> {
 
 type CompareJob = { job: 'compare'; hid: string; id: string; body: Record<string, unknown> };
 const lambda = new LambdaClient({});
-const ramiLevyStock = new RamiLevyStock();
 const COMPARE_TTL_S = 3600;
 
 /** A DynamoDB row holds 400 KB. A compare rarely nears it; when it does, the rejected stores' per-line resolutions go first (the cards still show their totals and reasons). */
