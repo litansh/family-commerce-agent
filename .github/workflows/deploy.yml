@@ -52,9 +52,18 @@ jobs:
         run: |
           npm ci || npm install
           mkdir -p ~/.kaniti && printf 'KANITI_E2E_EMAIL=%s\nKANITI_E2E_PASSWORD=%s\n' "$KANITI_E2E_EMAIL" "$KANITI_E2E_PASSWORD" > ~/.kaniti/e2e.env
-          node ops/api-health.mjs
-          node ops/test-cart.mjs --short
-          node ops/test-cart.mjs
+          # The pricing provider has short bursts of `internal_error` and 30-second answers, and
+          # recovers within minutes (measured repeatedly on 12-13 September). A deploy that is good
+          # must not go red because one of those landed on it: the proof gets a second run after a
+          # pause, and only a failure that survives both is a failure. Each attempt is printed, so a
+          # provider that is genuinely down still shows up rather than being retried into silence.
+          prove() {
+            node ops/api-health.mjs && node ops/test-cart.mjs --short && node ops/test-cart.mjs
+          }
+          if prove; then exit 0; fi
+          echo "::warning::the production proof failed once; the provider has bursts - waiting 90s and proving again"
+          sleep 90
+          prove
       - name: tell the channel
         if: always()
         env:
