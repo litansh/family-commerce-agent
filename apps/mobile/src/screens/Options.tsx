@@ -11,6 +11,7 @@ import { markLinked, useLinked } from '../lib/linked';
 import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
 import { productAt } from '../lib/quote';
+import { etaRank, etaTone, exceptionsOf, opensAt, rowsFor, savingOf, type CompareLike, type CompareRow } from '../lib/compare';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
 import { OrderOnDevice } from './OrderOnDevice';
@@ -42,8 +43,12 @@ function legsFor(option: PurchaseOption, quote: QuoteResult) {
   }));
 }
 
-/** One store on the compare, as one sentence: title · when · what it lacks, and its price. */
-type Row = { key: string; title: string; when: string | null; price: number; priceNote?: string; missing: string[]; swaps: string[]; short?: number; option?: PurchaseOption; sid: string };
+/**
+ * One store on the compare, ready to read: the row's facts from `lib/compare.ts`, and the Hebrew the
+ * screen wrapped around them. The facts and the words are kept apart on purpose — a rule written as a
+ * regex over rendered Hebrew is a rule no lab can check (docs/design/compare-accuracy.md).
+ */
+type RowView = { view: CompareRow; title: string; when: string | null; whenTone: 'good' | 'neutral' | 'warn'; priceNote?: string; second: string };
 type StoreLines = NonNullable<QuoteResult['storefrontLines']>[string];
 /** Long product names, one line's worth. */
 const short = (x: string) => (x.length > 28 ? x.slice(0, 27) + '…' : x);
@@ -99,31 +104,44 @@ function PriceCol({ price, note, color }: { price: string; note?: string; color?
  * Module-level on purpose: declared inside the screen it would be a new component type on every
  * render, remounting mid-tap. Tapping unfolds the store's lines and "buy here".
  */
-function StoreRow({ row, highlight, open, onToggle, lines, storeLines, onBuy }: {
-  row: Row; highlight?: boolean; open: boolean; onToggle: () => void; lines: QuoteResult['lines']; storeLines: StoreLines; onBuy: () => void;
+function StoreRow({ row, open, onToggle, quote, onBuy }: {
+  row: RowView; open: boolean; onToggle: () => void; quote: QuoteResult; onBuy: () => void;
 }) {
   const s = S();
-  const second = [
-    row.short !== undefined ? tr('tblShort', { x: money(row.short) }) : null,
-    row.missing.length ? tr('tblMissing', { x: row.missing.slice(0, 3).join(', ') + (row.missing.length > 3 ? '…' : '') }) : null,
-    row.swaps.length ? tr('swapsLine', { x: row.swaps.slice(0, 2).join(' · ') + (row.swaps.length > 2 ? '…' : '') }) : null,
-  ].filter(Boolean).join(' · ');
+  const { view } = row;
+  // A row whose number is not a delivered total is not the same kind of number as the answer's, and
+  // must not read as one: it stays in muted ink and its note says what it covers (promise 4).
+  const sid = view.storefrontId;
+  const split = view.brands.length > 1;
   return (
-    <Pressable onPress={onToggle} style={({ pressed }) => [{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, pressed ? { opacity: 0.7 } : null]} testID={`row-${row.sid}`}>
+    <Pressable onPress={onToggle} style={({ pressed }) => [{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, pressed ? { opacity: 0.7 } : null]} testID={`row-${sid}`}>
       <View style={[s.row, { gap: 10 }]}>
         <View style={{ flex: 1 }}>
           <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
-            <Text style={[s.body, { fontSize: 15, fontWeight: highlight ? '800' : '600', flexShrink: 1 }]} numberOfLines={1}>{row.title}</Text>
-            {row.when ? <Chip text={row.when} tone={/דק|min/.test(row.when) ? 'good' : 'neutral'} /> : null}
+            <Text style={[s.body, { fontSize: 15, fontWeight: '600', flexShrink: 1 }]} numberOfLines={1}>{row.title}</Text>
+            {row.when ? <Chip text={row.when} tone={row.whenTone} /> : null}
           </View>
-          {second ? <Text style={[s.faint, { fontSize: 11, marginTop: 2 }]}>{second}</Text> : null}
+          {row.second ? <Text style={[s.faint, { fontSize: 11, marginTop: 2 }]}>{row.second}</Text> : null}
         </View>
-        <PriceCol price={money(row.price)} {...(row.priceNote ? { note: row.priceNote } : {})} color={highlight ? t.accent : t.ink} />
+        <PriceCol price={money(view.price)} {...(row.priceNote ? { note: row.priceNote } : {})} color={view.deliveredTotal ? t.ink : t.muted} />
       </View>
       {open ? (
-        <View style={{ marginTop: 8 }} testID={`row-${row.sid}-open`}>
-          <StoreLineList lines={lines} storeLines={storeLines} />
-          <View style={{ marginTop: 8 }}><Button title={tr('buyHere')} kind="secondary" onPress={onBuy} testID={`buy-${row.sid}`} /></View>
+        <View style={{ marginTop: 8 }} testID={`row-${sid}-open`}>
+          {/* Unfolded, a row explains itself the way the answer card does: for a split, each leg with
+              its own brand, its own money and its own products — never the first leg's products under
+              lines the second leg will buy. */}
+          {split ? view.brands.map((b) => (
+            <View key={b.storefrontId} style={{ marginTop: 4 }}>
+              <View style={[s.row, { paddingVertical: 3 }]}>
+                <Text style={s.small}>{b.brand}</Text>
+                <Text style={s.priceSmall}>{money(b.itemsSubtotal)} + {money(b.deliveryFee)} {tr('delivery')}</Text>
+              </View>
+              <View style={{ paddingHorizontal: 8 }} testID={`row-lines-${b.storefrontId}`}>
+                <StoreLineList lines={quote.lines} storeLines={quote.storefrontLines?.[b.storefrontId] ?? {}} ids={b.lineIds} />
+              </View>
+            </View>
+          )) : <StoreLineList lines={quote.lines} storeLines={quote.storefrontLines?.[sid] ?? {}} />}
+          <View style={{ marginTop: 8 }}><Button title={tr('buyHere')} kind="secondary" onPress={onBuy} testID={`buy-${sid}`} /></View>
         </View>
       ) : null}
     </Pressable>
@@ -203,23 +221,44 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // "Fast" is measured, not assumed: Wolt venues carry a live estimate in minutes;
   // the chains deliver in windows, counted as a day until the phone reads real slots.
   const etaOf = (sid: string) => q.etas?.[sid];
-  const etaMinutes = (o: PurchaseOption) => Math.max(...o.legs.map((l) => { const e = etaOf(l.storefrontId); return e?.kind === 'live' && e.minutes ? e.minutes : 24 * 60; }));
+  // A shut store ranks after every open one: "הכי מהר" may never name a shop the family cannot order
+  // from today (lib/compare.ts#etaRank).
+  const etaMinutes = (o: PurchaseOption) => Math.max(...o.legs.map((l) => etaRank(etaOf(l.storefrontId))));
   const fastest = [...oneDelivery].sort((a, b) => etaMinutes(a) - etaMinutes(b) || a.cashCost - b.cashCost)[0];
   const balanced = fastest && best && fastest.cashCost - best.cashCost <= best.cashCost * 0.05 ? fastest : best;
   const pick = { cheap: best, balanced, fast: fastest ?? best }[strategy];
 
   // --- The design (docs/design/compare-screen.md): one answer, then every store as the same sentence. ---
   const brandsOf = (o: PurchaseOption) => o.legs.map((l) => l.brand).join(' + ');
-  const etaText = (sid: string): string | null => { const e = etaOf(sid); if (!e) return null; return e.kind === 'live' ? (e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes ?? 0 })) : tr('etaSlots'); };
+  /**
+   * When this store delivers. A venue that is **shut** says so in its own words when Wolt gave them and
+   * the app is in Hebrew, else from the hour it reopens — it used to fall through to "משלוח בחלון",
+   * which told a family a shop closed until 07:00 tomorrow would bring the list today (promises 2, 9).
+   */
+  const etaText = (sid: string): string | null => {
+    const e = etaOf(sid);
+    if (!e) return null;
+    if (e.kind === 'live') return e.range ? tr('etaLiveRange', { r: e.range }) : tr('etaLive', { m: e.minutes ?? 0 });
+    if (e.kind === 'closed') {
+      const at = opensAt(e);
+      if (e.text && isRTL()) return e.text;
+      return at ? tr('etaClosedAt', { x: at }) : tr('etaClosed');
+    }
+    return tr('etaSlots');
+  };
   const whenOf = (o: PurchaseOption) => [o.legs.length > 1 ? tr('twoDeliveries') : null, ...o.legs.map((l) => { const w = etaText(l.storefrontId); return w ? (o.legs.length > 1 ? `${l.brand}: ${w}` : w) : null; })].filter(Boolean).join(' · ');
-  const exceptionsOf = (sid: string, unpriced: readonly string[] = []) => {
-    const sl = q.storefrontLines?.[sid] ?? {};
-    // "Not in stock at your branch" is not "this store does not carry it": say which, here, not at the till.
-    const outOfStock = new Set(q.branchStock?.[sid]?.lineIds ?? []);
-    const missingIds = unpriced.length ? [...unpriced] : q.lines.filter((l) => !sl[l.id]).map((l) => l.id);
-    const missing = missingIds.map((id) => (outOfStock.has(id) ? tr('outOfStockAt', { x: short(nameOf(id)) }) : short(nameOf(id))));
-    const swaps = Object.values(sl).filter((l) => l.substituted).map((l) => (l.reason && l.reason.includes('→') ? l.reason : l.productName));
-    return { missing, swaps };
+  /**
+   * The exceptions of `lib/compare.ts`, in the family's words. The facts — which lines an option
+   * cannot supply, which swap belongs to which leg — are settled there, where a lab can check them;
+   * here they only get named. "Not in stock at your branch" is not "this store does not carry it":
+   * say which, here, not at the till.
+   */
+  const wordsFor = (ex: { missingLineIds: readonly string[]; swaps: readonly { productName: string; reason?: string }[] }, sids: readonly string[]) => {
+    const outOfStock = new Set(sids.flatMap((sid) => q.branchStock?.[sid]?.lineIds ?? []));
+    return {
+      missing: ex.missingLineIds.map((id) => (outOfStock.has(id) ? tr('outOfStockAt', { x: short(nameOf(id)) }) : short(nameOf(id)))),
+      swaps: ex.swaps.map((x) => (x.reason && x.reason.includes('→') ? x.reason : x.productName)),
+    };
   };
   // "Out of stock at your branch" is a decision the family makes here, in Kaniti, not at the store's
   // till: the line, what we put in its place (the compare already priced it), and a way to change it.
@@ -242,19 +281,37 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const couponNote = (o: PurchaseOption) => (couponOf(o) > 0 ? tr('inclCoupon', { x: money(couponOf(o)) }) : undefined);
   // Every store this list cannot be bought from as-is, as a row: what it prices, what it lacks, how short.
   const answer = pick;
-  const otherOptions: Row[] = q.options.filter((o) => o !== answer && o.kind !== 'drive').map((o) => {
-    const diff = o.missingEstimate ? tr('toComplete', { x: money(o.missingEstimate) }) : answer && o.cashCost > answer.cashCost ? `+${money(o.cashCost - answer.cashCost)}` : undefined;
-    const priceNote = [diff, couponNote(o)].filter(Boolean).join(' · ') || undefined;
-    return { key: `o-${brandsOf(o)}`, title: brandsOf(o), when: whenOf(o), price: o.cashCost, ...(priceNote ? { priceNote } : {}), ...exceptionsOf(o.legs[0]!.storefrontId, o.legs.length === 1 ? o.unpricedLineIds : []), option: o, sid: o.legs[0]!.storefrontId };
+  /**
+   * Every other way to buy this list, as one sentence each. The facts come from `rowsFor`; this turns
+   * them into the row's words — and the words obey the design: an incomplete basket carries its
+   * completed total, the difference from the answer is computed on that completed total, and a number
+   * that is items only says so instead of sitting in the delivered column as if it were one.
+   */
+  const rows: RowView[] = rowsFor(q as unknown as CompareLike, answer as never).map((view) => {
+    const o = view.option as PurchaseOption | undefined;
+    const words = wordsFor(view, view.brands.map((b) => b.storefrontId));
+    const priceNote = [
+      view.completed !== undefined ? tr('completedTotal', { x: money(view.completed) }) : undefined,
+      view.moreThanAnswer !== undefined ? `+${money(view.moreThanAnswer)}` : undefined,
+      view.deliveredTotal ? undefined : tr('itemsOnlyN', { n: view.pricedLines ?? 0 }),
+      o ? couponNote(o) : undefined,
+    ].filter(Boolean).join(' · ') || undefined;
+    const second = [
+      view.shortOfMinimum !== undefined ? tr('tblShort', { x: money(view.shortOfMinimum) }) : null,
+      words.missing.length ? tr('tblMissing', { x: words.missing.slice(0, 3).join(', ') + (words.missing.length > 3 ? '…' : '') }) : null,
+      words.swaps.length ? tr('swapsLine', { x: words.swaps.slice(0, 2).join(' · ') + (words.swaps.length > 2 ? '…' : '') }) : null,
+    ].filter(Boolean).join(' · ');
+    const when = o ? whenOf(o) : etaText(view.storefrontId);
+    return { view, title: view.brands.map((b) => b.brand).join(' + '), when: when || null, whenTone: etaTone(q.etas?.[view.storefrontId]), ...(priceNote ? { priceNote } : {}), second };
   });
-  const rejectedRows: Row[] = q.rejected.map((r) => ({ key: `r-${r.storefrontId}`, title: r.brand, when: etaText(r.storefrontId), price: r.itemsSubtotal, priceNote: tr('itemsOnly'), ...exceptionsOf(r.storefrontId), ...(r.code === 'minimum' && r.amountToMinimum !== undefined ? { short: r.amountToMinimum } : {}), sid: r.storefrontId }));
-  const rows = [...otherOptions, ...rejectedRows];
-  const buyRow = (row: Row) => {
-    if (row.option) { void orderBest(row.option, q, { pinnable: false }); return; }
+  const buyRow = (view: CompareRow) => {
+    if (view.option) { void orderBest(view.option as unknown as PurchaseOption, q, { pinnable: false }); return; }
     // A store the compare rejected is still a store the family may buy from: order what it has.
-    const sl = q.storefrontLines?.[row.sid] ?? {};
+    const sid = view.storefrontId;
+    const title = view.brands[0]!.brand;
+    const sl = q.storefrontLines?.[sid] ?? {};
     const ids = Object.keys(sl);
-    const pseudo = { kind: 'single_delivered', label: row.title, legs: [{ storefrontId: row.sid, brand: row.title, itemsSubtotal: row.price, deliveryFee: 0, lineIds: ids }], itemsSubtotal: row.price, fees: 0, cashCost: row.price, timeCost: 0, coverageRatio: q.lines.length ? ids.length / q.lines.length : 0, unpricedLineIds: q.lines.filter((l) => !sl[l.id]).map((l) => l.id), substitutedLineCount: Object.values(sl).filter((l) => l.substituted).length, explanation: { reason: '', savingVsBaseline: 0, baselineLabel: '', extraStores: 0, notes: [] } } as unknown as PurchaseOption;
+    const pseudo = { kind: 'single_delivered', label: title, legs: [{ storefrontId: sid, brand: title, itemsSubtotal: view.price, deliveryFee: 0, lineIds: ids }], itemsSubtotal: view.price, fees: 0, cashCost: view.price, timeCost: 0, coverageRatio: q.lines.length ? ids.length / q.lines.length : 0, unpricedLineIds: q.lines.filter((l) => !sl[l.id]).map((l) => l.id), substitutedLineCount: Object.values(sl).filter((l) => l.substituted).length, explanation: { reason: '', savingVsBaseline: 0, baselineLabel: '', extraStores: 0, notes: [] } } as unknown as PurchaseOption;
     void orderBest(pseudo, q, { pinnable: false });
   };
 
@@ -285,9 +342,19 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
 
         {/* The answer: one number, one line of when, one line of why, the legs fold open. */}
         {answer ? (() => {
-          const ex = answer.legs.length === 1 ? exceptionsOf(answer.legs[0]!.storefrontId, answer.unpricedLineIds) : { missing: answer.unpricedLineIds.map(nameOf), swaps: answer.legs.flatMap((l) => exceptionsOf(l.storefrontId).swaps) };
-          const saving = answer.explanation.savingVsBaseline;
-          const why = answer !== best && best ? tr('costsVs', { x: money(answer.cashCost - best.cashCost) }) : saving > 0 ? tr('savesVs', { x: money(saving), b: answer.explanation.baselineLabel }) : reasonT(answer.explanation.reason);
+          const ex = wordsFor(exceptionsOf(q as unknown as CompareLike, answer as never), answer.legs.map((l) => l.storefrontId));
+          /**
+           * Why this one, in money. Promise 2: "the difference is stated in money and minutes".
+           * The optimizer's own `savingVsBaseline` is silent in the ordinary case — it picks the winner
+           * as its own baseline, so the card used to show a reason with no figure in it at all, and a
+           * family was never told what Kaniti had just saved them. The figure that answers the question
+           * they asked is the one against the next way they could buy this list, exact when that
+           * alternative is complete and marked ≈ when its total rests on an estimate.
+           */
+          const vs = savingOf(q as unknown as CompareLike, answer as never);
+          const why = answer !== best && best ? tr('costsVs', { x: money(answer.cashCost - best.cashCost) })
+            : vs && vs.minor > 0 ? tr(vs.approx ? 'savesVsApprox' : 'savesVs', { x: money(vs.minor), b: vs.brand })
+            : reasonT(answer.explanation.reason);
           const [legsOpen, tag] = [open === 'answer', strategy === 'cheap' ? tr('mode_cheap') : strategy === 'fast' ? tr('mode_fast') : tr('mode_balanced')];
           return (
             <Pressable onPress={() => setOpen(legsOpen ? null : 'answer')} style={[s.card, { borderWidth: 2, borderColor: t.accent }]} testID="answer-card">
@@ -340,8 +407,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
         {rows.length ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
             <Text style={[s.title, { fontSize: 16, paddingVertical: 8 }]}>{tr('altTitle')}</Text>
-            {rows.sort((a, b) => Number(!!b.option) - Number(!!a.option) || a.price - b.price).map((row) => (
-              <StoreRow key={row.key} row={row} open={open === row.key} onToggle={() => setOpen(open === row.key ? null : row.key)} lines={q.lines} storeLines={q.storefrontLines?.[row.sid] ?? {}} onBuy={() => buyRow(row)} />
+            {/* Already ordered by what the family would really pay (lib/compare.ts#rowsFor): options
+                first, by their completed totals, so a partial basket never jumps a full one. */}
+            {rows.map((row) => (
+              <StoreRow key={row.view.key} row={row} open={open === row.view.key} onToggle={() => setOpen(open === row.view.key ? null : row.view.key)} quote={q} onBuy={() => buyRow(row.view)} />
             ))}
           </View>
         ) : null}
