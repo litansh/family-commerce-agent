@@ -396,6 +396,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           await writeRow(TABLE, 'CATALOG', 'PROMOS', { promos, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 2 * 86400 });
         }
       }
+      // Second rung (docs/BACKLOG.md, ADR 0010): the provider's own promotions pull can still answer
+      // with real promotions from only one or two chains (ops/deals-health.mjs is what catches a feed
+      // that thin). The chains' own PromoFull files, read on the ops Mac never from this Lambda (ADR
+      // 0011: services/branch-prices/refresh-deals.mjs), fill in whichever chains the provider's pull
+      // missed - never replacing a chain the provider already covered, since a store's own file is a
+      // fallback, not a better source.
+      const coveredChains = new Set(promos.map((p) => p.chainName));
+      if (coveredChains.size < 3) {
+        const fromFiles = (await readRow(TABLE, 'CATALOG', 'PROMOS_FILES')) as { promos?: Promotion[] } | undefined;
+        const gapFillers = (fromFiles?.promos ?? []).filter((p) => !coveredChains.has(p.chainName));
+        if (gapFillers.length) promos = [...promos, ...gapFillers];
+      }
       const memory = await repo.load();
       const usual = new Map(Object.values(memory.products).map((p) => [p.gtin, p]));
       const now = Date.now();
@@ -517,7 +529,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
+      // A product nobody has priced yet is still a product the family wants on the list. Dropping it
+      // told them "there is no such thing" - production answered 0 products for ביצים and סלמון while
+      // the provider had eight of each, none priced through this path. Priced first, then the rest.
+      const memoryNow = await repo.load();
+      const priced = found.filter((c) => c.pricedAtChains > 0);
+      const unpriced = found.filter((c) => c.pricedAtChains === 0);
+      const buyable = [...rankForHousehold(priced, memoryNow), ...rankForHousehold(unpriced, memoryNow)].slice(0, 14);
+      if (priced.length === 0 && unpriced.length > 0) console.log(JSON.stringify({ event: 'search-unpriced-only', hid, q, found: unpriced.length }));
       const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       const products = buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null }));
       // Variants (docs/design/item-identity.md): the same size and defining attribute, priced by
