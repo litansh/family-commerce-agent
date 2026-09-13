@@ -33,6 +33,9 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   # API Lambda's own attempt is blocked (a data centre gets Rami Levy's block page), so this Mac is
   # the only place that can actually reach it and write CATALOG#RL_BRANCHES for the API to read.
   node --experimental-strip-types services/retailer-connectors/refresh-branches.mjs 2>&1 | tail -5 | tee -a "$LOG"
+  # Hatzi Hinam's own stock, from this Mac (docs/BACKLOG.md, ADR 0011): a barcode the guest session
+  # says is out of stock drops from its compare card; CATALOG#HH_STOCK is what the API reads.
+  node --experimental-strip-types services/retailer-connectors/refresh-hazi-hinam-stock.mjs 2>&1 | tail -5 | tee -a "$LOG"
   # Open pull requests without an agents' review get one (the review workflow needs a key; this needs only this Mac).
   for n in $(gh pr list --state open --json number --jq '.[].number' 2>/dev/null); do ops/pr-review.sh "$n" 2>&1 | tail -1 | tee -a "$LOG"; done
   # The product review runs on green days too: a promise can be broken while every check passes.
