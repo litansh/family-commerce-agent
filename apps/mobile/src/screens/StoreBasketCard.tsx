@@ -155,20 +155,26 @@ export function StoreBasketCard({ card, quote, open, cheapened, onToggle, onChea
         </View>
       ) : null}
 
-      {/* 5 — the two actions. A store with nothing to buy the list from gets no "buy here": there is
-          nothing here to buy it from, and a primary button would say otherwise. */}
-      {card.complete ? (
-        <View style={{ marginTop: 10, gap: 8 }}>
+      {/* 5 — the actions. A store that cannot fill the basket keeps its way to be bought from
+          (promises 1 and 6: a card that names a store opens that store), but as a quiet link that says
+          what it would really buy — a primary button reading "קנו כאן · ₪23.75" would offer a basket
+          this store has not got. Never removed for tidiness; moved and sized. */}
+      <View style={{ marginTop: 10, gap: 8 }}>
+        {card.complete ? (
           <Button title={buyTitle} kind="secondary" onPress={onBuy} testID={`basket-buy-${card.storefrontId}`} />
-          {nothingCheaper ? (
-            <Text style={[s.faint, { fontSize: 12, textAlign: 'center' }]} testID={`basket-nocheaper-${card.storefrontId}`}>{tr('cheaperNone')}</Text>
-          ) : cheaperAnswered ? (
-            <Pressable onPress={onCheaper} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
-              <Text style={[s.link, { fontSize: 14 }]}>{cheapened ? tr('undoCheaper') : tr('makeCheaper')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
+        ) : (
+          <Pressable onPress={onBuy} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-buy-${card.storefrontId}`}>
+            <Text style={[s.link, { fontSize: 14, color: t.muted }]}>{tr('buyWhatItHas', { n: card.filled })}</Text>
+          </Pressable>
+        )}
+        {!card.complete ? null : nothingCheaper ? (
+          <Text style={[s.faint, { fontSize: 12, textAlign: 'center' }]} testID={`basket-nocheaper-${card.storefrontId}`}>{tr('cheaperNone')}</Text>
+        ) : cheaperAnswered ? (
+          <Pressable onPress={onCheaper} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
+            <Text style={[s.link, { fontSize: 14 }]}>{cheapened ? tr('undoCheaper') : tr('makeCheaper')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </Pressable>
   );
 }

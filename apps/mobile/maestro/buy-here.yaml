@@ -34,12 +34,14 @@ appId: com.litansh.kaniti
     timeout: 30000
     centerElement: true
 - tapOn: { text: ".*\\(וולט\\).*" }
+# A store that cannot fill the whole basket keeps its way to be bought from, as a quiet link that
+# says what it would really buy ("קנו כאן את 3 הפריטים שיש") — so the matcher takes either wording.
 - scrollUntilVisible:
-    element: { text: "קנו כאן" }
+    element: { text: "קנו כאן.*" }
     direction: DOWN
     timeout: 15000
     centerElement: true
-- tapOn: { text: "קנו כאן" }
+- tapOn: { text: "קנו כאן.*" }
 - extendedWaitUntil:
     visible: { id: "order-title" }
     timeout: 60000
