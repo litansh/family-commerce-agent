@@ -730,6 +730,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // its checkout, which for a family equals "does not exist" - so it is missing there already here,
       // and the substitutes and the other stores take over. Unknown stock drops nothing.
       const branchStock: Record<string, { branch: number; lineIds: string[] }> = {};
+      const lineQueryFor = new Map(lines.map((l) => [l.id, l.query]));
       const rl = res.quotes.filter((q) => /rami/i.test(q.storefrontId) || /רמי לוי/.test(q.brand));
       if (rl.length) {
         try {
@@ -744,6 +745,9 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
           const droppedNames: string[] = []; const droppedIds: string[] = [];
           for (const q of rl) { const { kept, dropped } = dropUnavailable(q.lines, branch, av); if (dropped.length) { (q as { lines: typeof q.lines }).lines = kept; droppedNames.push(...dropped.map((l) => l.productName)); droppedIds.push(...dropped.map((l) => l.lineId)); } }
           if (droppedIds.length) { branchStock['rami-levy'] = { branch, lineIds: droppedIds };
+            // Reality disagreed with what the catalogue told us, so stop repeating it: the next family
+            // asking these words gets a fresh answer instead of the same out-of-stock suggestion.
+            if (catalog instanceof CachedCatalog) void catalog.forget(droppedIds.map((id) => lineQueryFor.get(id) ?? '').filter(Boolean), household.address).catch(() => null);
             console.log(JSON.stringify({ event: 'branch-stock', hid, store: 'rami-levy', branch, branchFrom, dropped: droppedNames })); }
         } catch (e) { console.warn(JSON.stringify({ event: 'branch-stock-skipped', hid, error: e instanceof Error ? e.message : String(e) })); }
       }
