@@ -8,14 +8,26 @@
  * touching the domain.
  */
 import type { Region } from '@fca/domain';
-import { SuperMcpCatalogProvider, SuperMcpQuoteProvider, type CatalogProvider, type QuoteProvider } from '@fca/retailer-connectors';
+import {
+  CatalogWithFallback,
+  RamiLevyCatalogSearch,
+  SuperMcpCatalogProvider,
+  SuperMcpQuoteProvider,
+  type CatalogProvider,
+  type QuoteProvider,
+} from '@fca/retailer-connectors';
 
 export interface RegionProviders {
   readonly quote: QuoteProvider;
   readonly catalog: CatalogProvider;
 }
 
-const IL: RegionProviders = { quote: new SuperMcpQuoteProvider(), catalog: new SuperMcpCatalogProvider() };
+const IL: RegionProviders = {
+  quote: new SuperMcpQuoteProvider(),
+  // Compare's second rung under provider search (docs/adr/0010): Rami Levy's own catalogue races
+  // the provider and wins whenever it errs or is slow.
+  catalog: new CatalogWithFallback(new SuperMcpCatalogProvider(), new RamiLevyCatalogSearch()),
+};
 
 const REGISTRY: Partial<Record<string, RegionProviders>> = { IL };
 

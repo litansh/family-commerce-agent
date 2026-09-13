@@ -38,6 +38,9 @@ const CHECKS = {
   cart: () => run('cart', 'node --experimental-strip-types e2e/cart-recipe-lab.mjs rami-levy', `${ROOT}/apps/mobile`, 240_000, (o) => { const added = Number(/"added":(\d+)/.exec(o)?.[1] ?? 0); const badge = /basket page count: (\d+)/.exec(o)?.[1]; const violations = [...o.matchAll(/PROMISE9-VIOLATION: (.+)/g)].map((m) => m[1]); return { ok: added >= 2 && Number(badge) >= 2 && violations.length === 0, summary: violations.length ? `rami-levy guest cart: ${violations.join('; ')}` : `rami-levy guest cart: ${added} added, basket shows ${badge ?? '?'}` }; }),
   prices: () => run('prices', 'node --experimental-strip-types services/branch-prices/lab.mjs', ROOT, 900_000, (o) => { const priced = (o.match(/basket ₪/g) ?? []).length; const failed = (o.match(/FAILED/g) ?? []).length; return { ok: priced >= 3 && failed === 0, summary: `${priced} branches priced, ${failed} portal failures` }; }),
   api: () => run('api', 'node ops/api-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').pop() })),
+  // Everyday Hebrew groceries through the catalogue search, not the provider's own vocabulary
+  // (ADR 0010, Compare's second rung): red when any one of them cannot be found.
+  search: () => run('search', 'node ops/search-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).pop() })),
   // The shopper agent: a five-person family's week (about 35 lines) through resolve → compare → cart lines; cheap, fast, split, substitutes, in-store.
   shopper: () => run('shopper', `node ops/test-cart.mjs --json ${homedir()}/.kaniti/health/test-cart.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the test cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
   topup: () => run('topup', `node ops/test-cart.mjs --short --json ${homedir()}/.kaniti/health/test-cart-short.json`, ROOT, 300_000, (o, c) => ({ ok: c === 0, summary: (o.match(/the top-up cart passes end to end|\d+ check\(s\) failed: .*/)?.[0] ?? 'no verdict') })),
@@ -60,6 +63,7 @@ function ladderHealth(results) {
     const subsOk = [by.shopper, by.topup].some((r) => r && /^ok\s+substitutes are the same kind of product/m.test(r.tail));
     const rungs = [];
     if (has('api')) rungs.push({ name: 'SuperMCP quote (api)', ok: by.api.ok });
+    if (has('search')) rungs.push({ name: "the chains' own catalogues (search)", ok: by.search.ok });
     if (has('shopper') || has('topup')) rungs.push({ name: 'substitutes from the catalogue', ok: subsOk });
     if (has('prices')) rungs.push({ name: 'price-transparency files (prices)', ok: by.prices.ok });
     ladders.push({ ladder: 'Compare', rungs });
@@ -71,7 +75,7 @@ function ladderHealth(results) {
 }
 
 mkdirSync(`${homedir()}/.kaniti/health`, { recursive: true });
-const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'shopper', 'topup']).filter((n) => CHECKS[n]);
+const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'search', 'shopper', 'topup']).filter((n) => CHECKS[n]);
 if (withSim && !only) names.push('sim');
 // Browser checks share the network but not the simulator: everything but `sim` runs in parallel.
 const parallel = names.filter((n) => n !== 'sim');

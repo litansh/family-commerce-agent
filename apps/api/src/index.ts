@@ -557,16 +557,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
       const choices: Record<string, ProductChoice | null> = {};
-      // A week's list is thirty-nine lines. Asking the provider all of them at once is what turns a
-      // healthy provider into `internal_error` (seen in production: one failed search threw and the
-      // whole route answered 500, so the family got no list at all). Four at a time, and a line that
-      // cannot be resolved is a null in the answer - never the end of everyone else's list.
+      const unresolved: string[] = [];
+      // One line's provider error must never sink the other 38 (ADR 0010): each line gets its own
+      // budget and, on a miss, reports itself in `unresolved` instead of rejecting the whole batch.
+      // And four at a time, never thirty-nine: asking a shared provider for a whole week at once is
+      // what turns a healthy provider into `internal_error` (seen in production, HTTP 500, 0/39).
+      const LINE_BUDGET_MS = 6_000;
       await mapLimit(applied, 4, async ({ line, fromMemory }) => {
         try {
-          const [branded, open] = await Promise.all([
-            line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : [],
+          const [branded, open] = await withDeadline(Promise.all([
+            line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
             catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
-          ]);
+          ]), LINE_BUDGET_MS);
           const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
           const c = buildChoice(merged, {
             lineId: line.id, query: line.query,
@@ -575,13 +577,13 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           });
           choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
         } catch (e) {
-          console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, line: line.query, error: e instanceof Error ? e.message.slice(0, 120) : String(e) }));
+          console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, lineId: line.id, query: line.query, error: e instanceof Error ? e.message.slice(0, 120) : String(e) }));
           choices[line.id] = null;
+          unresolved.push(line.id);
         }
       });
-      const unresolved = Object.values(choices).filter((c) => c === null).length;
-      if (unresolved) console.log(JSON.stringify({ event: 'resolve', hid, lines: applied.length, unresolved }));
-      return ok({ choices, fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id) });
+      if (unresolved.length) console.log(JSON.stringify({ event: 'resolve', hid, lines: applied.length, unresolved: unresolved.length }));
+      return ok({ choices, fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id), unresolved });
     }
 
     if (method === 'POST' && rest === 'quote') {

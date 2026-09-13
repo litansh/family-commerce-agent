@@ -1,5 +1,36 @@
 # Needs the owner
 
+## A full week's basket still fails to quote (docs/BACKLOG.md, api-fixer)
+The urgent evidence (2026-09-13) had two parts. Search — `searchProducts('טופו')`/`('שוקולד')`
+erring or taking 20-30s — is fixed and proven in PR api/search-fallback-ladder (a bounded retry on
+the vendor's `internal_error`, Rami Levy's own catalogue as a second rung, per-line budgets in
+`/resolve`). The second part — the 39-line shopper's `quoteBasket` call itself, not search — is
+not fully fixed, and needs a judgment call before touching it further:
+
+What was found: `optimize_delivery` for the 39-line week's basket answers `internal_error` after
+44-57s (reproduced twice, from this Mac, against the live vendor); the first 20 lines fail this
+way, the last 19 succeed in 46.8s. Our own client aborts every call at 22s, so in production we
+never even see the vendor's real answer (success or error) - every attempt within the background
+job's 110s budget dies to our own timeout, and the family gets `stores_slow` for a basket the
+vendor might have priced if we had waited. Confirmed live both ways: the sync `/quote` route and
+the phone's real async `/compares` job (the actual path the app uses) both end in `stores_slow` for
+this exact basket.
+
+Why this needs a person, not a mechanical fix: raising the provider's per-call timeout enough for
+the vendor to answer (~50-60s) leaves very little slack under the API Lambda's 120s hard ceiling
+(`infrastructure/terraform/app/main.tf`) for the rest of the compare (substitutes, images, coupons,
+etas) - and if the Lambda itself gets killed mid-attempt, a compare is left `pending` forever
+instead of a clean `stores_slow`, which is worse for the family, not better. Raising the Lambda's
+own timeout is an infra change (`terraform.yml`'s plan-then-apply-on-merge), a cost/latency
+tradeoff, not a code update. A bounded retry-on-`internal_error` is wired into `quoteBasket` now
+(this PR) as a safe, no-regression step, in case some fraction of these are genuinely transient -
+it does not by itself fix this specific reproduced basket, which failed the same way on retry.
+
+Needs: a decision on the budget redesign (how much of the Lambda's 120s the quote gets vs. the
+rest of the compare, whether the Lambda timeout itself should grow, and what a mid-job kill should
+leave behind instead of a silent `pending`) before api-fixer touches the retry/timeout constants
+again.
+
 ## Victory / Mahsanei HaShuk / H. Cohen price files (docs/BACKLOG.md, price-portal-fixer)
 The backlog line says laibcatalog.co.il's postback form "answered no files" for Victory and
 Mahsanei HaShuk. A prior WIP already moved the reader off that form onto the site's newer JSON
