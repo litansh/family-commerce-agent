@@ -517,7 +517,14 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const found = gtin
         ? await catalog.searchProducts({ query: gtin, gtin, limit: 4, location: household.address })
         : await catalog.searchProducts({ query: q, limit: 12, location: household.address });
-      const buyable = rankForHousehold(found.filter((c) => c.pricedAtChains > 0), await repo.load()).slice(0, 14);
+      // A product nobody has priced yet is still a product the family wants on the list. Dropping it
+      // told them "there is no such thing" - production answered 0 products for ביצים and סלמון while
+      // the provider had eight of each, none priced through this path. Priced first, then the rest.
+      const memoryNow = await repo.load();
+      const priced = found.filter((c) => c.pricedAtChains > 0);
+      const unpriced = found.filter((c) => c.pricedAtChains === 0);
+      const buyable = [...rankForHousehold(priced, memoryNow), ...rankForHousehold(unpriced, memoryNow)].slice(0, 14);
+      if (priced.length === 0 && unpriced.length > 0) console.log(JSON.stringify({ event: 'search-unpriced-only', hid, q, found: unpriced.length }));
       const imgs = await images.cachedMany(buyable.map((c) => ({ key: c.productId, name: c.name, ...(c.gtin ? { gtin: c.gtin } : {}) })));
       const products = buyable.map((c) => ({ ...c, imageUrl: imgs[c.productId]?.url ?? null }));
       // Variants (docs/design/item-identity.md): the same size and defining attribute, priced by
