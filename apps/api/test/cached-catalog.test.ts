@@ -56,3 +56,9 @@ test('a cache hit never makes a product look unbuyable', async () => {
   const first = await c.searchProducts({ query: 'חלב', limit: 8 });
   assert.equal(first[0]?.pricedAtChains, 4, 'a miss passes the provider through untouched');
 });
+
+test('the key carries a version, so rows written by older code are never read as current', () => {
+  // A deploy fixes code in seconds; the rows it wrote live for a day. Without a version in the key,
+  // the fixed build kept reading the broken build's rows and production stayed broken after the fix.
+  assert.match(searchKey({ query: 'חלב', limit: 8 }), /^SEARCH#v\d+#/);
+});

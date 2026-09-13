@@ -29,7 +29,10 @@ export function searchKey(req: CatalogSearchRequest): string {
   // The address decides which storefronts price a product, so it belongs in the key - but only the
   // city, or every house number would have its own cache and share nothing.
   const city = (req.location ?? '').split(',').pop()?.trim().toLowerCase() ?? '';
-  return `SEARCH#${city}#${brand}#${q}#${req.limit ?? 0}`;
+  // The version is part of the key so a change in what we store cannot be read back by newer code as
+  // if it meant the same thing. v1 kept identity without a chain count; reading those rows made every
+  // product look unbuyable long after the code was fixed, because the rows outlive the deploy.
+  return `SEARCH#v2#${city}#${brand}#${q}#${req.limit ?? 0}`;
 }
 
 /** A live `PRICE#<barcode>` row as the refresher writes it. */
@@ -116,7 +119,10 @@ export class CachedCatalog implements CatalogProvider {
         .send(new GetCommand({ TableName: this.#table, Key: { PK: 'CATALOG', SK: key } }))
         .catch(() => undefined);
       const row = cached?.Item as { products?: ProductCandidate[] } | undefined;
-      if (row?.products) {
+      // A row that does not carry what this code needs is not a hit. Whatever wrote it, the family
+      // gets a real answer rather than a silently degraded one, and the row is overwritten below.
+      const usable = row?.products?.every((p) => typeof p.pricedAtChains === 'number' && typeof p.name === 'string') ?? false;
+      if (row?.products && usable) {
         this.#hits += 1;
         return this.#priced(row.products);
       }
