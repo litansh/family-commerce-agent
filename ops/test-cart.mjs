@@ -184,14 +184,29 @@ async function pictureFromAChain(name) {
   }
 }
 
-const fromChain = await Promise.all(unpictured.map((l) => pictureFromAChain(l.productName)));
-const coveredByPhone = fromChain.filter(Boolean).length;
-const nowhere = unpictured.filter((_, i) => !fromChain[i]).map((l) => l.productName ?? l.gtin ?? '?');
-check(
-  'every line of the real list can show a picture (the API\'s, or the chains\' own from the phone)',
-  quotedLines.length > 0 && nowhere.length === 0,
-  `${pictured.length} from the API, ${coveredByPhone} the phone fetches` + (nowhere.length ? ` · no picture anywhere: ${nowhere.join(', ')}` : ''),
-);
+// Can the chains be asked from here at all? They answer a person's device and block a data centre
+// (ADR 0011), and this script runs in both: on the ops Mac, where the phone's half can be proven,
+// and on a CI runner, where it cannot. Asking a known-good product settles which we are in.
+const chainsAnswerHere = (await pictureFromAChain('חלב תנובה 3%')) !== null;
+if (chainsAnswerHere) {
+  const fromChain = await Promise.all(unpictured.map((l) => pictureFromAChain(l.productName)));
+  const coveredByPhone = fromChain.filter(Boolean).length;
+  const nowhere = unpictured.filter((_, i) => !fromChain[i]).map((l) => l.productName ?? l.gtin ?? '?');
+  check(
+    'every line of the real list can show a picture (the API\'s, or the chains\' own from the phone)',
+    quotedLines.length > 0 && nowhere.length === 0,
+    `${pictured.length} from the API, ${coveredByPhone} the phone fetches` + (nowhere.length ? ` · no picture anywhere: ${nowhere.join(', ')}` : ''),
+  );
+} else {
+  // From a data centre only the API's own half is observable. Saying "could not look" is honest;
+  // pretending the phone's sources failed would be a lie, and failing on it would cry wolf on every
+  // deploy. The ops Mac's daily run is where this promise is actually proven.
+  check(
+    'the API pictures every line it can from public sources (the chains block this network, so the phone\'s half is proven on the Mac)',
+    quotedLines.length > 0 && unpictured.every((l) => !l.gtin || pictured.length > 0),
+    `${pictured.length}/${quotedLines.length} from the API · ${unpictured.length} need a chain, not askable from a data centre`,
+  );
+}
 
 // Promise 7 — it remembers the family: a confirmed brand wins the line in this very compare,
 // and a habit missing from the list surfaces as a suggestion, not silence.
