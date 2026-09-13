@@ -194,6 +194,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // had nothing cheaper" is a sentence worth not asking twice.
   const [cheaper, setCheaper] = useState<Record<string, CheaperSwap[]>>({});
   const [cheapBusy, setCheapBusy] = useState<string | null>(null);
+  // The partial-offer section starts folded: it is below the answers on purpose, and it is not one.
+  const [partialOpen, setPartialOpen] = useState(false);
   const makeCheaper = async (sid: string) => {
     if (modeAt[sid] === 'cheap') { setModeAt(({ [sid]: _off, ...rest }) => rest); return; }
     if (cheaper[sid]) { setModeAt((m) => ({ ...m, [sid]: 'cheap' })); return; }
@@ -325,7 +327,15 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // The compare plus whatever "עשה את זה זול יותר" has been told about each store, so the cards read
   // one object and `lib/fullBasket.ts` stays the single place a basket's facts are decided.
   const basketQuote = { ...q, cheaper } as unknown as BasketLike;
-  const basketCards = cardsFor(basketQuote).filter((c) => c.storefrontId !== answerSid);
+  const allCards = cardsFor(basketQuote).filter((c) => c.storefrontId !== answerSid);
+  /**
+   * "אין סל חלקי" (the owner, 13 September evening): an offer is a complete shop at one store, with
+   * that store's own alternatives where it lacks the exact product. Only complete offers stand among
+   * the answers — comparing them is apples to apples. A store that cannot fill a line even with a
+   * stand-in is not hidden; it simply stops pretending to be an answer, and waits in its own section.
+   */
+  const basketCards = allCards.filter((c) => c.complete);
+  const partialCards = allCards.filter((c) => !c.complete);
   /**
    * Buy this store's own basket. When the compare already priced it as an option, that option is what
    * is ordered — the numbers on the card are its numbers. Otherwise the lines this store priced are
@@ -458,6 +468,8 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                 open={open === `b-${card.storefrontId}`}
                 mode={modeAt[card.storefrontId] ?? null}
                 busy={cheapBusy === card.storefrontId}
+                when={etaText(card.storefrontId)}
+                whenTone={etaTone(q.etas?.[card.storefrontId])}
                 onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
                 onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
                 onCheaper={() => void makeCheaper(card.storefrontId)}
@@ -465,6 +477,34 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                 nameOf={nameOf}
               />
             ))}
+          </View>
+        ) : null}
+
+        {/* "אין סל חלקי — וזה חייב להיות בסקשן אחר": the offers that do not cover the whole list, below
+            and folded away. Nobody is hidden, and opening it says exactly what each one is missing. */}
+        {partialCards.length ? (
+          <View testID="partial-offers">
+            <Pressable onPress={() => setPartialOpen((v) => !v)} style={[s.row, { paddingVertical: 14, borderTopWidth: 1, borderColor: t.line }]} testID="partial-offers-toggle">
+              <Text style={[s.small, { flex: 1 }]}>{partialCards.length === 1 ? tr('partialOffer1') : tr('partialOffers', { n: partialCards.length })}</Text>
+              <Text style={[s.small, { color: t.accent }]}>{partialOpen ? '▾' : '‹'}</Text>
+            </Pressable>
+            {partialOpen ? partialCards.map((card) => (
+              <StoreBasketCard
+                key={card.storefrontId}
+                card={card}
+                quote={basketQuote}
+                open={open === `b-${card.storefrontId}`}
+                mode={modeAt[card.storefrontId] ?? null}
+                busy={cheapBusy === card.storefrontId}
+                when={etaText(card.storefrontId)}
+                whenTone={etaTone(q.etas?.[card.storefrontId])}
+                onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
+                onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
+                onCheaper={() => void makeCheaper(card.storefrontId)}
+                onBuy={() => buyStore(card.storefrontId, card.brand)}
+                nameOf={nameOf}
+              />
+            )) : null}
           </View>
         ) : null}
 

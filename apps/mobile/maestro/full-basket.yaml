@@ -77,12 +77,18 @@ appId: com.litansh.kaniti
 - assertVisible: { text: ".*→.*" }
 - assertVisible: { id: "swap-why" }
 
-# --- The only honest gap: a store that cannot fill a line even with an alternative says which. ---
+# --- "אין סל חלקי": an offer that does not cover the whole list is not an answer and does not sit
+#     among the answers. It waits, folded, in its own section below — and nobody is hidden.
 - scrollUntilVisible:
-    element: { text: "אין כאן חלופה ל: .*" }
+    element: { id: "partial-offers-toggle" }
     direction: DOWN
     timeout: 30000
     centerElement: true
+- takeScreenshot: maestro/shots/full-basket-partial-folded
+- tapOn: { id: "partial-offers-toggle" }
+- waitForAnimationToEnd
 - takeScreenshot: maestro/shots/full-basket-gap
-# And it keeps its way to be bought from — moved and sized, never removed (promises 1 and 6).
+# Opened, each one says exactly what it cannot fill, and keeps its way to be bought from —
+# moved and sized, never removed (promises 1 and 6).
+- assertVisible: { text: "אין כאן חלופה ל: .*" }
 - assertVisible: { text: "קנו כאן את [0-9]+ הפריטים שיש" }

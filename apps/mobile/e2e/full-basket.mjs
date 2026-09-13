@@ -134,6 +134,19 @@ check(firstPartial === -1 || lastComplete < firstPartial, 'no partial basket jum
 const completeRanks = cards.filter((c) => c.complete).map((c) => c.full.items ?? Infinity);
 check(completeRanks.every((v, i) => i === 0 || completeRanks[i - 1] <= v), 'the complete baskets are in price order', completeRanks.map(m).join(' ≤ '));
 
+// --- The owner's refinement, 13 September evening: "אין סל חלקי". Every offer among the answers
+//     covers the whole list; an incomplete one is not hidden, it is simply not an answer. ---
+const offers = cards.filter((c) => c.complete);
+const partial = cards.filter((c) => !c.complete);
+check(offers.every((c) => c.unfillableLineIds.length === 0), 'every offer among the answers covers the whole list', `${offers.length} offer(s): ${offers.map((c) => c.brand).join(', ')}`);
+check(partial.every((c) => c.unfillableLineIds.length > 0), 'and every partial one is partial for a named reason', partial.length ? `${partial.length} partial: ${partial.map((c) => `${c.brand} (${c.unfillableLineIds.map(nameOf).join('/')})`).join(', ')}` : 'none');
+// Inside an offer, a difference is a note with both prices in it — never a warning, never a decision.
+for (const s of allSwaps) {
+  if (s.was === undefined) continue;
+  check(s.lineTotal !== undefined, `${s.brand}: "${s.asked}" states both prices`, `${m(s.lineTotal)} ${s.wasAt ? `במקום ${m(s.was)} ב${s.wasAt}` : `במקום ${m(s.was)}`}`);
+  check(s.kind === 'cheaper' || !!s.wasAt, `${s.brand}: "${s.asked}" names the store their own one is priced at`, s.wasAt ?? 'this store');
+}
+
 // --- Every row of the design's state table, and which of them this compare reaches. ---
 const TABLE = ['yours', 'full-with-swaps', 'exact-cheaper', 'exact-elsewhere', 'exact-nowhere', 'cannot-fill', 'under-minimum', 'cheapened', 'cheaper-none', 'fee-unknown', 'closed', 'approx'];
 const seen = [...new Set(cards.flatMap((c) => c.states))];

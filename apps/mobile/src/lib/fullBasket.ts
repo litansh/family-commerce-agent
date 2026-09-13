@@ -67,6 +67,14 @@ export interface BasketSwap {
   lineTotal?: Agorot;
   /** A `cheaper` swap only: what choosing it saved. */
   saved?: Agorot;
+  /**
+   * What the product the family asked for costs, so the line can read "₪14.90 במקום ₪16.40" — the
+   * owner's own shape for it (13 September, evening). For a `cheaper` swap that is this store's own
+   * price for their product; for a `missing` one it is the price at a store that *has* it, and
+   * `wasAt` names that store, because a number from another shop may not look like this shop's.
+   */
+  was?: Agorot;
+  wasAt?: string;
   /** True when no store on this compare has the product the family pinned (design state 5). */
   nowhere?: boolean;
   /** Stores that do have the pinned product, when any do (design state 4). */
@@ -214,14 +222,23 @@ export function cardFor(quote: BasketLike, sid: string): StoreCardFacts {
     const cheap = cheaperById.get(l.id);
     if (cheap) {
       const saved = cheap.wasLineTotal !== undefined && cheap.lineTotal !== undefined ? cheap.wasLineTotal - cheap.lineTotal : undefined;
-      return [{ lineId: l.id, asked: l.query, got: cheap.productName, kind: 'cheaper' as const, ...(cheap.lineTotal !== undefined ? { lineTotal: cheap.lineTotal } : {}), ...(saved !== undefined ? { saved } : {}) }];
+      return [{
+        lineId: l.id, asked: l.query, got: cheap.productName, kind: 'cheaper' as const,
+        ...(cheap.lineTotal !== undefined ? { lineTotal: cheap.lineTotal } : {}),
+        ...(cheap.wasLineTotal !== undefined ? { was: cheap.wasLineTotal } : {}),
+        ...(saved !== undefined ? { saved } : {}),
+      }];
     }
     if (!x.substituted) return [];
     const elsewhere = whereExact(quote, l.id);
     const lt = lineTotalOf(quote, sid, l.id);
+    // What their own product costs, and where — the engine's `exactBasket.elsewhere` is the only
+    // place it is priced, because this store has not got it to price.
+    const at = facts?.exactBasket?.elsewhere?.find((e) => e.lineId === l.id);
     return [{
       lineId: l.id, asked: l.query, got: x.productName, kind: 'missing' as const,
       ...(lt !== undefined ? { lineTotal: lt } : {}),
+      ...(at?.lineTotal !== undefined ? { was: at.lineTotal, wasAt: at.brand } : {}),
       ...(elsewhere.length ? { elsewhere } : { nowhere: true }),
     }];
   });

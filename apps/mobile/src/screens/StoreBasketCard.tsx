@@ -36,37 +36,38 @@ function basketName(b: BasketPrice, card: StoreCardFacts): string {
 }
 
 /**
- * One swap, as the family reads it: their words, an arrow, this store's product, and what that line
- * costs inside this basket. The two kinds never share a colour — an alternative is amber because the
- * family did not choose it and cannot undo it here; a cheaper pick is green because they did and can.
+ * One difference inside an offer — and it is **a note, not a warning** (the owner's refinement of
+ * 13 September: "בתוך גוף ההצעה רק ייכתב מה ההבדל"). What was asked, what was found, the price of
+ * each: *במקום ביצים XL 12 — ביצים L 12, ₪14.90 במקום ₪16.40*.
+ *
+ * No exclamation and no colour that says "problem". A different size of egg is not a problem, it is a
+ * fact about this store, and colouring it amber told a family that every ordinary substitution was
+ * something they had to deal with. Only a `cheaper` swap — one they asked for — carries the accent,
+ * because a saving is worth seeing.
  */
 function SwapRow({ swap }: { swap: BasketSwap }) {
   const s = S();
   const cheaper = swap.kind === 'cheaper';
-  const why = cheaper
-    ? tr('swapCheaperWhy', { x: money(swap.saved ?? 0) })
-    : swap.nowhere ? tr('exactNowhere')
-    : swap.elsewhere?.length ? tr('exactAt', { b: swap.elsewhere.map((e) => e.brand).slice(0, 2).join(' · ') })
-    : tr('swapMissingWhy');
+  // "₪14.90 במקום ₪16.40": the second number is their own product's price. For a swap this store
+  // cannot make, that price is at another shop, and the line says which — a number from somewhere
+  // else may never look like this shop's (promise 4).
+  const was = swap.was === undefined ? null
+    : swap.wasAt ? tr('insteadOfWasAt', { x: money(swap.was), b: swap.wasAt })
+    : tr('insteadOfWas', { x: money(swap.was) });
   return (
     <View style={{ paddingVertical: 6, borderTopWidth: 1, borderColor: t.line }} testID={`swap-${swap.lineId}`}>
-      <View style={[s.row, { gap: 10 }]}>
-        <Text style={[s.small, { flex: 1, color: t.ink }]} numberOfLines={2}>
-          {swap.asked}
-          <Text style={{ color: t.faint }}>{'  →  '}</Text>
-          <Text style={{ color: cheaper ? t.accent : t.amber }}>{short(swap.got)}</Text>
-        </Text>
-        {swap.lineTotal !== undefined ? <Text style={s.priceSmall}>{money(swap.lineTotal)}</Text> : null}
-      </View>
-      {/* Why this line is not what they asked for. A stable testID as well as the words: a flow that
-          matches long Hebrew through the XCUITest driver is a flow that goes red for reasons that are
-          not the product (docs/backlog/app-designer.md). */}
-      <Text style={[s.faint, { fontSize: 11, color: cheaper ? t.accent : t.amber }]} numberOfLines={2} testID="swap-why">{why}</Text>
+      <Text style={[s.small, { color: t.muted }]} numberOfLines={3} testID="swap-why">
+        {tr('insteadOf', { a: short(swap.asked), b: short(swap.got) })}
+        {swap.lineTotal !== undefined ? <Text style={{ color: cheaper ? t.accent : t.ink, fontWeight: '600' }}>{', ' + money(swap.lineTotal)}</Text> : null}
+        {was ? <Text style={{ color: t.faint }}>{' ' + was}</Text> : null}
+        {/* Their own one is nowhere nearby: the only gap this design calls honest, so it is said. */}
+        {swap.nowhere ? <Text style={{ color: t.faint }}>{' · ' + tr('exactNowhere')}</Text> : null}
+      </Text>
     </View>
   );
 }
 
-export function StoreBasketCard({ card, quote, open, mode, busy, onToggle, onMode, onCheaper, onBuy, nameOf }: {
+export function StoreBasketCard({ card, quote, open, mode, busy, when, whenTone, onToggle, onMode, onCheaper, onBuy, nameOf }: {
   card: StoreCardFacts;
   quote: BasketLike;
   open: boolean;
@@ -74,6 +75,9 @@ export function StoreBasketCard({ card, quote, open, mode, busy, onToggle, onMod
   mode: BasketMode | null;
   /** True while this store is being asked for something cheaper. */
   busy: boolean;
+  /** When this store delivers, in the family's words, and the colour that fact deserves. */
+  when: string | null;
+  whenTone: 'good' | 'neutral' | 'warn';
   onToggle: () => void;
   /** Show this basket, or (with the same mode again) go back to whichever leads. */
   onMode: (m: BasketMode | null) => void;
@@ -117,8 +121,10 @@ export function StoreBasketCard({ card, quote, open, mode, busy, onToggle, onMod
         <View style={{ flex: 1 }}>
           <View style={[s.rowStart, { gap: 6, flexWrap: 'wrap' }]}>
             <Text style={[s.body, { fontSize: 15, fontWeight: '700', flexShrink: 1 }]} numberOfLines={1}>{card.brand}</Text>
+            {/* When it comes. A shut shop says so in its own words and ranks after every open one
+                (lib/compare.ts#etaRank) — "הכי מהר" may never name a shop that cannot deliver today. */}
+            {when ? <Chip text={when} tone={whenTone} /> : card.closed ? <Chip text={tr('etaClosed')} tone="warn" /> : null}
             {cheapened ? <Chip text={tr('cheapChip')} tone="good" /> : null}
-            {card.closed ? <Chip text={tr('etaClosed')} tone="warn" /> : null}
           </View>
           {/* 2 — the basket this number buys, named. One headline per card, and it is cash. */}
           <Text style={[s.faint, { fontSize: 12, marginTop: 2 }]} testID={`basket-${card.storefrontId}-name`}>{basketName(head, card)}</Text>
