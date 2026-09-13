@@ -31,6 +31,13 @@ rest of the compare, whether the Lambda timeout itself should grow, and what a m
 leave behind instead of a silent `pending`) before api-fixer touches the retry/timeout constants
 again.
 
+**Still a near miss even after this PR's image-clock fix**: product-qa's new `ops/test-cart.mjs`
+check ("the compare itself answers well inside the gateway cutoff") caught the full 39-line shopper
+cart's `/quote` call at 27.7s against the ~29s cutoff, 2026-09-13 — the image lookup no longer adds
+its own 20s on top, but the rest of the pipeline alone is already this close for a real week's list.
+This check now runs daily (`ops/check.mjs`'s `shopper`) and will go red the day this tips into
+another outage; it does not fix the underlying budget question above.
+
 ## Victory / Mahsanei HaShuk / H. Cohen price files (docs/BACKLOG.md, price-portal-fixer)
 The backlog line says laibcatalog.co.il's postback form "answered no files" for Victory and
 Mahsanei HaShuk. A prior WIP already moved the reader off that form onto the site's newer JSON
