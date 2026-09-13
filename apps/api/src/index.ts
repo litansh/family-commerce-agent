@@ -664,7 +664,17 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 /** How long a compare may take: one try inside API Gateway's 30 s (the sync route), or several tries in the background job. */
 type CompareBudget = { tryMs: number; totalMs: number };
 const SYNC_BUDGET: CompareBudget = { tryMs: 26_000, totalMs: 26_000 };
-const JOB_BUDGET: CompareBudget = { tryMs: 40_000, totalMs: 110_000 };
+/**
+ * The background job's budget grows with the basket, because the work does: the provider takes at
+ * most fifty items in a call, so a sixty-line list is two calls a pass and two passes, plus the
+ * substitutes. A flat 110 s failed a real family's list at 113 s and gave them nothing (reproduced
+ * on production, 13 September). The phone waits on a row, not on a clock, so a longer wait is only
+ * a longer wait - and the copy on screen says so past 35 seconds.
+ */
+function jobBudget(lines: number): CompareBudget {
+  const chunks = Math.max(1, Math.ceil(lines / 50));
+  return { tryMs: Math.min(120_000, 45_000 * chunks), totalMs: Math.min(280_000, 90_000 + 45_000 * chunks) };
+}
 
 /**
  * The compare: the family's list priced at every store that delivers, substitutes for what a store
@@ -880,8 +890,11 @@ async function runCompareJob(job: CompareJob): Promise<void> {
     const region = regionOf(household.country);
     const providers = providersFor(region);
     if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
-    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, JOB_BUDGET);
-    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: fitRow(result), at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
+    const lineCount = Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0;
+    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, jobBudget(lineCount));
+    const kept = fitRow(result);
+    console.log(JSON.stringify({ event: 'compare-done', hid: job.hid, lines: Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0, ms: Date.now() - started, kb: Math.round(JSON.stringify(kept).length / 1024) }));
+    await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: kept, at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
   } catch (e) {
     console.error(JSON.stringify({ event: 'compare-failed', hid: job.hid, id: job.id, ms: Date.now() - started, error: e instanceof Error ? e.message : String(e) }));
     await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'failed', error: e instanceof HttpError ? e.message : 'internal error', at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });
