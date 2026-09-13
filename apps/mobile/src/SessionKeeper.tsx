@@ -20,7 +20,7 @@ import { markLinked, markNeedsRelink, useLinked } from './lib/linked';
 import { confirmFromHistory } from './lib/pending';
 import { HISTORY_JS } from './lib/inject';
 import { BUILD } from './lib/config';
-import { captureSessionJs, GUARD_JS, parseCapturedSession, sessionSummary } from './lib/session';
+import { captureSessionJs, GUARD_JS, hasAuthSession, parseCapturedSession, sessionSummary } from './lib/session';
 
 const EVERY_MS = 6 * 3600_000;
 const KEY = (id: string) => `fca.keepalive.${id}`;
@@ -80,7 +80,10 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             // that finds a session and posts nothing is exactly the failure nobody would see.
             const got = parseCapturedSession(d.slice(12)); const sum = sessionSummary(got);
             const done = (extra: Record<string, unknown>) => api.importHistory(householdId, storeId, [], { build: BUILD, keepalive: { sessionCapture: { ...sum, ...extra } } }).catch(() => null);
-            if (sum.cookies + sum.tokens === 0) { void done({ empty: true }); return; }
+            // Decorative cookies (analytics, ad ids) are on every page, signed in or not - a capture
+            // without the store's own session key is never posted: it would clobber a good sealed
+            // session with a hollow one instead of just leaving it be.
+            if (!hasAuthSession(got, store.sessionKeys)) { void done({ empty: sum.cookies + sum.tokens === 0, authKeyMissing: true }); return; }
             void api.postStoreSession(householdId, storeId, { cookies: got.cookies, tokens: got.tokens, ...(got.userAgent ? { userAgent: got.userAgent } : {}) }).then((r) => done({ saved: r.connected }), (e: unknown) => done({ saved: false, postError: String(e).slice(0, 200) }));
             return;
           }
