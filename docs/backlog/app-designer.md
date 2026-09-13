@@ -18,8 +18,11 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
   honest either way (when grouping collapses nothing it shows the flat list and offers no toggle),
   so this is **api-fixer's** line, not a blocker for the chip. Written into the design doc under
   "What has to be built" → API.
-- **The compare does not yet name the product each store used for a כל מותג line.** That is step 4
-  of the design's "What has to be built" and the reason a split cart can be trusted. Next line here.
+- **The compare already names the product each store used** (step 4 of the design's "What has to be
+  built" — landed in `50b0f43`, held by `e2e/split-naming.mjs`). What it still cannot show is a
+  **per-store price per line**: the quote does not carry one, so a כל מותג line says which product
+  each store brought but not what each store charges for it. That is the piece that would let a
+  family see *why* splitting pays, line by line. It needs the quote to carry it first — api-fixer.
 - **The simulator's XCUITest driver on this Mac is unstable, and it is poisoning the `sim` check.**
   Twice today `node ops/check.mjs --only sim` came back `connect 0/9` then `1/9` with every store
   failing identically, and `maestro hierarchy` against a plainly-rendered Home screen returned only
