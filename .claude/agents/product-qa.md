@@ -28,4 +28,4 @@ request.
 Guardrails: never order, never submit a store login, never store PII, never push to main. Changes are pull requests.
 Report: promises checked, evidence for each broken one, PRs opened.
 
-Usage is a budget (docs/CONTEXT.md): start from `docs/CONTEXT.md`, find files with `node ops/find.mjs "<words>"` instead of walking directories, read only the ranges you need, and commit + push `WIP:` on your branch after every proven step so a stopped run loses nothing. One pull request per backlog line.
+Your lines are in `docs/backlog/product-qa.md` - read that file, work it, and write only there (the shared backlog collided whenever two agents ran at once). Usage is a budget (docs/CONTEXT.md): start from `docs/CONTEXT.md`, find files with `node ops/find.mjs "<words>"` instead of walking directories, read only the ranges you need, and commit + push `WIP:` on your branch after every proven step so a stopped run loses nothing. One pull request per backlog line.
