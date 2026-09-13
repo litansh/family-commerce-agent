@@ -396,6 +396,18 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
           await writeRow(TABLE, 'CATALOG', 'PROMOS', { promos, at: new Date().toISOString(), ttl: Math.floor(Date.now() / 1000) + 2 * 86400 });
         }
       }
+      // Second rung (docs/BACKLOG.md, ADR 0010): the provider's own promotions pull can still answer
+      // with real promotions from only one or two chains (ops/deals-health.mjs is what catches a feed
+      // that thin). The chains' own PromoFull files, read on the ops Mac never from this Lambda (ADR
+      // 0011: services/branch-prices/refresh-deals.mjs), fill in whichever chains the provider's pull
+      // missed - never replacing a chain the provider already covered, since a store's own file is a
+      // fallback, not a better source.
+      const coveredChains = new Set(promos.map((p) => p.chainName));
+      if (coveredChains.size < 3) {
+        const fromFiles = (await readRow(TABLE, 'CATALOG', 'PROMOS_FILES')) as { promos?: Promotion[] } | undefined;
+        const gapFillers = (fromFiles?.promos ?? []).filter((p) => !coveredChains.has(p.chainName));
+        if (gapFillers.length) promos = [...promos, ...gapFillers];
+      }
       const memory = await repo.load();
       const usual = new Map(Object.values(memory.products).map((p) => [p.gtin, p]));
       const now = Date.now();
