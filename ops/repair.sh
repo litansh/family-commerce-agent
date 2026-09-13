@@ -29,10 +29,16 @@ if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   # מבצעים second rung (docs/BACKLOG.md, ADR 0011): named deals read from the chains' own PromoFull
   # files, on this Mac, for /deals to fall back on when the pricing provider's own feed goes thin.
   node --experimental-strip-types services/branch-prices/refresh-deals.mjs 2>&1 | tail -15 | tee -a "$LOG"
+  # Rami Levy's online branches, geocoded and placed on the map (docs/BACKLOG.md, ADR 0011): the
+  # API Lambda's own attempt is blocked (a data centre gets Rami Levy's block page), so this Mac is
+  # the only place that can actually reach it and write CATALOG#RL_BRANCHES for the API to read.
+  node --experimental-strip-types services/retailer-connectors/refresh-branches.mjs 2>&1 | tail -5 | tee -a "$LOG"
   # Open pull requests without an agents' review get one (the review workflow needs a key; this needs only this Mac).
   for n in $(gh pr list --state open --json number --jq '.[].number' 2>/dev/null); do ops/pr-review.sh "$n" 2>&1 | tail -1 | tee -a "$LOG"; done
   # The product review runs on green days too: a promise can be broken while every check passes.
   ops/qa.sh
+  # Nothing the owner opens should be unmergeable.
+  ops/unblock.sh 2>&1 | tee -a "$LOG"
   # Then the fleet works the backlog in two lanes; each lane is serial and resumes around a usage limit.
   ops/lanes.sh --wait
   exit 0

@@ -1,0 +1,7 @@
+# Lists that only ever grow, worked on by several agents at once. A merge keeps both sides' lines
+# instead of stopping: two agents ticking different lines is not a disagreement (ops/unblock.sh
+# relies on this, and so does anyone merging by hand).
+docs/BACKLOG.md      merge=union
+docs/backlog/*.md    merge=union
+ops/NEEDS-HUMAN.md   merge=union
+.claude/agents/*.md  merge=union

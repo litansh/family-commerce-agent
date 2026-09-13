@@ -10,7 +10,7 @@
  *
  * Kept free of React and of `./api` on purpose: `e2e/split-naming.mjs` runs it over a real compare.
  */
-export interface QuoteLineProduct { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string }
+export interface QuoteLineProduct { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string }
 export interface QuoteLike {
   storefrontLines?: Record<string, Record<string, QuoteLineProduct>>;
   quotedLines: Record<string, { gtin?: string; productName: string; link?: string; imageUrl?: string | null }>;
@@ -19,11 +19,25 @@ export interface QuoteLike {
 /**
  * The product a given store puts behind a line: its own, or the compare's resolution when the store
  * priced the line without naming one. `own` says which, because a screen inside a store's leg may
- * only claim what that store will really add.
+ * only claim what that store will really add. `price` is this store's own unit price for the line
+ * (agorot) and is only ever the store's own — a shared resolution carries no price to fall back to,
+ * so a line that store did not price itself names no price at all.
  */
-export function productAt(quote: QuoteLike, storefrontId: string, lineId: string): { gtin?: string; productName?: string; link?: string; own: boolean } {
+export function productAt(quote: QuoteLike, storefrontId: string, lineId: string): { gtin?: string; productName?: string; price?: number; link?: string; own: boolean } {
   const sl = quote.storefrontLines?.[storefrontId]?.[lineId];
   const ql = quote.quotedLines[lineId];
-  if (sl) return { ...(sl.gtin ? { gtin: sl.gtin } : ql?.gtin ? { gtin: ql.gtin } : {}), productName: sl.productName, ...(sl.link ? { link: sl.link } : {}), own: true };
+  if (sl) return { ...(sl.gtin ? { gtin: sl.gtin } : ql?.gtin ? { gtin: ql.gtin } : {}), productName: sl.productName, ...(sl.price !== undefined ? { price: sl.price } : {}), ...(sl.link ? { link: sl.link } : {}), own: true };
   return { ...(ql?.gtin ? { gtin: ql.gtin } : {}), ...(ql?.productName ? { productName: ql.productName } : {}), ...(ql?.link ? { link: ql.link } : {}), own: false };
+}
+
+/**
+ * The line an order sends to one store's leg: this store's own barcode when it priced the line
+ * itself, the shared resolution only as a fallback — the same rule `productAt` gives a screen, so an
+ * order can never send a leg the winner's barcode for a product that leg's own store never priced
+ * (docs/design/item-identity.md). `line` carries the household's words and its own confirmed gtin.
+ */
+export function orderLineAt(quote: QuoteLike, storefrontId: string, lineId: string, line: { query: string; gtin?: string; brand?: string; amount?: number; unit?: string; packQty?: number }) {
+  const p = productAt(quote, storefrontId, lineId);
+  const gtin = p.gtin ?? line.gtin;
+  return { query: line.query, ...(gtin ? { gtin } : {}), ...(line.brand ? { brand: line.brand } : {}), ...(line.amount !== undefined ? { amount: line.amount } : {}), ...(line.unit ? { unit: line.unit } : {}), ...(line.packQty !== undefined ? { packQty: line.packQty } : {}) };
 }

@@ -42,8 +42,8 @@ export interface QuoteResult {
   etas?: Record<string, StorefrontEta>;
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
   drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
-  /** Each shown storefront's own product and deep link per line. */
-  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>>;
+  /** Each shown storefront's own product, its price for that line (agorot), and the deep link. */
+  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>>;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];

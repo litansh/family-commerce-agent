@@ -80,3 +80,15 @@ export function parseCapturedSession(json: string): CapturedSession {
 export const sessionSummary = (s: CapturedSession): { cookies: number; tokens: number; cookieNames: readonly string[]; tokenNames: string[]; skipped: readonly string[]; error?: string } => ({
   cookies: s.cookies.length, tokens: Object.keys(s.tokens).length, cookieNames: s.diag.cookieNames ?? s.cookies.map((c) => c.name), tokenNames: Object.keys(s.tokens), skipped: s.diag.skipped ?? [], ...(s.diag.error ? { error: s.diag.error } : {}),
 });
+
+/**
+ * Whether a capture actually holds the store's own session, not just decorative cookies -
+ * analytics/ad ids (`_ga`, `AWSALB`, …) are on every page, signed in or not, so `cookies>0` alone
+ * is never proof. Checked against the names the store itself keeps its session in
+ * (`StoreDef.sessionKeys`); a store with none named falls back to "captured anything at all".
+ */
+export function hasAuthSession(s: CapturedSession, sessionKeys: readonly string[] | undefined): boolean {
+  const keys = sessionKeys ?? [];
+  if (keys.length === 0) return s.cookies.length > 0 || Object.keys(s.tokens).length > 0;
+  return keys.some((k) => s.cookies.some((c) => c.name === k) || k in s.tokens);
+}

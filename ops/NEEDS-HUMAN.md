@@ -38,35 +38,17 @@ its own 20s on top, but the rest of the pipeline alone is already this close for
 This check now runs daily (`ops/check.mjs`'s `shopper`) and will go red the day this tips into
 another outage; it does not fix the underlying budget question above.
 
-## Victory / Mahsanei HaShuk / H. Cohen price files (docs/BACKLOG.md, price-portal-fixer)
-The backlog line says laibcatalog.co.il's postback form "answered no files" for Victory and
-Mahsanei HaShuk. A prior WIP already moved the reader off that form onto the site's newer JSON
-API (`services/branch-prices/src/portals.ts`, `laibPortal`: `GET /webapi/api/getfiles?edi=<chainId>`),
-which its own `/mshuk/index.html` page uses — but nobody had proven it against the live site before
-that landed on main. It doesn't work either: `node --experimental-strip-types
-services/branch-prices/lab.mjs` shows `victory branches 0`, `mahsanei-hashuk branches 0`,
-`h-cohen branches 0`.
-
-What price-portal-fixer checked (2026-09-13, from an Israeli residential IP, not a datacenter -
-so this isn't the Hatzi Hinam-style block):
-- The JSON API answers `200 []` for all three correct 13-digit chain IDs (confirmed correct: the
-  front page's own `<select name="...chain">` lists exactly these three values, and browsing the
-  chain's file folder directly 403s rather than 404s, so the folder exists). Any other ID, or the
-  chain+sub-chain / chain+branch codes the same page also exposes, gets a `400 FilesRootPath is
-  invalid` instead - so the endpoint is alive and the chain IDs are right; it just has nothing to
-  list.
-- The classic ASP.NET postback form (`__VIEWSTATE`/`__EVENTVALIDATION`, a real search submit) gives
-  the same answer: an empty results table for all three chains, every file type, with the date
-  field both defaulted to today and left blank.
-
-Two independent routes into the same vendor, both saying nothing is published, is a vendor-side
-gap: either the chains have stopped filing under this portal or it is mid-migration. Nothing in our
-request is wrong, so there is nothing left to try from here.
-
-Needs: someone to check laibcatalog.co.il's file listing for Victory or Mahsanei HaShuk in a real
-browser (or wait a few days and re-run the lab, in case this is a migration in progress) and say
-whether the files moved elsewhere. Until then this stays off; `laibPortal` fails soft (an empty
-branch list, no crash), so it costs nothing to leave connected.
+## ~~Victory / Mahsanei HaShuk / H. Cohen price files~~ — resolved, the vendor's migration finished
+Earlier the same day (docs/BACKLOG.md, price-portal-fixer) the JSON API and the classic postback
+form both answered "nothing published" for all three laibcatalog chains — a vendor-side gap, noted
+here as needing a person to re-check in a few days in case it was mid-migration. Re-run a few hours
+later (2026-09-13, same day, same code, same Israeli residential IP): `node --experimental-strip-types
+services/branch-prices/lab.mjs` now shows `victory branches 70`, `mahsanei-hashuk branches 71`,
+`h-cohen branches 5`, and a live basket priced at Victory (סיטי אחד העם, 4254 barcodes, 738 promos).
+Checked each chain's `priceFile`/`promoFile` directly for a real branch: all three return today's
+files (`PriceFull7290696200003-001-001-20260913-...`, and the equivalent for the other two chains).
+Nothing in `portals.ts` changed between the two checks — the migration this note guessed at finished
+on its own. No further action; `laibPortal` needs no code change.
 
 ## Automatic confirmation — a real order at Rami Levy (docs/BACKLOG.md, product-qa)
 The backlog line asks for "verified end to end on a real order at Rami Levy": a cart Kaniti fills
@@ -87,3 +69,21 @@ against a live order. Needs: the owner (or a phone connected as the test family)
 order through Kaniti at Rami Levy and check the Orders tab confirms it without a tap. If the field
 names are off, the phone's `diag` in the `history:` postMessage (posted to the API log) says exactly
 how.
+
+## The store's own catalogue as a second price source in the compare (docs/backlog/api-fixer.md)
+The line asks for Rami Levy's catalogue to price a storefront the provider lacks or is slow on,
+"its catalogue already answers the API" — true when checked from this Mac, not from the API Lambda.
+ADR 0011 (accepted 2026-09-13, the same night, from measurements) found the opposite: a Lambda
+calling `rami-levy.co.il/api/catalog` gets the same block page a data centre always gets. The image
+resolver already lives with this (`services/product-images/src/index.ts#tryRamiLevySearch` is called
+from the API today, and its own comment says it answers a block page there; the phone's `remember()`
+call is what actually fills that cache). A price source for the *compare* needs the same shape, and
+does not exist yet: something that runs on the phone or the ops Mac, prices the storefront there,
+and writes it somewhere the API can read as a cache — not a new Lambda-side call to the chain, which
+would only repeat the measured block.
+
+Needs: a decision on where this runs (phone, at compare time — but a compare must answer whether or
+not that store's own app is open, so it cannot depend on the phone being on that store's site; or
+the ops Mac, but its nightly run knows branches and prices, not a live per-basket quote) and what
+"lacks a store or is slow" should degrade to in the meantime (today: the storefront is rejected and
+missing from the compare, which is honest but not the second rung this line asks for).

@@ -1,16 +1,16 @@
 /**
  * Hatzi Hinam's own stock. A guest session - two GET calls, no login, no browser (`/` sets
- * `H_UUID`, `/proxy/init` sets `H_Authentication`; confirmed live, 2026-09-13) - answers a barcode
- * lookup with `IsInStock`, the same field the cart recipe already checks at fill time
- * (apps/mobile/src/lib/stores.ts). An item the family's branch does not carry is "out of stock" at
- * the store's checkout, which for a family equals "does not exist" - so the compare checks it
- * before offering the line (promise 9), the same as Rami Levy (rami-levy-stock.ts).
+ * `H_UUID`, `/proxy/init` sets `H_Authentication`; confirmed live, 2026-09-13, from this Mac) -
+ * answers a barcode lookup with `IsInStock`, the same field the cart recipe already checks at fill
+ * time (apps/mobile/src/lib/stores.ts).
  *
- * What this does not yet do: pick the family's own branch. No branch-selecting call was found in
- * a GET-only probe (`getItemByBarkod` ignored every branch query param tried), so this answers for
- * whichever of the chain's branches the guest session defaults to - not necessarily the family's
- * nearest one, the same honest gap Rami Levy started with before its own branch resolution shipped.
- * Unknown stock (the store did not answer, or the branch is wrong) drops nothing.
+ * Not wired into the compare (ADR 0011: no call to a chain's own site runs from the API or any
+ * Lambda). This class is meant for the ops Mac's nightly refresher - the same place Rami Levy's own
+ * branch list and geocoding are moving to - to write a cached stock row the API only reads; it is
+ * not yet called from there. It also does not yet pick the family's own branch: no branch-selecting
+ * call was found in a GET-only probe (`getItemByBarkod` ignored every branch query param tried), so
+ * it answers for whichever branch the guest session defaults to. Unknown stock (no answer, or the
+ * wrong branch) should drop nothing wherever this ends up wired in.
  */
 const SITE = 'https://shop.hazi-hinam.co.il';
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
