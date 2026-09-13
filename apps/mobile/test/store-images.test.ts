@@ -28,3 +28,20 @@ test('a name too short to mean anything is not asked about', async () => {
     assert.equal(await imageByName(' '), undefined);
   });
 });
+
+test('when the first chain has no picture, the second is asked (ADR 0010)', async () => {
+  const calls: string[] = [];
+  const impl = (async (url: string) => {
+    calls.push(String(url).includes('shufersal') ? 'shufersal' : 'rami');
+    return String(url).includes('shufersal')
+      ? { ok: true, json: async () => ({ results: [{ code: '7290001201510', name: 'ביצים 30', images: [{ format: 'product', url: 'https://res.cloudinary.com/shufersal/eggs.jpg' }] }] }) }
+      : { ok: true, json: async () => ({ data: [{ barcode: 1, images: {} }] }) };
+  }) as unknown as typeof fetch;
+  const real = globalThis.fetch; globalThis.fetch = impl;
+  try {
+    const r = await imageByName('ביצים 30 יחידות');
+    assert.equal(r?.url, 'https://res.cloudinary.com/shufersal/eggs.jpg');
+    assert.equal(r?.gtin, '7290001201510');
+    assert.deepEqual(calls, ['rami', 'shufersal'], 'the chain catalogue is asked first, Shufersal only when it has nothing');
+  } finally { globalThis.fetch = real; }
+});

@@ -146,12 +146,52 @@ if (best) {
   const fillable = best.legs[0].lineIds.filter((id) => sl[id]?.gtin || sl[id]?.link).length;
   check('the winning cart is fillable on the phone (barcode or link per line)', fillable >= best.legs[0].lineIds.length * 0.9, `${fillable}/${best.legs[0].lineIds.length}`);
 }
-// A picture on every line of a real list: a drawn glyph where a photograph belongs is the
-// commonest "the app looks unfinished" (tonight's report). quotedLines is the winner's cart as
-// the phone renders it, not a curated sample.
+// A picture on every line of a real list: a drawn glyph where a photograph belongs is the commonest
+// "the app looks unfinished". quotedLines is the winner's cart as the phone renders it.
+//
+// Where the picture comes from matters. The API answers from public sources (the chain's image host
+// by barcode, Open Food Facts); the chains' own catalogues answer a phone and block a data centre
+// (ADR 0011), so the phone fetches those and teaches the API. This check is run from a Mac, which
+// the chains treat as a person, so it can prove BOTH halves: what the API already has, and that the
+// phone's own sources cover the rest. A line neither can picture is the real failure.
 const quotedLines = Object.values(q.quotedLines ?? {});
-const pictured = quotedLines.filter((l) => l.imageUrl).length;
-check('every line of the real list has a picture, not a drawn icon', quotedLines.length > 0 && pictured >= quotedLines.length * 0.85, `${pictured}/${quotedLines.length}`);
+const pictured = quotedLines.filter((l) => l.imageUrl);
+const unpictured = quotedLines.filter((l) => !l.imageUrl);
+
+/** The phone's ladder, as `apps/mobile/src/lib/storeImages.ts` runs it: the chain's catalogue, then Shufersal. */
+async function pictureFromAChain(name) {
+  if (!name || name.trim().length < 2) return null;
+  try {
+    const r = await fetch('https://www.rami-levy.co.il/api/catalog?', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json;charset=utf-8', accept: 'application/json' },
+      body: JSON.stringify({ q: name, size: 5 }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const d = r.ok ? await r.json() : null;
+    const path = (d?.data ?? []).map((x) => x.images?.small ?? x.images?.trim).find(Boolean);
+    if (path) return path.startsWith('http') ? path : `https://img.rami-levy.co.il${path}`;
+  } catch { /* the second rung */ }
+  try {
+    const r = await fetch(`https://www.shufersal.co.il/online/he/search/results?q=${encodeURIComponent(`${name}:relevance`)}&limit=1`, {
+      headers: { accept: 'application/json', 'x-requested-with': 'XMLHttpRequest' },
+      signal: AbortSignal.timeout(8000),
+    });
+    const d = r.ok ? await r.json() : null;
+    return d?.results?.[0]?.images?.find((i) => i.format === 'product' || i.format === 'thumbnail')?.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const fromChain = await Promise.all(unpictured.map((l) => pictureFromAChain(l.productName)));
+const coveredByPhone = fromChain.filter(Boolean).length;
+const nowhere = unpictured.filter((_, i) => !fromChain[i]).map((l) => l.productName ?? l.gtin ?? '?');
+check(
+  'every line of the real list can show a picture (the API\'s, or the chains\' own from the phone)',
+  quotedLines.length > 0 && nowhere.length === 0,
+  `${pictured.length} from the API, ${coveredByPhone} the phone fetches` + (nowhere.length ? ` · no picture anywhere: ${nowhere.join(', ')}` : ''),
+);
 
 // Promise 7 — it remembers the family: a confirmed brand wins the line in this very compare,
 // and a habit missing from the list surfaces as a suggestion, not silence.
