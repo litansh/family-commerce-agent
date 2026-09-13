@@ -121,3 +121,4 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
 - **The card had no "when it delivers" at all** until this pass, though it is step one of the design's
   own read order. Worth a habit: draw the read order, then check each step off against the built
   screen, because the ones that carry no data are the ones that quietly never get built.
+- [ ] **Three sections in the compare** (docs/design/a-full-basket-everywhere.md, the owner's 13 September late refinement): exactly what you chose · cheaper with alternatives · faster; a store may appear in more than one, each section ordered by its own measure, and "partial" only when nothing related exists at that store. *app-designer*
