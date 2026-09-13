@@ -81,6 +81,37 @@ interface RawResult {
  *  - it does not let a float price reach the domain. Everything crosses the
  *    boundary as integer agorot.
  */
+/**
+ * Two answers about the same address and the same shop, joined into one. A storefront's lines are
+ * concatenated, its money summed, and the things that describe the shop rather than the basket -
+ * delivery fee, minimum, confidence - taken once from the first answer that carried it.
+ */
+export function mergeQuoteParts(parts: readonly QuoteResponse[]): QuoteResponse {
+  if (parts.length === 1) return parts[0]!;
+  const by = new Map<string, StorefrontQuote>();
+  for (const part of parts) {
+    for (const q of part.quotes) {
+      const prev = by.get(q.storefrontId);
+      if (!prev) { by.set(q.storefrontId, q); continue; }
+      const itemsSubtotal = (prev.itemsSubtotal + q.itemsSubtotal) as Agorot;
+      const deliveryFee = prev.deliveryFee; // one basket, one delivery
+      by.set(q.storefrontId, {
+        ...prev,
+        itemsSubtotal,
+        deliveryFee,
+        deliveredTotal: (itemsSubtotal + deliveryFee) as Agorot,
+        meetsMinimum: prev.minimumOrder === undefined ? prev.meetsMinimum || q.meetsMinimum : itemsSubtotal >= prev.minimumOrder,
+        requestedLines: prev.requestedLines + q.requestedLines,
+        pricedLines: prev.pricedLines + q.pricedLines,
+        lines: [...prev.lines, ...q.lines],
+        priceFeedStale: prev.priceFeedStale || q.priceFeedStale,
+        deliveryTermsConfidence: prev.deliveryTermsConfidence === 'verified' ? q.deliveryTermsConfidence : prev.deliveryTermsConfidence,
+      });
+    }
+  }
+  return { ...parts[0]!, quotes: [...by.values()] };
+}
+
 export class SuperMcpQuoteProvider implements QuoteProvider {
   readonly id = 'supermcp';
   readonly #mcp: McpClient;
@@ -94,7 +125,25 @@ export class SuperMcpQuoteProvider implements QuoteProvider {
     this.#mcp = new McpClient(url, timeoutMs, 1);
   }
 
+  /**
+   * The provider takes at most fifty items in one call ("Array must contain at most 50 element(s)",
+   * seen in production when a family's list grew past it: the whole compare failed and they got
+   * nothing). A longer list is asked for in chunks and the answers are merged: each storefront's
+   * lines joined, its subtotal summed, its delivery fee counted once - it is one delivery either way.
+   */
   async quoteBasket(req: QuoteRequest): Promise<QuoteResponse> {
+    const MAX = 50;
+    if (req.lines.length > MAX) {
+      const chunks: QuoteRequest['lines'][] = [];
+      for (let i = 0; i < req.lines.length; i += MAX) chunks.push(req.lines.slice(i, i + MAX));
+      const parts: QuoteResponse[] = [];
+      for (const lines of chunks) parts.push(await this.#quoteOne({ ...req, lines }));
+      return mergeQuoteParts(parts);
+    }
+    return this.#quoteOne(req);
+  }
+
+  async #quoteOne(req: QuoteRequest): Promise<QuoteResponse> {
     const started = Date.now();
     const raw = await this.#mcp.callTool<RawResult>('optimize_delivery', {
       items: req.lines.map(toItem),
