@@ -32,6 +32,27 @@ export function searchKey(req: CatalogSearchRequest): string {
   return `SEARCH#${city}#${brand}#${q}#${req.limit ?? 0}`;
 }
 
+/** A live `PRICE#<barcode>` row as the refresher writes it. */
+export interface PriceRow { readonly min?: number; readonly prices?: readonly { readonly storefrontId: string }[] }
+
+/**
+ * Today's price on a remembered product.
+ *
+ * A live row only ever *adds* to what the cache knew. Its absence must take nothing away: a product
+ * the refresher has not priced yet is still a real product a family can put on a list. Getting this
+ * backwards zeroed every candidate's chain count, made everything look unbuyable, and returned null
+ * for all eight lines of a real list on production (13 September).
+ */
+export function withLivePrice(p: ProductCandidate, row: PriceRow | undefined): ProductCandidate {
+  if (!row) return p;
+  // The larger of the two, because both are partial views: the cached count came from the catalogue's
+  // search answer, the row from whatever the refresher has priced so far. Taking the smaller would
+  // hide a product that is really on sale, which is the failure this function exists to prevent.
+  const seen = new Set((row.prices ?? []).map((x) => x.storefrontId)).size;
+  const withCount: ProductCandidate = seen > p.pricedAtChains ? { ...p, pricedAtChains: seen } : p;
+  return typeof row.min === 'number' ? { ...withCount, fromPrice: agorot(row.min) } : withCount;
+}
+
 export class CachedCatalog implements CatalogProvider {
   readonly id: string;
   readonly #inner: CatalogProvider;
@@ -68,10 +89,7 @@ export class CachedCatalog implements CatalogProvider {
       ? this.#doc.send(new GetCommand({ TableName: this.#table, Key: { PK: 'CATALOG', SK: `PRICE#${p.gtin}` } })).then((r) => r.Item).catch(() => undefined)
       : Promise.resolve(undefined))));
     return products.map((p, i) => {
-      const r = rows[i] as { min?: number; prices?: { storefrontId: string }[] } | undefined;
-      if (!r) return { ...p, pricedAtChains: 0 } satisfies ProductCandidate;
-      const withPrices: ProductCandidate = { ...p, pricedAtChains: new Set((r.prices ?? []).map((x) => x.storefrontId)).size };
-      return typeof r.min === 'number' ? { ...withPrices, fromPrice: agorot(r.min) } : withPrices;
+      return withLivePrice(p, rows[i] as PriceRow | undefined);
     });
   }
 
@@ -104,10 +122,11 @@ export class CachedCatalog implements CatalogProvider {
       }
       this.#misses += 1;
       const products = await this.#inner.searchProducts(req);
-      // Identity only. `fromPrice`, `unitPrice` and `pricedAtChains` are prices and price coverage,
-      // and they go stale in hours - the caller fetches them live (the search route reads PRICE#
-      // rows; the compare prices everything through the quote).
-      const identity = products.map(({ fromPrice: _f, unitPrice: _u, unitBasis: _b, pricedAtChains: _p, ...rest }) => rest);
+      // Identity, and how many chains carry it. The *amounts* - `fromPrice`, `unitPrice` - are what
+      // must never be served stale, so they are dropped and re-read live. `pricedAtChains` is a
+      // count, not a price, and it is kept: zeroing it made every product look unbuyable, which
+      // emptied `resolve` completely (every line came back null on production, 13 September).
+      const identity = products.map(({ fromPrice: _f, unitPrice: _u, unitBasis: _b, ...rest }) => rest);
       // An empty answer is cached too, briefly: a query nobody sells is asked again and again.
       await this.#doc
         .send(new PutCommand({
