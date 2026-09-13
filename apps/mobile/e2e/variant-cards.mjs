@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { groupIntoVariants } from '../../../packages/domain/src/variant.ts';
-import { brandGroups, carriedNearby, choiceOf, lineFromHit, lineFromVariant, soleProduct, spanOf, variantWords } from '../src/lib/choice.ts';
+import { brandGroups, carriedNearby, choiceOf, lineFromHit, lineFromVariant, pinBrand, soleProduct, spanOf, unpin, variantWords } from '../src/lib/choice.ts';
 
 let bad = 0;
 const check = (ok, what, detail = '') => { console.log(`${ok ? 'ok  ' : 'BAD '} ${what}${detail ? ` — ${detail}` : ''}`); if (!ok) bad += 1; };
@@ -58,8 +58,15 @@ for (const q of QUERIES) {
     console.log(`     ${sole ? sole.name : words}  ·  ${sole ? sole.brand ?? '—' : `${v.brandCount} מותגים`}  ·  ${here ? `${shekel(span?.min)}–${shekel(span?.max)}` : 'אין בחנויות שמגיעות אליכם'}`);
 
     if (sole) {
-      // One product behind the card means there is nothing to choose: the product *is* the choice.
-      check(choiceOf(lineFromHit(sole)) === 'pinned', `${q}: a one-product card pins that product`, sole.name);
+      // One product behind the card means there is nothing to choose: the product *is* the choice,
+      // and the line carries that product's own words. It pins with whatever the catalogue gave —
+      // a barcode, or failing that a brand. Real shelves have products with neither (`שמנת חמוצה`),
+      // and there the line honestly *is* כל מותג: every store prices its own cheapest of those
+      // words. A chip claiming a pin the compare cannot keep would be the worse bug.
+      const l = lineFromHit(sole);
+      check(l.query === sole.name, `${q}: a one-product card puts that product's own words on the line`, l.query);
+      check(choiceOf(l) === (sole.gtin || sole.brand ? 'pinned' : 'any'), `${q}: "${sole.name}" reads as the choice it really is`,
+        `${choiceOf(l)} · gtin=${sole.gtin ?? 'none'} brand=${sole.brand ?? 'none'}`);
       continue;
     }
     const line = lineFromVariant(v);
@@ -76,6 +83,17 @@ for (const q of QUERIES) {
     // Cheapest brand first — the family reads the answer, not a list.
     const mins = gs.map((g) => g.priceMin ?? Infinity);
     check(mins.every((m, i) => i === 0 || mins[i - 1] <= m), `${q}: "${words}" lists brands cheapest first`, gs.map((g) => `${g.brand} ${shekel(g.priceMin)}`).join(' · '));
+    // Choosing a brand has to *read* as a choice. A brand whose cheapest product carries no
+    // barcode still pins — the resolver honours `brand` at every store — so a chip that reads
+    // "כל מותג" one tap after the family chose תנובה is the screen lying about their own choice.
+    const asLine = { id: 'lab', ...line };
+    const limp = gs.filter((g) => choiceOf(pinBrand(asLine, g)) !== 'pinned');
+    check(limp.length === 0, `${q}: "${words}" — every brand in the sheet pins when it is chosen`, limp.map((g) => g.brand).join(', ') || `${gs.length} brand(s)`);
+    // And the way back is always open: unpinning returns the line to כל מותג, words intact.
+    if (gs[0]) {
+      const back = unpin(pinBrand(asLine, gs[0]));
+      check(choiceOf(back) === 'any' && back.query === line.query, `${q}: "${words}" — the pin comes off again`, `${choiceOf(back)} · ${back.query}`);
+    }
   }
 }
 

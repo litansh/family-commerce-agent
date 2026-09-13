@@ -6,7 +6,7 @@ import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain
 import type { Api, Deal, Household, SearchHit, SearchVariant } from '../lib/api';
 import { AISLES, aisleOf } from '../lib/categories';
 import {
-  brandGroups, carriedNearby, cheapestOf, lineFromHit, lineFromVariant, pinBrand,
+  brandGroups, carriedNearby, cheapestOf, choiceOf, lineFromHit, lineFromVariant, pinBrand,
   soleProduct, spanOf, unpin, variantId, variantWords, type BrandGroup,
 } from '../lib/choice';
 import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
@@ -382,7 +382,9 @@ function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
           {/* A variant no store that reaches the family carries is named and greyed, never dropped. */}
           {!here ? <Text style={[s.faint, { color: t.amber, marginTop: 2 }]}>{tr('notNearby')}</Text> : (
             <View style={[s.rowStart, { marginTop: 3, gap: 6 }]}>
-              <Text style={s.faint}>{sole ? sole.brand ?? '' : v.brandCount > 1 ? tr('nBrands', { n: v.brandCount }) : tr('oneBrand')}</Text>
+              {/* A card the catalogue names no brand for says nothing about brands — "מותג אחד"
+                  over zero brands is a count the family cannot then find in the sheet. */}
+              {(() => { const who = sole ? sole.brand : v.brandCount > 1 ? tr('nBrands', { n: v.brandCount }) : v.brandCount === 1 ? tr('oneBrand') : undefined; return who ? <Text style={s.faint}>{who}</Text> : null; })()}
               {span ? <Text style={[s.priceSmall, { color: t.ink }]}>{span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`}</Text> : null}
             </View>
           )}
@@ -395,7 +397,7 @@ function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
 
 /** The choice, on every line, as a control: "[ כל מותג ▾ ]" or "[ תנובה ▾ ]". */
 function ChoiceChip({ line, onPress }: { line: Line; onPress: () => void }) {
-  const pinned = !!line.gtin;
+  const pinned = choiceOf(line) === 'pinned';
   const label = pinned ? line.brand ?? line.productName ?? line.query : tr('anyBrand');
   return (
     <Pressable testID={`choice-${line.id}`} onPress={onPress} hitSlop={8}
@@ -557,7 +559,7 @@ function ItemSheet({ item, onClose, onBump, onDelete, onChoose, lines }: { item:
         <View style={[s.row, { marginTop: 18 }]}>
           <View style={{ flexShrink: 1 }}>
             <Text style={s.body}>{tr('whichBrand')}</Text>
-            <Text style={s.faint}>{live.gtin ? tr('pinnedNote') : tr('anyNote')}</Text>
+            <Text style={s.faint}>{choiceOf(live) === 'pinned' ? tr('pinnedNote') : tr('anyNote')}</Text>
           </View>
           <ChoiceChip line={live} onPress={onChoose} />
         </View>

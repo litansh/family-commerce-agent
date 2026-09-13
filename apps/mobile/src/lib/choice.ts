@@ -18,8 +18,15 @@ import type { Line } from './store';
 /** "כל מותג" (cheapest equivalent, per store) or one barcode, everywhere. */
 export type Choice = 'any' | 'pinned';
 
-/** A barcode on the line is the family saying "this one"; nothing else pins. */
-export const choiceOf = (l: Pick<Line, 'gtin'>): Choice => (l.gtin ? 'pinned' : 'any');
+/**
+ * A barcode **or a brand** on the line is the family saying "this one".
+ *
+ * Both, because the catalogue does not always have a barcode to pin with: a brand whose
+ * cheapest product carries none still pins — the resolver honours `brand` at every store —
+ * and a chip reading "כל מותג" one tap after the family chose תנובה is the screen lying
+ * about the family's own choice. A line with neither is genuinely "cheapest equivalent".
+ */
+export const choiceOf = (l: Pick<Line, 'gtin' | 'brand'>): Choice => (l.gtin || l.brand ? 'pinned' : 'any');
 
 /** A stable identity for a variant row. The API groups; it does not send the key. */
 export const variantId = (v: SearchVariant): string =>

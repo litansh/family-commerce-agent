@@ -119,6 +119,33 @@ test('a product with no price at all still lends the card its identity', () => {
   assert.equal(cheapestOf([]), undefined);
 });
 
+test('a brand with no barcode still pins: the chip says what the family chose', () => {
+  // Real shelves: the catalogue knows the brand and not the barcode. `pinBrand` can only put
+  // `brand` on the line — and the resolver honours it at every store — so the line *is* pinned.
+  // The bug this holds: the chip read the barcode alone, so it said "כל מותג" one tap after the
+  // family chose טרה, and the sheet reopened with nothing selected.
+  const noCode: SearchHit = { productId: 'tara-nocode', name: 'חלב הומוגני טרה 3% 1 ליטר', brand: 'טרה', rawBrand: 'טרה', sizeQty: 1000, sizeUnit: 'ml', fromPrice: shekels(7.2), pricedAtChains: 3, imageUrl: null };
+  const line = { id: 'l1', query: 'חלב 3% 1 ליטר', size: '1 ליטר' };
+
+  const pinned = pinBrand(line, brandGroups([noCode])[0]!);
+  assert.equal(pinned.gtin, undefined, 'there was no barcode to pin with');
+  assert.equal(pinned.brand, 'טרה');
+  assert.equal(choiceOf(pinned), 'pinned', 'a brand is a choice even without a barcode');
+
+  const back = unpin(pinned);
+  assert.equal(choiceOf(back), 'any', 'and the way back to כל מותג is still open');
+});
+
+test('a product with neither barcode nor brand is honestly כל מותג', () => {
+  // "שמנת חמוצה" on the real shelf: nothing identifies one product across stores, so every
+  // store prices its own cheapest of those words. The card must not claim a pin the compare
+  // cannot keep — but the line still carries the product's own words, not the family's search.
+  const bare: SearchHit = { productId: 'sour', name: 'שמנת חמוצה', sizeQty: 0, sizeUnit: '', fromPrice: shekels(4.9), pricedAtChains: 2, imageUrl: null };
+  const line = lineFromHit(bare);
+  assert.equal(line.query, 'שמנת חמוצה');
+  assert.equal(choiceOf(line), 'any');
+});
+
 test('a product the catalogue gives no brand for is not a brand to choose', () => {
   const unbranded: SearchHit = { productId: 'x', name: 'חלב 3% 1 ליטר', sizeQty: 1000, sizeUnit: 'ml', fromPrice: shekels(6), pricedAtChains: 2, imageUrl: null };
   assert.deepEqual(brandGroups([unbranded, ...MILK]).map((g) => g.brand), ['תנובה', 'טרה', 'יטבתה']);
