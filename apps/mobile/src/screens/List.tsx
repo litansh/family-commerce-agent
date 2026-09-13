@@ -202,7 +202,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         {showSearch ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
             {searching && !hits ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('searching')}</Text> : null}
-            {grouped ? variants!.map((v) => <VariantRow key={variantId(v)} v={v} onAdd={() => addVariant(v)} />) : null}
+            {grouped ? variants!.map((v, i) => <VariantRow key={variantId(v)} i={i} v={v} onAdd={() => addVariant(v)} />) : null}
             {grouped ? null : (hits ?? []).map((h) => (
               <Pressable key={h.productId} onPress={() => addHit(h)} style={({ pressed }) => [s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }, pressed && { opacity: 0.6 }]}>
                 <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
@@ -309,7 +309,9 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                         asked, and it is on every line: "חלב 3%  1 ליטר  [ כל מותג ▾ ]". */}
                     <View style={[s.rowStart, { marginTop: 3, gap: 7 }]}>
                       {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); return sz ? <Text style={s.faint}>{sz}</Text> : null; })()}
-                      <ChoiceChip line={item} onPress={() => { tap(); setChoosing(item); }} />
+                      {/* Numbered by the line's place on the whole list, not within its aisle, so a
+                          flow can reach "the first line's chip" without knowing the aisles. */}
+                      <ChoiceChip id={`choice-${lines.indexOf(item)}`} line={item} onPress={() => { tap(); setChoosing(item); }} />
                     </View>
                   </View>
                 </Pressable>
@@ -366,7 +368,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
  * The card's job is *which thing*, not how much: the span is a secondary line on purpose,
  * because a single headline price here would be a promise the compare has not made yet.
  */
-function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
+function VariantRow({ i, v, onAdd }: { i: number; v: SearchVariant; onAdd: () => void }) {
   const s = S();
   const sole = soleProduct(v);
   const pic = cheapestOf(v.products);
@@ -374,7 +376,7 @@ function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
   const here = carriedNearby(v);
   const title = sole ? sole.name : variantWords(v);
   return (
-    <Pressable testID={`variant-${variantId(v)}`} onPress={onAdd} style={({ pressed }) => [s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, (pressed || !here) && { opacity: here ? 0.6 : 0.55 }]}>
+    <Pressable testID={`variant-${i}`} onPress={onAdd} style={({ pressed }) => [s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, (pressed || !here) && { opacity: here ? 0.6 : 0.55 }]}>
       <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
         <ProductImage url={pic?.imageUrl ?? null} gtin={pic?.gtin} name={pic?.name ?? title} size={52} />
         <View style={{ flex: 1 }}>
@@ -396,11 +398,11 @@ function VariantRow({ v, onAdd }: { v: SearchVariant; onAdd: () => void }) {
 }
 
 /** The choice, on every line, as a control: "[ כל מותג ▾ ]" or "[ תנובה ▾ ]". */
-function ChoiceChip({ line, onPress }: { line: Line; onPress: () => void }) {
+function ChoiceChip({ id, line, onPress }: { id: string; line: Line; onPress: () => void }) {
   const pinned = choiceOf(line) === 'pinned';
   const label = pinned ? line.brand ?? line.productName ?? line.query : tr('anyBrand');
   return (
-    <Pressable testID={`choice-${line.id}`} onPress={onPress} hitSlop={8}
+    <Pressable testID={id} onPress={onPress} hitSlop={8}
       style={({ pressed }) => [{
         flexDirection: isRTL() ? 'row-reverse' : 'row', alignItems: 'center', gap: 4,
         backgroundColor: pinned ? t.accentSoft : t.inkSoft, borderRadius: 999,
@@ -456,8 +458,8 @@ function BrandSheet({ api, household, line, memory, onClose, onPick }: {
     } finally { setBusy(false); }
   };
 
-  const Row = ({ label, sub, price, on, onPress }: { label: string; sub?: string; price?: string | null; on: boolean; onPress: () => void }) => (
-    <Pressable onPress={() => { tap(); onPress(); }} style={[s.row, { paddingVertical: 13, borderTopWidth: 1, borderColor: t.line }]}>
+  const Row = ({ id, label, sub, price, on, onPress }: { id: string; label: string; sub?: string; price?: string | null; on: boolean; onPress: () => void }) => (
+    <Pressable testID={id} onPress={() => { tap(); onPress(); }} style={[s.row, { paddingVertical: 13, borderTopWidth: 1, borderColor: t.line }]}>
       <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
         <View style={{ width: 21, height: 21, borderRadius: 11, borderWidth: 2, borderColor: on ? t.accent : t.line, alignItems: 'center', justifyContent: 'center' }}>
           {on ? <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: t.accent }} /> : null}
@@ -479,10 +481,14 @@ function BrandSheet({ api, household, line, memory, onClose, onPick }: {
         <Text style={[s.small, { marginBottom: 8 }]} numberOfLines={1}>{line.query}</Text>
         {!hits ? <Loading label={tr('searching')} /> : (
           <ScrollView style={{ flexGrow: 0 }}>
-            <Row label={tr('anyBrand')} sub={tr('anyBrandSub')} on={!sel}
+            <Row id="brand-any" label={tr('anyBrand')} sub={tr('anyBrandSub')} on={!sel}
               price={span ? (span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`) : null}
               onPress={() => setSel(null)} />
-            {groups.map((g) => <Row key={g.brand} label={g.brand} price={rangeOf(g)} on={sel === g.brand} onPress={() => setSel(g.brand)} />)}
+            {groups.map((g, i) => <Row key={g.brand} id={`brand-${i}`} label={g.brand} price={rangeOf(g)} on={sel === g.brand} onPress={() => setSel(g.brand)} />)}
+            {/* A sheet with one row and no explanation looks broken. The catalogue simply has
+                no brand to offer for these words, and that is an answer: every store's own
+                cheapest is what the family gets, and nothing was hidden from them. */}
+            {groups.length === 0 ? <Text style={[s.faint, { paddingTop: 12 }]}>{tr('noBrands')}</Text> : null}
           </ScrollView>
         )}
         {canRemember ? (
@@ -561,7 +567,7 @@ function ItemSheet({ item, onClose, onBump, onDelete, onChoose, lines }: { item:
             <Text style={s.body}>{tr('whichBrand')}</Text>
             <Text style={s.faint}>{choiceOf(live) === 'pinned' ? tr('pinnedNote') : tr('anyNote')}</Text>
           </View>
-          <ChoiceChip line={live} onPress={onChoose} />
+          <ChoiceChip id="choice-detail" line={live} onPress={onChoose} />
         </View>
         <View style={[s.row, { marginTop: 18 }]}>
           <Text style={s.body}>{tr('amount')}</Text>
