@@ -93,13 +93,12 @@ The line asks for Rami Levy's catalogue to price a storefront the provider lacks
 "its catalogue already answers the API" — true when checked from this Mac, not from the API Lambda.
 ADR 0011 (accepted 2026-09-13, the same night, from measurements) found the opposite: a Lambda
 calling `rami-levy.co.il/api/catalog` gets the same block page a data centre always gets. The image
-resolver already lives with this — `services/product-images/src/index.ts#tryRamiLevySearch` used to
-be called from the API for exactly this reason, and has since been removed (api-fixer, 2026-09-13)
-because it never once answered from there; the phone's `remember()` call is what actually fills
-that cache now. A price source for the *compare* needs the same shape, and does not exist yet:
-something that runs on the phone or the ops Mac, prices the storefront there, and writes it
-somewhere the API can read as a cache — not a new Lambda-side call to the chain, which would only
-repeat the measured block.
+resolver already lives with this (`services/product-images/src/index.ts#tryRamiLevySearch` is called
+from the API today, and its own comment says it answers a block page there; the phone's `remember()`
+call is what actually fills that cache). A price source for the *compare* needs the same shape, and
+does not exist yet: something that runs on the phone or the ops Mac, prices the storefront there,
+and writes it somewhere the API can read as a cache — not a new Lambda-side call to the chain, which
+would only repeat the measured block.
 
 Needs: a decision on where this runs (phone, at compare time — but a compare must answer whether or
 not that store's own app is open, so it cannot depend on the phone being on that store's site; or
