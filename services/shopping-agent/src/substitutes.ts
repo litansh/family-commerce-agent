@@ -42,10 +42,15 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   // stores must not bail out because their gaps differ - that left every alternative unpriced.
   // The closest catalogue product for each missing line: same words, a different product.
   const picks = new Map<string, { gtin: string; name: string }>();
-  await Promise.all([...missing.values()].slice(0, 12).map(async (l) => {
+  // Four at a time: twelve searches at once is what a provider answers with `internal_error`.
+  const wanted = [...missing.values()].slice(0, 12);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, wanted.length) }, async () => {
+    for (let i = next++; i < wanted.length; i = next++) await (async (l) => {
     const found = await catalog.searchProducts({ query: l.query, limit: 8, location: address }).catch(() => []);
     const alt = pickSubstitute(l.query, found.filter((c) => c.gtin !== l.gtin));
     if (alt?.gtin) picks.set(l.id, { gtin: alt.gtin, name: alt.name });
+    })(wanted[i]!);
   }));
   if (picks.size === 0) return res;
   const again = await qp.quoteBasket({ lines: [...picks].map(([id, p]) => { const l = missing.get(id)!; return { ...l, gtin: p.gtin, query: p.name }; }), address, serviceType: 'delivery' });

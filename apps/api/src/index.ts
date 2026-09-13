@@ -58,6 +58,16 @@ import { BranchPrices } from './branches.ts';
 import { ConnectFailed, driverFor, localPhone, type PastOrderRaw, type StoreSession } from '@fca/cloud-connectors';
 
 
+/** Runs `work` over `items`, at most `limit` at a time: the provider is a shared service, not ours to flood. */
+async function mapLimit<T>(items: readonly T[], limit: number, work: (item: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (let n = i++; n < items.length; n = i++) await work(items[n]!);
+  });
+  await Promise.all(workers);
+}
+
+
 const TABLE = process.env['TABLE_NAME'] ?? 'fca-main';
 
 /**
@@ -550,28 +560,29 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const unresolved: string[] = [];
       // One line's provider error must never sink the other 38 (ADR 0010): each line gets its own
       // budget and, on a miss, reports itself in `unresolved` instead of rejecting the whole batch.
+      // And four at a time, never thirty-nine: asking a shared provider for a whole week at once is
+      // what turns a healthy provider into `internal_error` (seen in production, HTTP 500, 0/39).
       const LINE_BUDGET_MS = 6_000;
-      await Promise.all(
-        applied.map(async ({ line, fromMemory }) => {
-          try {
-            const [branded, open] = await withDeadline(Promise.all([
-              line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
-              catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
-            ]), LINE_BUDGET_MS);
-            const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
-            const c = buildChoice(merged, {
-              lineId: line.id, query: line.query,
-              ...(line.brand ? { requestedBrand: line.brand } : {}),
-              ...(line.gtin ? { requestedGtin: line.gtin } : {}),
-            });
-            choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
-          } catch (e) {
-            console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, lineId: line.id, query: line.query, error: e instanceof Error ? e.message : String(e) }));
-            choices[line.id] = null;
-            unresolved.push(line.id);
-          }
-        }),
-      );
+      await mapLimit(applied, 4, async ({ line, fromMemory }) => {
+        try {
+          const [branded, open] = await withDeadline(Promise.all([
+            line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
+            catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
+          ]), LINE_BUDGET_MS);
+          const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
+          const c = buildChoice(merged, {
+            lineId: line.id, query: line.query,
+            ...(line.brand ? { requestedBrand: line.brand } : {}),
+            ...(line.gtin ? { requestedGtin: line.gtin } : {}),
+          });
+          choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
+        } catch (e) {
+          console.warn(JSON.stringify({ event: 'resolve-line-failed', hid, lineId: line.id, query: line.query, error: e instanceof Error ? e.message.slice(0, 120) : String(e) }));
+          choices[line.id] = null;
+          unresolved.push(line.id);
+        }
+      });
+      if (unresolved.length) console.log(JSON.stringify({ event: 'resolve', hid, lines: applied.length, unresolved: unresolved.length }));
       return ok({ choices, fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id), unresolved });
     }
 

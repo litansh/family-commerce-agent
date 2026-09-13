@@ -55,7 +55,12 @@ everything else answers in under a second.
 
 ## Not yet
 
-Victory/Mahsanei HaShuk (postback form), Hatzi Hinam branches (no Stores
-file), promotions (PromoFull files: club prices and multi-buys would lower the
-in-store total further), and a per-household car cost instead of the default
-₪2.50/km.
+Victory/Mahsanei HaShuk/H. Cohen (the postback form and the JSON API it was moved to both answer
+zero files as of 2026-09-13; ops/NEEDS-HUMAN.md), Hatzi Hinam branches (no Stores file), and a
+per-household car cost instead of the default ₪2.50/km.
+
+Promotions (PromoFull files: club prices, multi-buys) are read: `refreshHousehold` fetches each
+indexed branch's promo file alongside its price file and stores it next to the price index; the
+quote path passes it into `priceAtBranch`, which picks the cheapest way to buy each line's
+quantity and marks club-only deals. A branch that publishes none, or a promo fetch that fails,
+still prices at the regular price - promos only ever add a discount, never block a quote.

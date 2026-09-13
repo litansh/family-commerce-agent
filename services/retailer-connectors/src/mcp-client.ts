@@ -41,13 +41,21 @@ export class McpClient {
     this.#retries = retries;
   }
 
+  /**
+   * The provider errs in short bursts: the same call that answered `internal_error` answers in
+   * 200 ms a second later (measured 2026-09-12: 'טופו' failed after 20.7 s, then five products in
+   * 468 ms). A transient error is therefore retried twice with a short backoff before it is anyone
+   * else's problem. A refusal that is not transient (a bad argument) is passed straight up.
+   */
   async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       try {
         return await this.#callOnce<T>(name, args);
       } catch (e) {
         if (attempt >= this.#retries || !(e instanceof McpCallError) || !TRANSIENT.test(e.message)) throw e;
-        await sleep(300 * (attempt + 1));
+        console.warn(JSON.stringify({ event: 'provider-retry', tool: name, attempt: attempt + 1, error: e.message.slice(0, 120) }));
+        // Jitter: a burst of retries in step is another burst.
+        await sleep(300 * (attempt + 1) + Math.floor(Math.random() * 300));
       }
     }
   }
