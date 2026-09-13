@@ -50,12 +50,15 @@ for (const id of ids) {
     // Promise 9: a claim of "added" is only true if it is the product the family asked for.
     const fakeAdded = (res.results || []).find((r) => r.gtin === FAKE_GTIN && r.status === 'added');
     if (fakeAdded) console.log(`   PROMISE9-VIOLATION: the deliberately absent barcode ${FAKE_GTIN} was added as "${fakeAdded.detail}" — the store's cart holds a product the family never asked for`);
-    // Read the store's own cart back, to confirm the lines really landed.
-    if (id === 'rami-levy') {
-      const n = await page.evaluate(async () => { try { const nx = window.$nuxt; const c = nx && nx.$store && nx.$store.getters['cart/getCartItems']; const items = (nx && nx.$store && nx.$store.state && nx.$store.state.cart && nx.$store.state.cart.items) || null; return items ? items.length : 'no cart state'; } catch (e) { return 'err ' + e.message; } });
-      console.log(`   store cart state holds: ${n}`);
-      await page.goto('https://www.rami-levy.co.il/he/basket', { waitUntil: 'domcontentloaded', timeout: 45000 }); await page.waitForTimeout(5000);
-      const badge = await page.evaluate(() => { const t=(document.body.innerText||'').replace(/\s+/g,' '); const m=t.match(/(\d+)\s*הסל שלי/); return m?m[1]:'?'; });
+    // Read the store's own cart back (its own basketCountJs, the same recipe the phone runs on
+    // the cart page), to confirm the lines really landed - not just that the recipe said so.
+    if (store.basketCountJs && store.cartUrl) {
+      let resolveBadge; const gotBadge = new Promise((r) => { resolveBadge = r; });
+      await page.exposeFunction('__basketResult', (m) => resolveBadge(m));
+      await page.goto(store.cartUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }); await page.waitForTimeout(5000);
+      await page.evaluate(() => { window.__origPost = window.ReactNativeWebView.postMessage; window.ReactNativeWebView.postMessage = (m) => { if (String(m).startsWith('basket:')) window.__basketResult(String(m).slice(7)); else window.__origPost(m); }; });
+      await page.evaluate(store.basketCountJs.replace(/;\s*true;\s*$/, ''));
+      const badge = await Promise.race([gotBadge, new Promise((r) => setTimeout(() => r('?'), 15_000))]);
       console.log(`   basket page count: ${badge}`);
       if (badge !== '?' && Number(badge) !== (counts.added || 0)) console.log(`   PROMISE9-VIOLATION: ${counts.added || 0} claimed added but the store's own basket shows ${badge}`);
     }
