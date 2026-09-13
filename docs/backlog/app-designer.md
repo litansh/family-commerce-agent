@@ -104,3 +104,5 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
   "כל החנויות שמגיעות אליכם". A store that cannot fill the basket keeps its way to be bought from —
   as a quiet link reading "קנו כאן את N הפריטים שיש", never a primary button offering a basket it has
   not got (promises 1 and 6; the charter's "move it, size it, but keep it reachable").
+- [ ] **A full basket at every store** (docs/design/a-full-basket-everywhere.md), the owner's central ask: every store priced for the whole list using its own alternatives, the family's exact basket priced beside it with the difference in shekels, and a 'make it cheaper' action. Coverage becomes a fact on the card, not a reason to hide a store. *app-designer*
+- [ ] **Complete offers only, partial ones in their own section** (docs/design/a-full-basket-everywhere.md, the owner's 13 September refinement): every offer covers the whole basket with that store's alternatives; a store that cannot fill a line even with its nearest alternative moves to a collapsed "הצעות חלקיות ב-N חנויות" section; inside an offer a difference is one quiet line, "במקום X — Y, ₪n במקום ₪m". *app-designer*
