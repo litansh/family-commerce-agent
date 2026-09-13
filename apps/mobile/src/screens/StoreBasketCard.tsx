@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Button, Chip, PriceCol, S, t } from '../ui';
 import { money, t as tr } from '../lib/i18n';
-import { alternativeTo, headlineOf, type BasketLike, type BasketPrice, type BasketSwap, type StoreCardFacts } from '../lib/fullBasket';
+import { alternativeTo, headlineOf, type BasketLike, type BasketMode, type BasketPrice, type BasketSwap, type StoreCardFacts } from '../lib/fullBasket';
 
 /**
  * One store, offered with a whole basket (docs/design/a-full-basket-everywhere.md).
@@ -66,20 +66,22 @@ function SwapRow({ swap }: { swap: BasketSwap }) {
   );
 }
 
-export function StoreBasketCard({ card, quote, open, cheapened, onToggle, onCheaper, onBuy, nameOf }: {
+export function StoreBasketCard({ card, quote, open, mode, onToggle, onMode, onBuy, nameOf }: {
   card: StoreCardFacts;
   quote: BasketLike;
   open: boolean;
-  /** Whether "עשה את זה זול יותר" is on for this store. */
-  cheapened: boolean;
+  /** The basket the family asked this card to show, or null for whichever leads. */
+  mode: BasketMode | null;
   onToggle: () => void;
-  onCheaper: () => void;
+  /** Show this basket, or (with the same mode again) go back to whichever leads. */
+  onMode: (m: BasketMode | null) => void;
   onBuy: () => void;
   nameOf: (lineId: string) => string;
 }) {
   const s = S();
-  const head = headlineOf(card, cheapened);
+  const head = headlineOf(card, mode);
   const alt = alternativeTo(card, head);
+  const cheapened = head.mode === 'cheap';
   // A number that is not items + delivery may not read like one that is: it stays in muted ink and its
   // note says what it covers. The same rule the compare rows have always kept (promise 4).
   const comparable = head.delivered && card.complete;
@@ -125,12 +127,21 @@ export function StoreBasketCard({ card, quote, open, cheapened, onToggle, onChea
         />
       </View>
 
-      {/* 3 — the other basket, named, with the difference in shekels. A tap switches to it. */}
+      {/* 3 — the other basket, named as what it actually is, with the difference in shekels. One tap
+          switches the headline to it, and the same tap again comes back: "the exact basket is always
+          reachable in one tap, with its own number and the difference". */}
       {alt ? (
-        <Text style={[s.small, { marginTop: 6, color: t.accent }]} testID={`basket-${card.storefrontId}-alt`}>
-          {tr('exactBasketAt', { x: money(alt.basket.total ?? 0) })} ({alt.diff >= 0 ? '+' : '−'}{money(Math.abs(alt.diff))})
-          {alt.basket.approx ? ` · ${tr('exactTwoStops', { b: card.swaps.flatMap((x) => x.elsewhere ?? []).map((e) => e.brand)[0] ?? '' })}` : ''}
-        </Text>
+        <Pressable
+          onPress={(e) => { e.stopPropagation?.(); onMode(alt.basket.mode === head.mode ? null : alt.basket.mode); }}
+          hitSlop={6}
+          testID={`basket-${card.storefrontId}-alt`}
+        >
+          <Text style={[s.small, { marginTop: 6, color: t.accent }]}>
+            {basketName(alt.basket, card)} {money(alt.basket.total ?? 0)} ({alt.diff >= 0 ? '+' : '−'}{money(Math.abs(alt.diff))})
+            {/* A total that had to cross a store boundary has a second delivery inside it, and says so. */}
+            {alt.basket.approx ? ` · ${tr('exactTwoStops', { b: card.swaps.flatMap((x) => x.elsewhere ?? []).map((e) => e.brand)[0] ?? '' })}` : ''}
+          </Text>
+        </Pressable>
       ) : null}
 
       {/* A minimum is a fact in shekels, not a rejection: it says exactly what would make this orderable. */}
@@ -177,7 +188,7 @@ export function StoreBasketCard({ card, quote, open, cheapened, onToggle, onChea
         {!card.complete ? null : nothingCheaper ? (
           <Text style={[s.faint, { fontSize: 12, textAlign: 'center' }]} testID={`basket-nocheaper-${card.storefrontId}`}>{tr('cheaperNone')}</Text>
         ) : cheaperAnswered ? (
-          <Pressable onPress={onCheaper} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
+          <Pressable onPress={(e) => { e.stopPropagation?.(); onMode(cheapened ? null : 'cheap'); }} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
             <Text style={[s.link, { fontSize: 14 }]}>{cheapened ? tr('undoCheaper') : tr('makeCheaper')}</Text>
           </Pressable>
         ) : null}

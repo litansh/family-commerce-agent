@@ -147,6 +147,16 @@ Read order — first, second, third:
 4. **What was swapped, and what nobody has.** (what I am agreeing to) — a tap unfolds.
 5. **The two actions.** (buy it · make it cheaper)
 
+**The switch is the second line itself, not a third button.** The agreement's own sketch had
+`[ קח את שלי, +₪18 ]` as a button beside `[ החלף הכל ]`; building it showed that two buttons plus a
+line naming the other basket is three controls for two things, on a card that already carries a price,
+a minimum, a gap and a swap count. So the line that names the other basket *is* the tap that switches
+to it, and the same tap comes back. `קנו כאן` and `עשה את זה זול יותר` stay as the two actions.
+
+And the line names the basket it actually is. When the exact basket leads (state 3) the second line is
+the **full** basket; calling it "הסל המדויק שלך" there would print the headline's own name twice, on
+the one card whose whole job is telling two baskets apart.
+
 ### The resting card — a store that fills the basket with one alternative
 
 ```
@@ -195,18 +205,23 @@ orderable, in shekels. That is information, not a rejection.
 
 ```
 ┌──────────────────────────────────────────────────┐
-│ מחסני השוק | רמת גן (וולט)         ל־3 מתוך 8    │
-│ משלוח ב-45 דק׳                        ₪23.75    │
+│ מחסני השוק | רמת גן (וולט)       מה שיש כאן      │
+│ משלוח ב-45 דק׳          ₪23.75 · ל־3 מתוך 8     │
 │ ──────────────────────────────────────────────── │
 │ אין כאן חלופה ל: ביצים L, פילה סלמון, בננות…     │
+│           קנו כאן את 3 הפריטים שיש               │
 └──────────────────────────────────────────────────┘
 ```
 
 It keeps its number, in muted ink, labelled for what it covers — it is not a basket, so it may not sit
-in the same column as one (promise 4, `docs/design/compare-accuracy.md`). No "buy here" primary: there
-is nothing here to buy the list from. This state is the **only** honest gap the design allows, and
-every card in it is a line for *api-fixer*: a store with no alternative for ביצים is a lookup that did
-not run, not a store without eggs.
+in the same column as one (promise 4, `docs/design/compare-accuracy.md`), and it is not called one
+either. No primary "קנו כאן · ₪23.75", which would offer a basket this store has not got; but the way
+to buy what it *does* have stays, as a quiet link, because a card that names a store is a store the
+family may buy from (promises 1 and 6). Moved and sized, never removed.
+
+This state is the **only** honest gap the design allows, and every card in it is a line for
+*api-fixer*: a store with no alternative for ביצים is a lookup that did not run, not a store without
+eggs.
 
 ### "עשה את זה זול יותר"
 
@@ -248,7 +263,7 @@ is not.
 | 3 | The exact basket is the cheaper of the two (Z < 0) | the exact basket becomes the headline; the full basket is the second line, with `−₪Z` |
 | 4 | The exact basket needs another store | second line reads `+₪Z · ב-2 משלוחים מ{brand}` — never a single number hiding a second delivery |
 | 5 | Nobody nearby has the pinned product | no exact-basket line at all; the swap row says `את זה שביקשתם אין באף חנות` — the only gap the design calls honest |
-| 6 | The store cannot fill some line, even with an alternative | number in muted ink, labelled `ל־{n} מתוך {m}`, the lines named, **no** primary buy action |
+| 6 | The store cannot fill some line, even with an alternative | number in muted ink, named `מה שיש כאן` — never `הסל שלך`, which would claim the one thing this card exists to be honest about — labelled `ל־{n} מתוך {m}`, the lines named, and the buy action demoted to a quiet `קנו כאן את {n} הפריטים שיש` |
 | 7 | Basket complete, under the store's minimum | complete number + `חסר ₪X למינימום של ₪Y`; the primary action says what would fix it |
 | 8 | Made cheaper | headline = cheaper total, chip `מוזל`, `חסכתם ₪X`, every swap in accent, `בטלו את ההוזלה` |
 | 9 | "Cheaper" found nothing at this store | the action reports once, in place: `לא נמצא כאן זול יותר`, and stays tappable |
@@ -270,14 +285,13 @@ Hebrew is the product; English is kept in step in the same commit (`lib/i18n.ts`
 | `fullBasket` | סל מלא | Full basket |
 | `yourBasket` | הסל שלך | Your basket |
 | `exactBasket` | הסל המדויק שלך | Your exact basket |
-| `exactBasketAt` | הסל המדויק שלך {x} | Your exact basket {x} |
+| `whatTheyHave` | מה שיש כאן | What they have here |
 | `exactTwoStops` | ב-2 משלוחים מ{b} | 2 deliveries, with {b} |
 | `exactNowhere` | את זה שביקשתם אין באף חנות | Nobody nearby has the one you asked for |
 | `swapsN` / `swaps1` | {n} החלפות / החלפה אחת | {n} substitutions / one substitution |
 | `swapMissingWhy` | החלפה — את זה שביקשתם אין כאן | Substitute — they do not have yours |
 | `swapCheaperWhy` | זול יותר · {x} פחות | Cheaper · {x} less |
-| `takeMine` | קחו את שלי · +{x} | Take mine · +{x} |
-| `backToFull` | חזרה לסל המלא · −{x} | Back to the full basket · −{x} |
+| `buyWhatItHas` | קנו כאן את {n} הפריטים שיש | Buy the {n} items they have |
 | `makeCheaper` | עשה את זה זול יותר | Make it cheaper |
 | `undoCheaper` | בטלו את ההוזלה | Undo |
 | `cheapBasket` | סל מוזל | Cheaper basket |

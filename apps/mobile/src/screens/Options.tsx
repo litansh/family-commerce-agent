@@ -12,7 +12,7 @@ import { addPending } from '../lib/pending';
 import { getMode, setMode } from '../lib/prefs';
 import { orderLineAt, productAt } from '../lib/quote';
 import { etaRank, etaTone, exceptionsOf, opensAt, rowsFor, savingOf, type CompareLike, type CompareRow } from '../lib/compare';
-import { cardsFor, type BasketLike } from '../lib/fullBasket';
+import { cardsFor, type BasketLike, type BasketMode } from '../lib/fullBasket';
 import { StoreBasketCard } from './StoreBasketCard';
 import { StoreLink } from './StoreLink';
 import { storeForStorefront, type CartLine } from '../lib/stores';
@@ -185,9 +185,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   const setStrategy = (m: 'cheap' | 'balanced' | 'fast') => { setStrategyState(m); setMode(m); };
   // Which row, card or the answer's legs is unfolded.
   const [open, setOpen] = useState<string | null>(null);
-  // The stores "עשה את זה זול יותר" is on for. Per store, and reversible in one tap: the family asked
-  // for a cheaper basket at this shop, not for a different app (docs/design/a-full-basket-everywhere.md).
-  const [cheapAt, setCheapAt] = useState<string[]>([]);
+  // Which basket each store's card is showing — the exact one, the cheapened one, or whichever leads.
+  // Per store, and reversible in one tap: the family asked for a different basket at this shop, not
+  // for a different screen (docs/design/a-full-basket-everywhere.md).
+  const [modeAt, setModeAt] = useState<Record<string, BasketMode>>({});
   const [attempt, setAttempt] = useState(0);
   // Past half a minute the loading copy says why it is taking longer, so nobody thinks it is stuck.
   const [slow, setSlow] = useState(false);
@@ -436,9 +437,9 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
                 card={card}
                 quote={q as unknown as BasketLike}
                 open={open === `b-${card.storefrontId}`}
-                cheapened={cheapAt.includes(card.storefrontId)}
+                mode={modeAt[card.storefrontId] ?? null}
                 onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
-                onCheaper={() => setCheapAt((on) => (on.includes(card.storefrontId) ? on.filter((x) => x !== card.storefrontId) : [...on, card.storefrontId]))}
+                onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
                 onBuy={() => buyStore(card.storefrontId, card.brand)}
                 nameOf={nameOf}
               />

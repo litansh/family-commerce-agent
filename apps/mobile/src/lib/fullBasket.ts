@@ -309,18 +309,28 @@ export function cardsFor(quote: BasketLike): StoreCardFacts[] {
   return [...complete, ...partial];
 }
 
+/** The basket the card is showing, when the family has asked for one. `null` means "whichever leads". */
+export const basketOf = (card: StoreCardFacts, mode: BasketMode): BasketPrice | undefined =>
+  mode === 'cheap' ? card.cheap : mode === 'exact' ? card.exact : card.full;
+
 /**
- * The basket a card leads with. One headline per card, and it is cash: the cheapened basket when the
- * family asked for it, the exact one when it is genuinely the cheaper of the two (there is no reason
- * to make anyone pay for a stand-in they did not want), otherwise the full basket.
+ * The basket a card leads with. One headline per card, and it is cash.
+ *
+ * `want` is the family's own tap — the exact basket or the cheapened one, each reachable in one.
+ * Left to itself the card leads with the full basket, except where the exact basket is genuinely the
+ * cheaper of the two: nobody should be made to pay for a stand-in they did not ask for.
  */
-export function headlineOf(card: StoreCardFacts, cheapened: boolean): BasketPrice {
-  if (cheapened && card.cheap) return card.cheap;
+export function headlineOf(card: StoreCardFacts, want?: BasketMode | null): BasketPrice {
+  if (want) { const b = basketOf(card, want); if (b?.total !== undefined) return b; }
   if (card.exact?.total !== undefined && card.full.total !== undefined && card.exact.total < card.full.total) return card.exact;
   return card.full;
 }
 
-/** The other basket the card names beside its headline, with the difference in shekels. Null when there is only one. */
+/**
+ * The other basket the card names beside its headline, with the difference in shekels — the cheapest
+ * of the ones this store can actually price. Null when there is only one basket here, which is the
+ * ordinary case: a list with nothing pinned has no exact version to cost, and the card stays calm.
+ */
 export function alternativeTo(card: StoreCardFacts, headline: BasketPrice): { basket: BasketPrice; diff: Agorot } | null {
   const others = [card.full, card.exact, card.cheap].filter((b): b is BasketPrice => !!b && b !== headline && b.total !== undefined);
   if (headline.total === undefined || !others.length) return null;

@@ -37,7 +37,7 @@ console.log(`     ${q.lines.length} line(s), ${q.options.length} option(s), ${q.
 
 // --- The screen the family would see, printed, so the PR can be read without a simulator. ---
 for (const c of cards) {
-  const head = headlineOf(c, false);
+  const head = headlineOf(c, null);
   const alt = alternativeTo(c, head);
   const tail = [
     c.complete ? 'סל מלא' : `ל־${c.filled} מתוך ${c.asked}`,
@@ -104,14 +104,14 @@ for (const c of cards) {
     check(!q.storefronts?.[c.storefrontId]?.exactBasket?.total, `${c.brand}: shows no exact-basket number the engine did not give`, 'none');
     continue;
   }
-  const head = headlineOf(c, false);
+  const head = headlineOf(c, null);
   const alt = alternativeTo(c, head);
   check(alt !== null && alt.basket !== head, `${c.brand}: the other basket is named beside the headline`, `${alt?.basket.mode} ${m(alt?.basket.total)} (${alt && alt.diff >= 0 ? '+' : ''}${m(Math.abs(alt?.diff ?? 0))})`);
 }
 
 // --- One headline per card, and it is cash. ---
 for (const c of cards) {
-  const head = headlineOf(c, false);
+  const head = headlineOf(c, null);
   const alt = alternativeTo(c, head);
   check([c.full, c.exact, c.cheap].filter((b) => b === head).length === 1, `${c.brand}: exactly one basket leads the card`, head.mode);
   check(alt === null || alt.basket !== head, `${c.brand}: the alternative is not the headline again`, alt ? alt.basket.mode : 'only one basket');

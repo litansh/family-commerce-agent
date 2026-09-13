@@ -38,7 +38,7 @@ test('a store that gives the family exactly what they asked for shows one number
   assert.deepEqual(card.swaps, []);
   assert.ok(card.states.includes('yours'));
   assert.equal(card.exact, undefined, 'no second basket when nothing was swapped');
-  assert.equal(alternativeTo(card, headlineOf(card, false)), null, 'and so nothing beside the headline');
+  assert.equal(alternativeTo(card, headlineOf(card, null)), null, 'and so nothing beside the headline');
   assert.equal(card.full.total, shekels(135.9));
   assert.equal(card.full.delivered, true);
 });
@@ -75,12 +75,18 @@ test('the exact basket leads when it is the cheaper of the two', () => {
   });
   q.storefrontLines!['b-store'] = { b: { productName: 'שמן זית אליעד', price: shekels(24.9) } };
   const card = cardFor(q, 'a-store');
-  const head = headlineOf(card, false);
+  const head = headlineOf(card, null);
   assert.equal(head.mode, 'exact', 'nobody is made to pay for a stand-in they did not want');
   assert.ok(card.states.includes('exact-cheaper'));
   const alt = alternativeTo(card, head);
+  // The card must name the alternative for what it *is*. When the exact basket leads, the second line
+  // is the FULL basket — calling it "הסל המדויק שלך" there would print the headline's own name twice.
   assert.equal(alt?.basket.mode, 'full');
   assert.equal(alt?.diff, shekels(135.9) - shekels(128.4), 'the difference is stated in shekels');
+  // And one tap shows the full basket instead, with the exact one named beside it.
+  const swapped = headlineOf(card, 'full');
+  assert.equal(swapped.mode, 'full');
+  assert.equal(alternativeTo(card, swapped)?.basket.mode, 'exact');
 });
 
 // --- States 8 and 9: "עשה את זה זול יותר". ---
@@ -98,8 +104,12 @@ test('"make it cheaper" is a mode the card enters, and every swap it makes is na
   assert.equal(card.swaps[0]!.asked, 'חלב 3%');
   assert.equal(card.cheap?.total, shekels(135.9) - shekels(1.5));
   // The headline follows the tap, and one tap back restores the full basket.
-  assert.equal(headlineOf(card, true).mode, 'cheap');
-  assert.equal(headlineOf(card, false).mode, 'full');
+  assert.equal(headlineOf(card, 'cheap').mode, 'cheap');
+  assert.equal(headlineOf(card, null).mode, 'full');
+  // The alternative beside the cheapened headline is the full basket, named as the full basket.
+  const alt = alternativeTo(card, headlineOf(card, 'cheap'))!;
+  assert.equal(alt.basket.mode, 'full');
+  assert.equal(alt.diff, shekels(1.5), 'and the difference is what the tap saved');
 });
 
 test('a store where nothing cheaper was found says so once, and shows no cheaper basket', () => {
@@ -111,7 +121,7 @@ test('a store where nothing cheaper was found says so once, and shows no cheaper
   const card = cardFor(q, 'a-store');
   assert.ok(card.states.includes('cheaper-none'));
   assert.equal(card.cheap, undefined);
-  assert.equal(headlineOf(card, true).mode, 'full', 'asking for cheaper when there is none changes nothing');
+  assert.equal(headlineOf(card, 'cheap').mode, 'full', 'asking for cheaper when there is none changes nothing');
 });
 
 // --- The rule the module exists for: a total is the engine's, or there is no total. ---
@@ -167,7 +177,7 @@ test('one basket leads the card, and the alternative beside it is never the same
     storefronts: { 'a-store': { brand: 'רמי לוי', exactBasket: { total: shekels(151.4), elsewhere: [{ lineId: 'b', storefrontId: 'b-store', brand: 'שופרסל' }] } } },
   });
   const card = cardFor(q, 'a-store');
-  const head = headlineOf(card, false);
+  const head = headlineOf(card, null);
   assert.equal(head.mode, 'full', 'the cheaper of the two leads');
   const alt = alternativeTo(card, head)!;
   assert.equal(alt.basket.mode, 'exact');
