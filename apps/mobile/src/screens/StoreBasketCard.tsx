@@ -58,7 +58,10 @@ function SwapRow({ swap }: { swap: BasketSwap }) {
         </Text>
         {swap.lineTotal !== undefined ? <Text style={s.priceSmall}>{money(swap.lineTotal)}</Text> : null}
       </View>
-      <Text style={[s.faint, { fontSize: 11, color: cheaper ? t.accent : t.amber }]} numberOfLines={2}>{why}</Text>
+      {/* Why this line is not what they asked for. A stable testID as well as the words: a flow that
+          matches long Hebrew through the XCUITest driver is a flow that goes red for reasons that are
+          not the product (docs/backlog/app-designer.md). */}
+      <Text style={[s.faint, { fontSize: 11, color: cheaper ? t.accent : t.amber }]} numberOfLines={2} testID="swap-why">{why}</Text>
     </View>
   );
 }

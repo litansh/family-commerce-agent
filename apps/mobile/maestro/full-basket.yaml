@@ -73,9 +73,9 @@ appId: com.litansh.kaniti
 - tapOn: { text: ".*(החלפה אחת|[0-9]+ החלפות).*" }
 - waitForAnimationToEnd
 - takeScreenshot: maestro/shots/full-basket-swaps
-# What was asked, an arrow, what this store gives, and where the family's own one actually is.
+# What was asked, an arrow, what this store gives — and, under it, why it is not what they asked for.
 - assertVisible: { text: ".*→.*" }
-- assertVisible: { text: "החלפה — את זה שביקשתם אין כאן|את זה שביקשתם יש ב.*|את זה שביקשתם אין באף חנות" }
+- assertVisible: { id: "swap-why" }
 
 # --- The only honest gap: a store that cannot fill a line even with an alternative says which. ---
 - scrollUntilVisible:
