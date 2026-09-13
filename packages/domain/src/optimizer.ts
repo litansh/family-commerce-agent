@@ -72,7 +72,10 @@ export function optimize(input: OptimizeInput): OptimizeResult {
     // One missing line never disqualifies a store: on an eight-line top-up a 90 % floor would
     // reject a store for the salmon alone. The missing line is named on the card instead.
     const missing = q.requestedLines - q.pricedLines;
-    const allowedMissing = Math.max(1, Math.floor(q.requestedLines * (1 - constants.minCoverageRatio)));
+    // The epsilon is not decoration: 1 - 0.9 is 0.09999999999999998 in binary floating point, so
+    // 20 lines at a 90 % floor allowed one missing line instead of two, and stores that met the
+    // floor exactly were rejected for missing it. A family saw two stores where five qualified.
+    const allowedMissing = Math.max(1, Math.floor(q.requestedLines * (1 - constants.minCoverageRatio) + 1e-9));
     if (missing > allowedMissing) {
       rejected.push({
         storefrontId: q.storefrontId, brand: q.brand, code: 'coverage',
