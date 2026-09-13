@@ -223,7 +223,10 @@ export const RAMI_LEVY: Platform = {
   // with the session's EcomToken; item ids come from /api/catalog?itemsBy=barcode. Runs in the page,
   // so it is the person's own session and the store sees its own app at work.
   // The store's own count: its cart state (the plus buttons' source of truth), else the basket badge text.
-  basketCountJs: `(()=>{try{const st=window.$nuxt&&window.$nuxt.$store;const items=st&&st.state&&st.state.cart&&st.state.cart.items;if(Array.isArray(items)){window.ReactNativeWebView.postMessage('basket:'+items.length);return;}const t=(document.body&&document.body.innerText||'').replace(/\s+/g,' ');const m=t.match(/(\d+)\s*הסל שלי/);window.ReactNativeWebView.postMessage('basket:'+(m?m[1]:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
+  // The cart page's own state also carries a delivery-fee pseudo-line ('מחיר משלוח', is_delivery:true) -
+  // not a product the family asked for, so it is never counted (confirmed in a lab, 2026-09-13: two
+  // products in the cart page still read items.length 3 until this line is excluded).
+  basketCountJs: `(()=>{try{const st=window.$nuxt&&window.$nuxt.$store;const items=st&&st.state&&st.state.cart&&st.state.cart.items;if(Array.isArray(items)){window.ReactNativeWebView.postMessage('basket:'+items.filter(function(i){return i&&!i.is_delivery;}).length);return;}const t=(document.body&&document.body.innerText||'').replace(/\s+/g,' ');const m=t.match(/(\d+)\s*הסל שלי/);window.ReactNativeWebView.postMessage('basket:'+(m?m[1]:'?'));}catch(e){window.ReactNativeWebView.postMessage('basket:?');}})();true;`,
   cartJs: (lines) => `(async()=>{const L=${JSON.stringify(lines)};const out=[];try{${PICK_BY_NAME_JS}
   const n=window.$nuxt;const st=(n&&n.$store)?n.$store:null;
   // The site's own anonymous (or signed-in) bearer, read off its axios defaults.
@@ -416,9 +419,11 @@ export const HAZI_HINAM: Platform = {
   // supply; the family meets it as a substitution offer, not a surprise at checkout.
   if(item.IsInStock===false){out.push({gtin:l.gtin,status:'unavailable',detail:item.Name||l.name});continue;}
   const id=item.Id||item.ItemId;
-  const add=await j('item/addItemToCart',{method:'POST',body:JSON.stringify({ItemId:id,Quantity:l.qty||1,Type:0,IsCalculateCart:true})});
+  // The endpoint's model binder wants the payload wrapped as {Object:{...}} - a bare body
+  // 400s with "The Object field is required" (confirmed in a lab, 2026-09-13).
+  const add=await j('item/addItemToCart',{method:'POST',body:JSON.stringify({Object:{ItemId:id,Quantity:l.qty||1,Type:0,IsCalculateCart:true}})});
   const ok=add.d&&add.d.IsOK;
-  out.push({gtin:l.gtin,status:ok?'added':(add.s>=500?'error':'missing'),detail:item.ItemName||item.Name||String(add.s)});}
+  out.push({gtin:l.gtin,status:ok?'added':'error',detail:item.ItemName||item.Name||(add.d&&add.d.ErrorResponse&&add.d.ErrorResponse.ErrorDescription)||String(add.s)});}
   window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://shop.hazi-hinam.co.il/checkout/cart',diag:{auth:!!auth}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
 };
