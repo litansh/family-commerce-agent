@@ -141,6 +141,32 @@ test('the card never adds unit prices up, and says when its number is items only
   assert.ok(card.states.includes('under-minimum'), 'a minimum is a fact on the card, not a rejection');
 });
 
+/**
+ * The engine returns a `fullBasket.total` for every store it can price — and for a store whose
+ * delivery fee it does not have, that total *is* the items subtotal. Reading "a total arrived" as "a
+ * delivered total arrived" put an items-only number in the delivered column, which is precisely what
+ * promise 4 forbids. Live on the compare of 13 September: ויקטורי's `total` and `items` are both
+ * ₪133.90 with no `deliveryFee` at all.
+ */
+test('an engine total with no delivery fee behind it is still items only, and says so', () => {
+  const q = quote({
+    storefronts: { 'a-store': { brand: 'ויקטורי', minimumOrder: shekels(250), fullBasket: { total: shekels(133.9), items: shekels(133.9), unfillableLineIds: [] } } },
+    storefrontLines: { 'a-store': { a: { productName: 'חלב', price: shekels(6.9) }, b: { productName: 'שמן זית אליעד', price: shekels(29.9) } } },
+  });
+  const card = cardFor(q, 'a-store');
+  assert.equal(card.full.total, shekels(133.9));
+  assert.equal(card.full.delivered, false, 'no fee is known, so this number may not sit beside a delivered one');
+  assert.ok(card.states.includes('fee-unknown'));
+  // And the same store with a fee is a delivered total.
+  const withFee = cardFor(quote({
+    storefronts: { 'a-store': { brand: 'ויקטורי', deliveryFee: shekels(35.9), fullBasket: { total: shekels(169.8), items: shekels(133.9), unfillableLineIds: [] } } },
+    storefrontLines: q.storefrontLines!,
+  }), 'a-store');
+  assert.equal(withFee.full.delivered, true);
+  assert.equal(withFee.full.total, shekels(169.8));
+  assert.ok(!withFee.states.includes('fee-unknown'));
+});
+
 test('a store the response priced but gave no subtotal for shows no total at all', () => {
   const q = quote({ storefrontLines: { 'a-store': { a: { productName: 'חלב', price: shekels(6.9) }, b: { productName: 'שמן זית אליעד', price: shekels(29.9) } } } });
   const card = cardFor(q, 'a-store');

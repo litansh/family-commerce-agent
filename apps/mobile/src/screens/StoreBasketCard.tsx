@@ -66,15 +66,19 @@ function SwapRow({ swap }: { swap: BasketSwap }) {
   );
 }
 
-export function StoreBasketCard({ card, quote, open, mode, onToggle, onMode, onBuy, nameOf }: {
+export function StoreBasketCard({ card, quote, open, mode, busy, onToggle, onMode, onCheaper, onBuy, nameOf }: {
   card: StoreCardFacts;
   quote: BasketLike;
   open: boolean;
   /** The basket the family asked this card to show, or null for whichever leads. */
   mode: BasketMode | null;
+  /** True while this store is being asked for something cheaper. */
+  busy: boolean;
   onToggle: () => void;
   /** Show this basket, or (with the same mode again) go back to whichever leads. */
   onMode: (m: BasketMode | null) => void;
+  /** "עשה את זה זול יותר", and the same tap again to undo it. */
+  onCheaper: () => void;
   onBuy: () => void;
   nameOf: (lineId: string) => string;
 }) {
@@ -91,12 +95,12 @@ export function StoreBasketCard({ card, quote, open, mode, onToggle, onMode, onB
     head.approx ? '≈' : undefined,
   ].filter(Boolean).join(' · ') || undefined;
 
-  // "עשה את זה זול יותר" appears only where it can be answered. Until the engine offers cheaper
-  // products for a store, the card shows no button rather than one that does nothing; an empty list
-  // is the engine having looked and found nothing, which is a sentence, not a dead tap.
+  // "עשה את זה זול יותר" asks one store, when the family taps it (`POST /households/:id/cheaper`).
+  // Nobody has looked until then, so the action is offered on any card with a basket to cheapen, says
+  // it is working while it asks, and — when the store had nothing cheaper of the same kind and size —
+  // reports that in place rather than leaving a button that does nothing.
   const cheaperList = quote.cheaper?.[card.storefrontId];
-  const cheaperAnswered = cheaperList !== undefined;
-  const nothingCheaper = cheaperAnswered && cheaperList.length === 0;
+  const nothingCheaper = cheaperList !== undefined && cheaperList.length === 0;
 
   const buyTitle = card.shortOfMinimum !== undefined
     ? tr('addToOrder', { x: money(card.shortOfMinimum) })
@@ -185,13 +189,15 @@ export function StoreBasketCard({ card, quote, open, mode, onToggle, onMode, onB
             <Text style={[s.link, { fontSize: 14, color: t.muted }]}>{tr('buyWhatItHas', { n: card.filled })}</Text>
           </Pressable>
         )}
-        {!card.complete ? null : nothingCheaper ? (
+        {!card.complete ? null : busy ? (
+          <Text style={[s.faint, { fontSize: 12, textAlign: 'center' }]} testID={`basket-cheapbusy-${card.storefrontId}`}>{tr('makingCheaper')}</Text>
+        ) : nothingCheaper ? (
           <Text style={[s.faint, { fontSize: 12, textAlign: 'center' }]} testID={`basket-nocheaper-${card.storefrontId}`}>{tr('cheaperNone')}</Text>
-        ) : cheaperAnswered ? (
-          <Pressable onPress={(e) => { e.stopPropagation?.(); onMode(cheapened ? null : 'cheap'); }} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
+        ) : (
+          <Pressable onPress={(e) => { e.stopPropagation?.(); onCheaper(); }} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 6 }} testID={`basket-cheaper-${card.storefrontId}`}>
             <Text style={[s.link, { fontSize: 14 }]}>{cheapened ? tr('undoCheaper') : tr('makeCheaper')}</Text>
           </Pressable>
-        ) : null}
+        )}
       </View>
     </Pressable>
   );

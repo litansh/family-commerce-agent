@@ -274,14 +274,24 @@ storefronts answered, and only **two** were offered. Three of the ten set aside 
 minimum rather than by anything missing. A minimum is an honest reason, and it stays; it belongs on
 the card, in shekels ("חסר ₪45.72 למינימום של ₪200"), not as a reason a family never sees the shop.
 
+On the card: the store and when it delivers, one headline in cash with the basket it buys **named**,
+the other basket beside it with the difference — and that line is the tap that switches to it —
+the swap list a tap below, then `קנו כאן` and `עשה את זה זול יותר`. The engine half is the
+`storefronts[sid]` contract described above; the screen half is
+`apps/mobile/src/lib/fullBasket.ts` (pure, the decisions) and
+`apps/mobile/src/screens/StoreBasketCard.tsx` (the Hebrew).
+
 Two rules make the numbers safe to put side by side:
 
 - **The screen never adds line prices up.** `storefrontLines[…].price` is a shelf price; a store's
   subtotal carries its promotions, and on that capture the two differ by ₪8–₪21 at every chain.
-  Totals come from the engine or the card shows none — `apps/mobile/src/lib/fullBasket.ts` cannot
-  produce one on its own.
-- **A number that is not items + delivery never looks like one that is.** It stays in muted ink with a
-  note saying what it covers ("+ משלוח", "ל־7 מתוך 8 פריטים").
+  Totals come from the engine or the card shows none — `lib/fullBasket.ts` cannot produce one on its
+  own.
+- **A number that is not items + delivery never looks like one that is.** Whether it is a delivered
+  total is decided by whether a delivery fee is known, never by whether a total arrived: the engine
+  returns a `fullBasket.total` for every store it can price, and for one whose fee it lacks that total
+  is the items subtotal. A number without a fee behind it stays in muted ink with a note saying what
+  it covers ("+ משלוח", "ל־7 מתוך 8 פריטים").
 
 Proved by `node apps/mobile/e2e/full-basket.mjs` (the same functions the screen uses, run over a real
 compare), `apps/mobile/test/fullBasket.test.ts` for the states one compare cannot contain, and

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { PurchaseOption } from '@fca/domain';
-import type { Api, Household, QuoteResult } from '../lib/api';
+import type { Api, CheaperSwap, Household, QuoteResult } from '../lib/api';
 import { removeLine, type Line } from '../lib/store';
 import { Button, Chip, Header, Loading, PriceCol, S, Skeleton, t } from '../ui';
 import { ProductImage } from '../ProductImage';
@@ -189,6 +189,22 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
   // Per store, and reversible in one tap: the family asked for a different basket at this shop, not
   // for a different screen (docs/design/a-full-basket-everywhere.md).
   const [modeAt, setModeAt] = useState<Record<string, BasketMode>>({});
+  // "עשה את זה זול יותר" is one store's question, asked when the family taps it. The answer is kept
+  // so the undo, and a second tap, cost nothing — and an empty answer is kept too, because "this shop
+  // had nothing cheaper" is a sentence worth not asking twice.
+  const [cheaper, setCheaper] = useState<Record<string, CheaperSwap[]>>({});
+  const [cheapBusy, setCheapBusy] = useState<string | null>(null);
+  const makeCheaper = async (sid: string) => {
+    if (modeAt[sid] === 'cheap') { setModeAt(({ [sid]: _off, ...rest }) => rest); return; }
+    if (cheaper[sid]) { setModeAt((m) => ({ ...m, [sid]: 'cheap' })); return; }
+    setCheapBusy(sid);
+    try {
+      const swaps = await api.cheaper(household.id, sid, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l));
+      setCheaper((c) => ({ ...c, [sid]: swaps }));
+      if (swaps.length) setModeAt((m) => ({ ...m, [sid]: 'cheap' }));
+    } catch { setCheaper((c) => ({ ...c, [sid]: [] })); }
+    finally { setCheapBusy(null); }
+  };
   const [attempt, setAttempt] = useState(0);
   // Past half a minute the loading copy says why it is taking longer, so nobody thinks it is stuck.
   const [slow, setSlow] = useState(false);
@@ -306,7 +322,10 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
    * number and the same facts, and showing it twice would be two headlines for one decision.
    */
   const answerSid = answer && answer.legs.length === 1 ? answer.legs[0]!.storefrontId : null;
-  const basketCards = cardsFor(q as unknown as BasketLike).filter((c) => c.storefrontId !== answerSid);
+  // The compare plus whatever "עשה את זה זול יותר" has been told about each store, so the cards read
+  // one object and `lib/fullBasket.ts` stays the single place a basket's facts are decided.
+  const basketQuote = { ...q, cheaper } as unknown as BasketLike;
+  const basketCards = cardsFor(basketQuote).filter((c) => c.storefrontId !== answerSid);
   /**
    * Buy this store's own basket. When the compare already priced it as an option, that option is what
    * is ordered — the numbers on the card are its numbers. Otherwise the lines this store priced are
@@ -435,11 +454,13 @@ export function OptionsScreen({ api, household, lines, onBack, onChoose, onOrder
               <StoreBasketCard
                 key={card.storefrontId}
                 card={card}
-                quote={q as unknown as BasketLike}
+                quote={basketQuote}
                 open={open === `b-${card.storefrontId}`}
                 mode={modeAt[card.storefrontId] ?? null}
+                busy={cheapBusy === card.storefrontId}
                 onToggle={() => setOpen(open === `b-${card.storefrontId}` ? null : `b-${card.storefrontId}`)}
                 onMode={(m) => setModeAt(({ [card.storefrontId]: _drop, ...rest }) => (m ? { ...rest, [card.storefrontId]: m } : rest))}
+                onCheaper={() => void makeCheaper(card.storefrontId)}
                 onBuy={() => buyStore(card.storefrontId, card.brand)}
                 nameOf={nameOf}
               />

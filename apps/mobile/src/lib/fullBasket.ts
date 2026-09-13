@@ -232,7 +232,17 @@ export function cardFor(quote: BasketLike, sid: string): StoreCardFacts {
   // A single-leg option's `cashCost` is already the delivered total the family would pay, net of any
   // coupon — so it is preferred to items + fee, which would quietly drop the coupon.
   const fullTotal = facts?.fullBasket?.total ?? (sole ? sole.cashCost : items !== undefined && fee !== undefined ? items + fee : items);
-  const delivered = facts?.fullBasket?.total !== undefined || sole !== undefined || (items !== undefined && fee !== undefined);
+  /**
+   * Whether this number is items + delivery, and so may sit in the same column as another store's.
+   *
+   * It is decided by **whether a delivery fee is known**, never by whether a total arrived. The
+   * engine returns a `fullBasket.total` for every store it can price, and for a store whose fee it
+   * does not have that total is the items subtotal — on the live compare, ויקטורי's `total` and
+   * `items` are both ₪133.90 and there is no `deliveryFee`. Reading "a total exists" as "a delivered
+   * total exists" put an items-only number in the delivered column, which is the exact thing promise
+   * 4 forbids and the reason this module exists.
+   */
+  const delivered = fee !== undefined || sole !== undefined;
   const full: BasketPrice = {
     mode: 'full', delivered, approx: false,
     ...(fullTotal !== undefined ? { total: fullTotal } : {}),
