@@ -41,8 +41,8 @@ import {
   type StorefrontQuote,
   type SubstitutionPolicy,
   groupIntoVariants,
-  cheapestExactPricePerLine,
-  fullBasketFor,
+  cheapestExactElsewhere,
+  storefrontFacts,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
@@ -652,7 +652,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const res = await quoteProvider.quoteBasket({ lines, address, serviceType });
       const quote = res.quotes.find((q) => q.storefrontId === storefrontId);
       if (!quote) throw new HttpError(404, 'storefront not in this compare');
-      return ok(await cheapestBasketFor(quoteProvider, catalog, quote, lines, address));
+      // The wire shape is the array alone (docs/design/a-full-basket-everywhere.md's own "engine
+      // line"): the screen already has the original name from `storefrontLines`, and derives the
+      // new total itself from `storefronts[sid].fullBasket.total` minus each swap's own delta.
+      return ok((await cheapestBasketFor(quoteProvider, catalog, quote, lines, address)).swaps);
     }
     // The phone's path: start the compare, collect it when it is done. No gateway clock, no timeout
     // on the family's side; the job retries a slow provider by itself. If the API may not invoke
@@ -841,22 +844,28 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...couponed.map((q) => q.storefrontId), ...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
-      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
+      const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; price?: number; lineTotal?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
       // A substitution's reason is for people: "what you asked → what this store has". The provider's own
       // codes (confirmed_product_unavailable) never reach a card.
       const lineQuery = new Map(lines.map((l) => [l.id, l.query]));
       const reasonFor = (l: QuotedLine): string => (l.substitutionReason && l.substitutionReason.includes('→') ? l.substitutionReason : `${lineQuery.get(l.lineId) ?? ''} → ${l.productName}`);
       // Per-store price per line (docs/design/item-identity.md: "רמי לוי ₪6.20 (תנובה 1 ל')" needs one):
-      // this store's own unit price, never the winner's or another store's.
-      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      // this store's own unit price, never the winner's or another store's. `lineTotal` (not `price`,
+      // which is the provider's `unitPrice`) is what this line costs inside the basket — the two
+      // disagree once a promotion applies (docs/design/a-full-basket-everywhere.md, "the screen may
+      // not add the line prices up"), so a card that shows a swap's cost must read this field, never
+      // sum `price` fields itself.
+      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // The engine half of "a full basket everywhere" (docs/design/a-full-basket-everywhere.md):
-      // every delivering storefront's FULL-BASKET total (this store's own nearest product wherever
+      // every delivering storefront's full-basket facts (this store's own nearest product wherever
       // it lacks the exact one - substituteMissing already tried every gap, not just the near-complete
-      // stores'), the family's EXACT-BASKET total beside it, and the swaps between them. Computed once
-      // per compare, shared by every card - never a rejection gate, a fact each one can show.
-      const exactPriceByLine = cheapestExactPricePerLine(couponed);
-      const fullBasket = Object.fromEntries(
-        couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, fullBasketFor(q, lines.map((l) => l.id), lineQuery, exactPriceByLine)]),
+      // stores') and, only when a line the family actually pinned was swapped here, the exact-basket
+      // facts beside them (a free-text line's own resolution is never a swap to charge extra for).
+      // Computed once per compare, shared by every card - never a rejection gate, a fact each one can show.
+      const pinnedLineIds = new Set(lines.filter((l) => l.gtin).map((l) => l.id));
+      const elsewhereByLine = cheapestExactElsewhere(couponed);
+      const storefronts = Object.fromEntries(
+        couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, storefrontFacts(q, lines.map((l) => l.id), pinnedLineIds, elsewhereByLine)]),
       );
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
@@ -880,7 +889,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         etas,
         drive: driveOut,
         storefrontLines,
-        fullBasket,
+        storefronts,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,
