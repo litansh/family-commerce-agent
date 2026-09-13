@@ -16,3 +16,4 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
 - [ ] **Items of physical-only chains** (Osher Ad, Yohananof) into the item list from the branch indexes. *store scout + api-fixer*
 - [ ] **The agents' key** in SSM: `claude setup-token` needs a browser once; or the Mac-side reviewer (`ops/pr-review.sh`) runs with the local login. *api-fixer*
 - [ ] **Alarms → Telegram** verified with a real alarm (the test message went through). *api-fixer*
+- [ ] **Pictures for every line, proven daily**: a check that a household's usual list has a real photograph on every line, not the drawn glyph; extend the sources per chain (stor.ai and Shufersal by barcode) until it passes. *api-fixer + product-qa*
