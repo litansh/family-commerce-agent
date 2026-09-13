@@ -11,6 +11,10 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 TITLE="$1"; BODY="${2:-}"; WAIT=1; [ "${3:-}" = "--no-wait" ] && WAIT=0
 [ -f "$BODY" ] && BODY="$(cat "$BODY")"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# A change to how the product behaves, runs or is built must carry the README with it (CLAUDE.md).
+if git diff --name-only origin/main...HEAD 2>/dev/null | grep -qE '^(apps|services|packages|ops|infrastructure|\.github)/' && ! git diff --name-only origin/main...HEAD 2>/dev/null | grep -q '^README.md$'; then
+  echo "note: this branch changes code or ops but not README.md — if it changes how the product behaves, is run, or is built, update the README in this pull request"
+fi
 # Open on top of main, always: a pull request that cannot be merged wastes the owner's tap.
 git fetch -q origin main && git merge -q --no-edit origin/main >/dev/null 2>&1 || { echo "note: main does not merge cleanly into $BRANCH; resolve before opening"; git merge --abort 2>/dev/null; }
 [ "$BRANCH" != "main" ] || { echo "refusing: on main — create a branch first"; exit 1; }
