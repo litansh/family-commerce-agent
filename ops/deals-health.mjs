@@ -20,14 +20,20 @@ const res = await fetch(`${API}/households/${hid}/deals`, { headers: h });
 const j = await res.json().catch(() => ({}));
 const deals = j.deals ?? [];
 const chains = new Set(deals.map((d) => d.chainName));
-const pictured = deals.filter((d) => d.imageUrl).length;
 // Promise 1 - the whole picture: a feed dominated by one chain is a family being shown one store's
 // window and told it is "מבצעים" (deals, plural, everywhere) - the exact report from tonight.
 const spanOk = res.status === 200 && deals.length > 0 && chains.size >= 3;
 console.log(`${spanOk ? 'ok ' : 'BAD'}  מבצעים spans at least three chains — HTTP ${res.status}, ${deals.length} deals across ${chains.size} chain(s): ${[...chains].join(', ')}`);
+// /deals answers from the image cache only; Home.tsx follows up with the same POST /images
+// backfill List.tsx and Aisle.tsx already use, so the true promise is "mostly pictured once that
+// backfill has run", not "the raw feed happens to be cache-warm" (which is near-0% right after a
+// promotions refresh and would make this check flap on cache state, not the product).
+const missing = deals.filter((d) => !d.imageUrl && d.gtin).map((d) => d.gtin);
+const backfilled = missing.length ? await fetch(`${API}/households/${hid}/images`, { method: 'POST', headers: h, body: JSON.stringify({ gtins: missing.slice(0, 40) }) }).then((r) => r.json()).catch(() => ({ images: {} })) : { images: {} };
+const pictured = deals.filter((d) => d.imageUrl || backfilled.images?.[d.gtin]).length;
 // A drawn icon instead of a photograph is the commonest "the app looks unfinished"; most of a
-// deals carousel a family scrolls through should be real pictures.
+// deals carousel a family scrolls through should be real pictures once Home's own backfill runs.
 const picOk = deals.length > 0 && pictured >= deals.length * 0.6;
-console.log(`${picOk ? 'ok ' : 'BAD'}  most deals have a real picture, not a drawn icon — ${pictured}/${deals.length}`);
+console.log(`${picOk ? 'ok ' : 'BAD'}  most deals have a real picture, not a drawn icon, once backfilled — ${pictured}/${deals.length}`);
 console.log(`(${((Date.now() - t0) / 1000).toFixed(1)}s)`);
 process.exit(spanOk && picOk ? 0 : 1);
