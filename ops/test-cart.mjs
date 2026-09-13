@@ -64,18 +64,29 @@ if (!SHORT && hid) {
 }
 
 // 1. Resolve: what the app does as the list is typed.
-const resolved = await fetch(`${API}/households/${hid}/resolve`, { method: 'POST', headers: h, body: JSON.stringify({ lines: LIST }) }).then((r) => r.json()).catch(() => ({}));
+// Same one-retry rule as the quote below: a gateway 5xx is a bad minute, not a verdict on the
+// product - but production has shown this landing on 0/39 with no retry at all, so it gets one now.
+const t1 = Date.now();
+let rres = await fetch(`${API}/households/${hid}/resolve`, { method: 'POST', headers: h, body: JSON.stringify({ lines: LIST }) });
+if (rres.status >= 500) { await new Promise((r) => setTimeout(r, 8000)); rres = await fetch(`${API}/households/${hid}/resolve`, { method: 'POST', headers: h, body: JSON.stringify({ lines: LIST }) }); }
+const resolved = await rres.json().catch(() => ({}));
 const choices = resolved.choices ?? {};
 const withProduct = LIST.filter((l) => choices[l.id]?.chosen || choices[l.id]?.productId || choices[l.id]?.gtin).length;
-check('lines resolve to products', withProduct >= LIST.length * 0.8, `${withProduct}/${LIST.length}`);
+check('lines resolve to products', rres.status === 200 && withProduct >= LIST.length * 0.8, `HTTP ${rres.status}, ${withProduct}/${LIST.length}, ${((Date.now() - t1) / 1000).toFixed(1)}s`);
 const lines = LIST.map((l) => { const c = choices[l.id]; const gtin = c?.chosen?.gtin ?? c?.gtin; return gtin ? { ...l, gtin } : l; });
 
 // 2. Quote: the compare screen.
 // A 5xx from the gateway (a slow provider minute) is retried once before it counts: the check is about the product, not one bad minute.
+const t2 = Date.now();
 let res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) });
 if (res.status >= 500) { await new Promise((r) => setTimeout(r, 8000)); res = await fetch(`${API}/households/${hid}/quote`, { method: 'POST', headers: h, body: JSON.stringify({ lines }) }); }
 const q = await res.json().catch(() => ({}));
+const quoteSeconds = (Date.now() - t2) / 1000;
 check('quote answers', res.status === 200 && Array.isArray(q.options), `HTTP ${res.status}, ${q.options?.length ?? 0} options, ${q.rejected?.length ?? 0} rejected, ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+// API Gateway cuts a REST integration at 29s (docs/CONTEXT.md); a quote landing near that is the
+// family one bad provider-minute away from the 503 tonight's report was ("39-line quote 503 after
+// 59s") - catch the near miss before it becomes the outage.
+check('the compare itself answers well inside the gateway cutoff', quoteSeconds < 26, `${quoteSeconds.toFixed(1)}s (cutoff ~29s)`);
 const options = q.options ?? [];
 const best = options[0];
 check('a cheapest option exists', !!best, best ? `${best.label} ${money(best.cashCost)}` : 'none');
@@ -135,6 +146,12 @@ if (best) {
   const fillable = best.legs[0].lineIds.filter((id) => sl[id]?.gtin || sl[id]?.link).length;
   check('the winning cart is fillable on the phone (barcode or link per line)', fillable >= best.legs[0].lineIds.length * 0.9, `${fillable}/${best.legs[0].lineIds.length}`);
 }
+// A picture on every line of a real list: a drawn glyph where a photograph belongs is the
+// commonest "the app looks unfinished" (tonight's report). quotedLines is the winner's cart as
+// the phone renders it, not a curated sample.
+const quotedLines = Object.values(q.quotedLines ?? {});
+const pictured = quotedLines.filter((l) => l.imageUrl).length;
+check('every line of the real list has a picture, not a drawn icon', quotedLines.length > 0 && pictured >= quotedLines.length * 0.85, `${pictured}/${quotedLines.length}`);
 
 // Promise 7 — it remembers the family: a confirmed brand wins the line in this very compare,
 // and a habit missing from the list surfaces as a suggestion, not silence.
