@@ -36,7 +36,7 @@ test('cheapestBasketFor: a real, confirmed saving at this store is applied; the 
   const out = await cheapestBasketFor(qp, catalog, store, lines, 'x');
   assert.equal(out.total, 690 + 800);
   assert.equal(out.swaps.length, 1);
-  assert.equal(out.swaps[0]?.lineId, 'b');
+  assert.deepEqual(out.swaps[0], { lineId: 'b', gtin: 'g-alt2', productName: 'חלב טרה', lineTotal: 700, wasLineTotal: 800 });
   assert.equal(out.cheaperTotal, 690 + 700);
 });
 

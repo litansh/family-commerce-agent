@@ -30,12 +30,24 @@ export type StorefrontEta =
   | { kind: 'closed'; nextOpen?: string; text?: string }
   | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
 
-export interface FullBasketSwap { lineId: string; requestedQuery: string; productName: string; reason?: string; swapPrice: number; exactPrice: number }
-export interface FullBasketQuote { storefrontId: string; fullBasketTotal: number; exactBasketTotal: number; swaps: FullBasketSwap[]; unresolvedLineIds: string[] }
+// docs/design/a-full-basket-everywhere.md — "the engine line", the exact shape `lib/fullBasket.ts` reads.
+/** Where the family's own pinned product, unsubstituted, is actually sold, and what it costs there. */
+export interface ExactElsewhere { lineId: string; storefrontId: string; brand: string; lineTotal: number }
+export interface FullBasketFacts { total: number; items: number; unfillableLineIds: string[] }
+export interface ExactBasketFacts { total: number; elsewhere: ExactElsewhere[] }
+export interface StorefrontFacts {
+  brand: string;
+  /** Absent when this storefront's own delivery terms are not verified — never a delivered total that was guessed. */
+  deliveryFee?: number;
+  minimumOrder?: number;
+  fullBasket: FullBasketFacts;
+  /** Absent when nothing pinned was swapped here: one number, no second price. */
+  exactBasket?: ExactBasketFacts;
+}
 
-/** "עשה את זה זול יותר" (docs/design/a-full-basket-everywhere.md, rule 4): one store, made cheaper. */
-export interface CheaperSwap { lineId: string; fromName: string; toName: string; toGtin: string; fromPrice: number; toPrice: number }
-export interface CheaperResult { storefrontId: string; total: number; cheaperTotal: number; swaps: CheaperSwap[] }
+/** "עשה את זה זול יותר" (docs/design/a-full-basket-everywhere.md, rule 4): one store, made cheaper.
+ * The original name is not repeated here — the screen already has it from `storefrontLines`. */
+export interface CheaperSwap { lineId: string; gtin: string; productName: string; lineTotal: number; wasLineTotal: number }
 
 export interface QuoteResult {
   currency?: string;
@@ -49,15 +61,17 @@ export interface QuoteResult {
   etas?: Record<string, StorefrontEta>;
   /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
   drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
-  /** Each shown storefront's own product, its price for that line (agorot), and the deep link. */
-  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>>;
+  /** Each shown storefront's own product, its price for that line (agorot), and the deep link.
+   * `lineTotal` is what the line costs inside this basket (promotions applied) — `price` (`unitPrice`)
+   * and `lineTotal` disagree once a promotion applies, so a card must never sum `price` fields itself. */
+  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; price?: number; lineTotal?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>>;
   /**
-   * Every delivering storefront's two totals (docs/design/a-full-basket-everywhere.md): FULL basket
-   * (this store's own nearest product wherever it lacks the exact one) and EXACT basket (only the
-   * products the family chose), plus the swaps between them. Coverage is a fact here, never a gate -
-   * a storefront can appear here even when it is not (or not yet) one of `options`.
+   * Every delivering storefront's full-basket facts (this store's own nearest product wherever it
+   * lacks the exact one) and, only when a line the family pinned was swapped here, the exact-basket
+   * facts beside them. Coverage is a fact here, never a gate — a storefront can appear here even when
+   * it is not (or not yet) one of `options` (docs/design/a-full-basket-everywhere.md).
    */
-  fullBasket?: Record<string, FullBasketQuote>;
+  storefronts?: Record<string, StorefrontFacts>;
   lines: ListLine[];
   fromMemory: string[];
   options: PurchaseOption[];
@@ -172,10 +186,11 @@ export class Api {
   resolve = (hid: string, lines: Omit<ListLine, 'id'>[]) =>
     this.#call<{ choices: Record<string, ProductChoice | null>; fromMemory: string[] }>('POST', `/households/${hid}/resolve`, { lines });
   /** "עשה את זה זול יותר": one store, made cheaper - the family's own chosen products, swapped
-   * wherever the same kind and size is really priced lower there. Reversible: the caller keeps
-   * both totals and only shows the one the family picked. */
+   * wherever the same kind and size is really priced lower there. Reversible: derive the cheaper
+   * total from `storefronts[sid].fullBasket.total` minus each swap's own delta, never a separate
+   * number that could drift from it. */
   cheaper = (hid: string, storefrontId: string, lines: Omit<ListLine, 'id'>[]) =>
-    this.#call<CheaperResult>('POST', `/households/${hid}/cheaper`, { storefrontId, lines });
+    this.#call<CheaperSwap[]>('POST', `/households/${hid}/cheaper`, { storefrontId, lines });
   suggest = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<{ suggestions: Suggestion[] }>('POST', `/households/${hid}/suggest`, { lines });
   /**
    * "Yes, that one." `substitution` is what the brand chip means next time: a pinned brand is

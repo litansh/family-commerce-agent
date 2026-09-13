@@ -106,12 +106,12 @@ chain's own site is called from the person's device or the ops Mac, never from o
 chains answer a data centre with a block page ([ADR 0011](docs/adr/0011-store-calls-run-on-the-device.md)).
 
 **A full basket at every store** ([docs/design/a-full-basket-everywhere.md](docs/design/a-full-basket-everywhere.md)):
-missing a line no longer hides a storefront. The compare's `fullBasket` carries, for every store
-that delivers, a FULL-basket total (priced with that store's own nearest product wherever it lacks
-the exact one) beside the family's EXACT-basket total (only what they chose) and the swaps between
-them — the two always differ by exactly the sum of the swaps. `POST /households/:id/cheaper` is
-"עשה את זה זול יותר": one store, the family's own products swapped for the cheapest one of the
-same kind and size that store actually carries.
+missing a line no longer hides a storefront. The compare's `storefronts[sid]` carries, for every
+store that delivers, a full-basket total (priced with that store's own nearest product wherever it
+lacks the exact one) and, only when a line the family actually pinned was swapped there, an
+exact-basket total beside it — a free-text line's own resolution is never a swap to charge extra
+for. `POST /households/:id/cheaper` is "עשה את זה זול יותר": one store, the family's own products
+swapped for the cheapest one of the same kind and size that store actually carries.
 
 ## Running the app
 
