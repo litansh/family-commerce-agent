@@ -469,6 +469,16 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
 
     // Pictures for a set of barcodes, resolved within a time budget so the
     // grid never waits on them. The app calls this right after rendering.
+    // What a phone learned from a chain's own catalogue (ADR 0011: the API may not ask the chain
+    // itself). Kept under the same key the resolver reads, so the next family member pays nothing.
+    if (method === 'POST' && rest === 'images/learned') {
+      const given = (typeof body['images'] === 'object' && body['images'] ? body['images'] : {}) as Record<string, unknown>;
+      const pairs = Object.entries(given).filter(([k, v]) => typeof k === 'string' && typeof v === 'string' && /^https:\/\//.test(v as string)).slice(0, 40) as [string, string][];
+      await Promise.all(pairs.map(([key, url]) => images.remember(key, url)));
+      console.log(JSON.stringify({ event: 'images-learned', hid, kept: pairs.length }));
+      return ok({ kept: pairs.length });
+    }
+
     if (method === 'POST' && rest === 'images') {
       // Barcodes, and names for the lines a family typed in their own words - those have no barcode,
       // and a drawn glyph where a photograph belongs is the commonest "the app looks unfinished".
