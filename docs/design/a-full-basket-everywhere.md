@@ -326,3 +326,66 @@ one.
   `--live`): every state in the table is asserted against real numbers, and the totals-never-summed
   rule is asserted by construction.
 - `apps/mobile/maestro/full-basket.yaml` on the simulator, shots in `maestro/shots/full-basket-*.png`.
+
+## The owner's refinement, 13 September (evening)
+
+> "אין סל חלקי - כל ההצעות זה עבור הסל המלא אבל עם אלטרנטיבות לכל סל בחנויות השונות, ככה שבשופרסל
+> זה עבור כל הסל, רמי לוי עבור כל הסל וכו. בוודאי שהמוצרים יהיו שונים בין סל לסל, אבל ההשוואה חייבת
+> להיות תפוחים לתפוחים… אם אין ביצים XL 12 ברמי לוי אני רוצה את האלטרנטיבה הקרובה ביותר ובתוך גוף
+> ההצעה רק ייכתב מה ההבדל… ההצעה חייבת לכלול ביצים אחרת זאת הצעה חלקית וזה חייב להיות בסקשן אחר."
+
+Three things this settles, and they override anything above that disagrees:
+
+**1. Adding to the list is not the problem.** That flow works. All of this is about the compare.
+
+**2. Every offer is for the whole basket.** An offer is a complete shop at one store, with that
+store's own alternatives where it lacks the exact product. Shufersal's offer covers the whole list.
+Rami Levy's offer covers the whole list. The products inside them will differ — that is expected and
+fine — but each is complete, so comparing them is apples to apples.
+
+**3. An incomplete offer is not an answer, and does not sit among the answers.** A store that cannot
+fill a line even with its nearest alternative goes to its own section, below and collapsed:
+
+```
+                    ─────────────────────────────
+                    נמצאו הצעות חלקיות ב-6 חנויות נוספות   ›
+                    ─────────────────────────────
+```
+
+Opening it shows those stores with exactly what each is missing. Nobody is hidden; they are just not
+pretending to be an answer.
+
+### Inside an offer, a difference is one quiet line
+
+The alternative is not a warning and not a decision to make. It is a note, in the body of the offer:
+
+```
+┌────────────────────────────────────────────┐
+│ רמי לוי אונליין                     ₪243   │
+│ מחר 10:00–14:00 · הסל כולו                 │
+│                                            │
+│   במקום ביצים XL 12 — ביצים L 12, ₪14.90   │
+│   במקום ₪16.40                             │
+│   במקום קוטג' תנובה — קוטג' טרה, ₪5.50     │
+│   במקום ₪6.90                              │
+│                                            │
+│ הסל המדויק שלך ₪261 (+₪18)   [ קח את שלי ] │
+└────────────────────────────────────────────┘
+```
+
+Rules for that line: what was asked, what was found, the price of each. No exclamation, no colour
+that says "problem" — a different size of egg is not a problem, it is a fact about this store. The
+exact basket stays one tap away with its difference in shekels.
+
+### What this means for the engine
+
+- **Completeness is the gate for the main section**, not coverage-as-a-percentage. A store qualifies
+  when every requested line is filled by the exact product or a real alternative.
+- **"Real alternative" is already enforced** (`isRealAlternative`): a substitution sharing no word
+  with the request does not fill its line. So a store cannot buy its way into the main section with a
+  wrong product.
+- **Look harder before giving up.** With sixteen chains connected there is rarely no alternative: the
+  background compare has minutes and a shared cache, so a gap should be searched for properly before
+  a store is moved to the partial section.
+- **The partial section still gets everything it needs to be read**: each store, what it would cost,
+  and precisely which lines it cannot fill.
