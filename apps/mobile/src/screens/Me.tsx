@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import type { Api, Household } from '../lib/api';
 import { t as tr } from '../lib/i18n';
@@ -24,6 +24,8 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
   const linked = [...new Set([...local, ...Object.entries(cloud).filter(([, c]) => c.connected).map(([id]) => id)])];
   const [linking, setLinking] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [worker, setWorker] = useState<{ online: boolean; linked: Record<string, boolean> } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   // Only stores that actually deliver here. Until the answer arrives (or if it
@@ -93,6 +95,28 @@ export function MeScreen({ api, household, onSignOut, onShowIntro }: { api: Api;
         <Pressable onPress={() => void Linking.openURL('https://d3lykvs28o7qrc.cloudfront.net/privacy.html')} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 10 }}>
           <Text style={[s.small, { color: t.muted, textDecorationLine: 'underline' }]}>{tr('privacy')}</Text>
         </Pressable>
+        {/* Deleting is a person's right and must be reachable without asking anyone, but never by one
+            stray tap: the sheet says exactly what goes, and only then does anything happen. */}
+        <Pressable onPress={() => setAsking(true)} hitSlop={8} style={{ alignItems: 'center', paddingVertical: 14 }}>
+          <Text style={[s.small, { color: t.red }]}>{tr('deleteAccount')}</Text>
+        </Pressable>
+        <Modal transparent animationType="fade" visible={asking} onRequestClose={() => setAsking(false)}>
+          <Pressable style={{ flex: 1, backgroundColor: '#0007' }} onPress={() => setAsking(false)} />
+          <View style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 34 }}>
+            <Text style={[s.title, { fontSize: 18 }]}>{tr('deleteAccountAsk')}</Text>
+            <Text style={[s.body, { marginTop: 10 }]}>{tr('deleteAccountWhat')}</Text>
+            <View style={{ marginTop: 20, gap: 10 }}>
+              <Button title={tr('keepIt')} onPress={() => setAsking(false)} />
+              <Pressable
+                disabled={deleting}
+                onPress={() => { setDeleting(true); api.deleteHousehold(household.id).then(onSignOut).catch(() => { setDeleting(false); setAsking(false); }); }}
+                style={{ alignItems: 'center', paddingVertical: 12 }}
+              >
+                <Text style={{ color: t.red, fontWeight: '700' }}>{deleting ? tr('deletingAccount') : tr('deleteAccountGo')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
         {linking ? <StoreLink storeId={linking} api={api} householdId={household.id} onClose={() => { setLinking(null); void refreshCloud(); }} onLinked={(id) => { markLinked(id); setLinking(null); void refreshCloud(); }} /> : null}
         <View style={{ alignItems: 'center', marginTop: 24, opacity: 0.5 }}><Mark size={28} /><Text style={[s.faint, { marginTop: 6 }]}>{tr('taglineShort')}</Text><Text style={[s.faint, { marginTop: 4, fontSize: 10 }]}>build {BUILD}</Text></View>
       </ScrollView>

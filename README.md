@@ -188,7 +188,26 @@ Not opens, not compares — those rise while nothing changes in a kitchen. A sho
 purchase was **confirmed from the store's own order history**, the one event nobody can produce by
 tapping around. Collect it from the first family onwards: a week that passed unmeasured cannot be
 measured later.
+## Putting it in a family's hands
 
+The order that avoids a wasted week: **TestFlight first, the App Store after there is something to
+say.** TestFlight reaches friends and family in days and carries its own feedback channel; a public
+release invites Apple's review of an app that signs into other people's shops, which is a better
+conversation to have once real families have used it.
+
+Before either, three things Apple requires and a family deserves:
+
+| | Where |
+|---|---|
+| Delete the account and everything in it, from inside the app | Me → מחיקת החשבון והנתונים; erases every row under the household |
+| A privacy policy at a public URL | `docs/privacy.md`, published with the web build |
+| Honest data-use answers for the App Store's privacy card | no PII kept; store sessions sealed; history stays in the household |
+
+```bash
+cd apps/mobile
+eas build --platform ios --profile production     # a signed build
+eas submit --platform ios --latest                # to App Store Connect, then TestFlight
+```
 ## Checking it works
 
 ```bash
