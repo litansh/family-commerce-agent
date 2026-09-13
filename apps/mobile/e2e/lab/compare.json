@@ -1,0 +1,842 @@
+{
+ "options": [
+  {
+   "fees": 3590,
+   "explanation": {
+    "notes": [],
+    "reason": "Cheapest complete basket from one retailer",
+    "extraStores": 0,
+    "baselineLabel": "רמי לוי אונליין",
+    "savingVsBaseline": 0
+   },
+   "label": "רמי לוי אונליין",
+   "cashCost": 13489,
+   "timeCost": 0,
+   "itemsSubtotal": 9899,
+   "coverageRatio": 1,
+   "unpricedLineIds": [],
+   "legs": [
+    {
+     "lineIds": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "h",
+      "g"
+     ],
+     "brand": "רמי לוי אונליין",
+     "storefrontId": "rami-levy-online",
+     "itemsSubtotal": 9899,
+     "deliveryFee": 3590
+    }
+   ],
+   "kind": "single_delivered",
+   "substitutedLineCount": 1,
+   "missingEstimate": 0
+  },
+  {
+   "cashCost": 17310,
+   "timeCost": 0,
+   "explanation": {
+    "extraStores": 0,
+    "savingVsBaseline": -3821,
+    "baselineLabel": "רמי לוי אונליין",
+    "notes": [],
+    "reason": "Single retailer with verified delivery terms"
+   },
+   "itemsSubtotal": 13720,
+   "missingEstimate": 1390,
+   "substitutedLineCount": 0,
+   "kind": "single_delivered",
+   "legs": [
+    {
+     "itemsSubtotal": 13720,
+     "deliveryFee": 3590,
+     "lineIds": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "f",
+      "g",
+      "h"
+     ],
+     "storefrontId": "shufersal-online",
+     "brand": "שופרסל ONLINE"
+    }
+   ],
+   "coverageRatio": 0.875,
+   "unpricedLineIds": [
+    "e"
+   ],
+   "fees": 3590,
+   "label": "שופרסל ONLINE"
+  }
+ ],
+ "suggestions": [
+  {
+   "reason": "usual",
+   "daysSince": 1,
+   "preference": {
+    "gtin": "7290000072753",
+    "orderCount": 2,
+    "purchaseHistory": [
+     "2026-09-12T14:43:50.387Z",
+     "2026-09-12T14:43:50.387Z"
+    ],
+    "substitution": "equivalent",
+    "phrase": "קפה נמס",
+    "key": "קפה נמס",
+    "lastOrderedAt": "2026-09-12T14:43:50.387Z",
+    "productName": "קפה נמס טייסטרס צ'ויס Taster's Choice"
+   }
+  }
+ ],
+ "assumptions": [
+  {
+   "query": "חלב 3%",
+   "kind": "generic_default",
+   "lineId": "a",
+   "reason": "availability_upgrade",
+   "message": "Read \"חלב 3%\" as a general request and picked the everyday \"חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח\".",
+   "selectedName": "חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח"
+  },
+  {
+   "kind": "generic_default",
+   "lineId": "b",
+   "reason": "availability_upgrade",
+   "message": "Read \"ביצים L\" as a general request and picked the everyday \"ביצים אומגה L 30 יחידות\".",
+   "selectedName": "ביצים אומגה L 30 יחידות",
+   "query": "ביצים L"
+  },
+  {
+   "message": "Read \"לחם אחיד פרוס\" as a general request and picked the everyday \"לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח\".",
+   "query": "לחם אחיד פרוס",
+   "selectedName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+   "kind": "generic_default",
+   "reason": "availability_upgrade",
+   "lineId": "c"
+  },
+  {
+   "kind": "generic_default",
+   "selectedName": "קוטג׳ שטראוס 5% - 250 גרם",
+   "query": "קוטג׳ 5%",
+   "reason": "availability_upgrade",
+   "message": "Read \"קוטג׳ 5%\" as a general request and picked the everyday \"קוטג׳ שטראוס 5% - 250 גרם\".",
+   "lineId": "d"
+  },
+  {
+   "reason": "commodity_best_effort",
+   "lineId": "e",
+   "query": "פילה סלמון",
+   "selectedName": "פילה סלמון נתחים טרי, 220 גרם",
+   "kind": "generic_default",
+   "message": "Read \"פילה סלמון\" as a general request and picked the everyday \"פילה סלמון נתחים טרי, 220 גרם\"."
+  },
+  {
+   "lineId": "f",
+   "reason": "commodity_best_effort",
+   "query": "בננות",
+   "selectedName": "בננות ישראל",
+   "kind": "generic_default",
+   "message": "Read \"בננות\" as a general request and picked the everyday \"בננות ישראל\"."
+  },
+  {
+   "query": "טופו",
+   "kind": "generic_default",
+   "selectedName": "טופו בטעם טבעי אלטרנטיב 300 גרם עד\"ח",
+   "lineId": "h",
+   "reason": "commodity_best_effort",
+   "message": "Read \"טופו\" as a general request and picked the everyday \"טופו בטעם טבעי אלטרנטיב 300 גרם עד\"ח\"."
+  },
+  {
+   "selectedName": "שמן זית בכבישה קרה ה",
+   "lineId": "g",
+   "query": "שמן זית",
+   "kind": "generic_default",
+   "reason": "availability_upgrade",
+   "message": "Read \"שמן זית\" as a general request and picked the everyday \"שמן זית בכבישה קרה ה\"."
+  }
+ ],
+ "quotedLines": {
+  "a": {
+   "productName": "חלב יטבתה 3% מועשר בסידן ובויטמין D - בקבוק 2 ליטר",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290003029815",
+   "imageUrl": "https://img.rami-levy.co.il/product/7290003029815/small.jpg",
+   "gtin": "7290003029815"
+  },
+  "b": {
+   "productName": "ביצים 30 יח`ארוזות M פיקוח",
+   "gtin": "7290001201510",
+   "imageUrl": null,
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290001201510"
+  },
+  "h": {
+   "gtin": "7290011923303",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290011923303",
+   "imageUrl": "https://img.rami-levy.co.il/product/7290011923303/small.jpg",
+   "productName": "טופו טבעי 300גרם ליב"
+  },
+  "g": {
+   "productName": "שמן זית מזוכך אופיר 750מ\"ל",
+   "imageUrl": "https://images.openfoodfacts.org/images/products/729/012/034/8004/front_en.3.200.jpg",
+   "gtin": "7290120348004",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290120348004"
+  },
+  "d": {
+   "gtin": "7290004127329",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290004127329",
+   "imageUrl": "https://img.rami-levy.co.il/product/7290004127329/small.jpg",
+   "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ"
+  },
+  "c": {
+   "imageUrl": "https://img.rami-levy.co.il/product/7290002079477/small.jpg",
+   "productName": "לחם אחיד פרוס 750 גרם",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=7290002079477",
+   "gtin": "7290002079477"
+  },
+  "f": {
+   "productName": "בננה",
+   "link": "https://www.rami-levy.co.il/he/online/search?q=%D7%91%D7%A0%D7%A0%D7%94",
+   "imageUrl": null
+  },
+  "e": {
+   "productName": "פילה סלמון במיץ טבעי 170 גרם",
+   "gtin": "4751007734004",
+   "link": "https://www.rami-levy.co.il/he/online/search?item=4751007734004",
+   "imageUrl": "https://img.rami-levy.co.il/product/4751007734004/small.jpg"
+  }
+ },
+ "lines": [
+  {
+   "id": "a",
+   "query": "חלב 3%"
+  },
+  {
+   "query": "ביצים L",
+   "id": "b"
+  },
+  {
+   "id": "c",
+   "query": "לחם אחיד פרוס"
+  },
+  {
+   "query": "קוטג׳ 5%",
+   "id": "d"
+  },
+  {
+   "id": "e",
+   "query": "פילה סלמון"
+  },
+  {
+   "id": "f",
+   "query": "בננות"
+  },
+  {
+   "query": "שמן זית",
+   "brand": "אליעד",
+   "id": "g",
+   "gtin": "7290017334479"
+  },
+  {
+   "query": "טופו",
+   "id": "h"
+  }
+ ],
+ "etas": {
+  "quik": {
+   "kind": "slots"
+  },
+  "wolt-victory-rothschild": {
+   "text": "נפתח ביום מחר בשעה 07:30",
+   "kind": "closed",
+   "nextOpen": "2026-09-14T07:30"
+  },
+  "rami-levy-online": {
+   "kind": "slots"
+  },
+  "hazi-hinam-online": {
+   "kind": "slots"
+  },
+  "shufersal-online": {
+   "kind": "slots"
+  },
+  "tiv-taam-519": {
+   "kind": "slots"
+  },
+  "wolt-victory-tel-aviv-ahad-haam": {
+   "nextOpen": "2026-09-14T07:00",
+   "kind": "closed",
+   "text": "נפתח ביום מחר בשעה 07:00"
+  },
+  "wolt-machsanei-hashuk-ramat-gan": {
+   "text": "נפתח ביום מחר בשעה 08:00",
+   "kind": "closed",
+   "nextOpen": "2026-09-14T08:00"
+  },
+  "victory-online": {
+   "kind": "slots"
+  },
+  "yeinot-bitan-online": {
+   "kind": "slots"
+  },
+  "carrefour-online": {
+   "kind": "slots"
+  },
+  "wolt-victory-allenby": {
+   "text": "נפתח ביום מחר בשעה 07:00",
+   "nextOpen": "2026-09-14T07:00",
+   "kind": "closed"
+  }
+ },
+ "currency": "ILS",
+ "couponSavings": {
+  "carrefour-online": 0,
+  "victory-online": 0,
+  "hazi-hinam-online": 0,
+  "rami-levy-online": 0,
+  "shufersal-online": 0,
+  "tiv-taam-519": 0,
+  "wolt-victory-tel-aviv-ahad-haam": 0,
+  "wolt-machsanei-hashuk-ramat-gan": 0,
+  "yeinot-bitan-online": 0,
+  "wolt-victory-rothschild": 0,
+  "quik": 0,
+  "wolt-victory-allenby": 0
+ },
+ "storefrontLines": {
+  "wolt-victory-rothschild": {
+   "a": {
+    "price": 735,
+    "productName": "חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח"
+   },
+   "g": {
+    "reason": "שמן זית → שמן זית כתית מעולה בכבישה קרה | ויקטורי",
+    "price": 2390,
+    "swapBy": "store",
+    "productName": "שמן זית כתית מעולה בכבישה קרה | ויקטורי",
+    "substituted": true
+   },
+   "c": {
+    "price": 838,
+    "productName": "לחם אחיד כהה פרוס ברמן 750 גרם | מוצר בפיקוח"
+   }
+  },
+  "wolt-victory-allenby": {
+   "c": {
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+    "price": 950
+   },
+   "g": {
+    "price": 1890,
+    "productName": "שמן זית כתית מעולה בכבישה קרה | ויקטורי",
+    "reason": "שמן זית → שמן זית כתית מעולה בכבישה קרה | ויקטורי",
+    "substituted": true,
+    "swapBy": "store"
+   },
+   "d": {
+    "price": 650,
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ"
+   },
+   "a": {
+    "price": 735,
+    "productName": "חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח"
+   }
+  },
+  "wolt-machsanei-hashuk-ramat-gan": {
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 650
+   },
+   "c": {
+    "price": 990,
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח"
+   },
+   "a": {
+    "price": 735,
+    "productName": "חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח"
+   }
+  },
+  "wolt-victory-tel-aviv-ahad-haam": {
+   "c": {
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+    "price": 950
+   },
+   "g": {
+    "price": 1890,
+    "reason": "שמן זית → שמן זית כתית מעולה בכבישה קרה | ויקטורי",
+    "swapBy": "store",
+    "substituted": true,
+    "productName": "שמן זית כתית מעולה בכבישה קרה | ויקטורי"
+   },
+   "a": {
+    "productName": "חלב תנובה מהדרין 3% 1 ליטר | מוצר בפיקוח",
+    "price": 735
+   },
+   "d": {
+    "price": 650,
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ"
+   }
+  },
+  "shufersal-online": {
+   "f": {
+    "productName": "אשכול בננה (אונליין)",
+    "price": 1290,
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%90%D7%A9%D7%9B%D7%95%D7%9C%20%D7%91%D7%A0%D7%A0%D7%94%20(%D7%90%D7%95%D7%A0%D7%9C%D7%99%D7%99%D7%9F)"
+   },
+   "c": {
+    "price": 1005,
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%9C%D7%97%D7%9D%20%D7%90%D7%97%D7%99%D7%93%20%D7%A4%D7%A8%D7%95%D7%A1%20900%20%D7%92%D7%A8%D7%9D",
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח"
+   },
+   "g": {
+    "gtin": "7290017334479",
+    "productName": "שמן זית ארומה פירותית750",
+    "price": 4990,
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%A9%D7%9E%D7%9F%20%D7%96%D7%99%D7%AA%20%D7%90%D7%A8%D7%95%D7%9E%D7%94%20%D7%A4%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%AA750"
+   },
+   "h": {
+    "productName": "טופו במרקם קשה 400 גר כשר טעמי אסיה",
+    "price": 1290,
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%98%D7%95%D7%A4%D7%95%20%D7%98%D7%A8%D7%99%20%D7%91%D7%9E%D7%A8%D7%A7%D7%9D%20%D7%A7%D7%A9%D7%94%20400%20%D7%92"
+   },
+   "a": {
+    "productName": "חלב 3% שומן שקית 1 ליטר פיקוח",
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%97%D7%9C%D7%91%203%25%20%D7%9E%D7%94%D7%93%D7%A8%D7%99%D7%9F%20%D7%A9%D7%A7%D7%99%D7%AA%201%20%D7%9C",
+    "price": 641
+   },
+   "b": {
+    "link": "https://www.shufersal.co.il/online/he/search?text=30%D7%91%D7%99%D7%A6%D7%99%20%D7%90%D7%95%D7%9E%D7%92%D7%943%20%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C",
+    "price": 4990,
+    "productName": "ביצים אומגה L 30 יחידות"
+   },
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 610,
+    "link": "https://www.shufersal.co.il/online/he/search?text=%D7%A7%D7%95%D7%98%D7%92%205%25%20250%20%D7%92%D7%A8%D7%9D%20%D7%91%D7%A2%D7%9C%D7%96"
+   }
+  },
+  "victory-online": {
+   "h": {
+    "price": 1390,
+    "productName": "טופו במרקם קשה 450 גר ויקטורי"
+   },
+   "g": {
+    "price": 2790,
+    "swapBy": "store",
+    "reason": "שמן זית → שמן זית כתית מעולה 750 מל ויקטורי",
+    "productName": "שמן זית כתית מעולה 750 מל ויקטורי",
+    "substituted": true
+   },
+   "b": {
+    "productName": "ביצים 30 יח`ארוזות M פיקוח",
+    "price": 3270
+   },
+   "c": {
+    "productName": "לחם אחיד פרוס ברמן 750 גרם | מוצר בפיקוח",
+    "price": 790
+   },
+   "e": {
+    "price": 4590,
+    "productName": "פילה סלמון מומלח מעושן (מוכן לאכילה) קפוא 200 גרם"
+   },
+   "f": {
+    "productName": "בננות ישראל",
+    "price": 1390
+   },
+   "a": {
+    "price": 641,
+    "productName": "חלב 3% שומן שקית 1 ליטר פיקוח"
+   },
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 610
+   }
+  },
+  "yeinot-bitan-online": {
+   "c": {
+    "price": 1005,
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח"
+   },
+   "f": {
+    "price": 1290,
+    "productName": "בננה מובחרת"
+   },
+   "h": {
+    "price": 1190,
+    "productName": "טופו במרקם קשה 400 גר כשר טעמי אסיה"
+   },
+   "a": {
+    "productName": "חלב טרי 3% תנובה 1.5 ליטר | מוצר בפיקוח",
+    "price": 1102
+   },
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 610
+   },
+   "g": {
+    "swapBy": "store",
+    "reason": "שמן זית → **שמן זית 750 מ\"ל -ק",
+    "price": 2990,
+    "productName": "**שמן זית 750 מ\"ל -ק",
+    "substituted": true
+   }
+  },
+  "hazi-hinam-online": {
+   "g": {
+    "substituted": true,
+    "swapBy": "store",
+    "productName": "שמן זית 750 מ\"ל OLIO",
+    "reason": "שמן זית → שמן זית 750 מ\"ל OLIO",
+    "price": 1990
+   },
+   "a": {
+    "productName": "חלב 3% שומן שקית 1 ליטר פיקוח",
+    "price": 641
+   },
+   "e": {
+    "price": 4290,
+    "productName": "פילה סלמון גרבלקס הר"
+   },
+   "c": {
+    "productName": "לחם אחיד פרוס ברמן 750 גרם | מוצר בפיקוח",
+    "price": 838
+   },
+   "h": {
+    "price": 1190,
+    "productName": "טופו במרקם קשה 400 גר כשר טעמי אסיה"
+   },
+   "f": {
+    "productName": "בננה",
+    "price": 990
+   },
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 610
+   }
+  },
+  "quik": {
+   "b": {
+    "productName": "ביצים 30 יח`ארוזות M פיקוח",
+    "price": 3282
+   },
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 610
+   },
+   "a": {
+    "productName": "חלב טרי 3% תנובה 1.5 ליטר | מוצר בפיקוח",
+    "price": 1102
+   },
+   "g": {
+    "price": 2990,
+    "swapBy": "store",
+    "substituted": true,
+    "productName": "**שמן זית 750 מ\"ל -ק",
+    "reason": "שמן זית → **שמן זית 750 מ\"ל -ק"
+   },
+   "h": {
+    "productName": "טופו קשה משפחתי 500 גרם",
+    "price": 2390
+   },
+   "c": {
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+    "price": 1005
+   },
+   "f": {
+    "price": 1290,
+    "productName": "בננה מובחרת"
+   }
+  },
+  "tiv-taam-519": {
+   "d": {
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "link": "https://www.tivtaam.co.il/search/7290004127329",
+    "price": 610
+   },
+   "b": {
+    "productName": "ביצה פלוס אומגה M 30",
+    "price": 4990,
+    "link": "https://www.tivtaam.co.il/search/7296082000172"
+   },
+   "c": {
+    "link": "https://www.tivtaam.co.il/search/7290018500361",
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+    "price": 1000
+   },
+   "f": {
+    "link": "https://www.tivtaam.co.il/search/%D7%91%D7%A0%D7%A0%D7%95%D7%AA",
+    "price": 1190,
+    "productName": "בננות"
+   },
+   "a": {
+    "productName": "חלב טרי 3% תנובה 1.5 ליטר | מוצר בפיקוח",
+    "link": "https://www.tivtaam.co.il/search/7290000056845",
+    "price": 1100
+   },
+   "h": {
+    "productName": "טופו במרקם קשה 400 גר כשר טעמי אסיה",
+    "price": 1250,
+    "link": "https://www.tivtaam.co.il/search/8888351200070"
+   },
+   "g": {
+    "productName": "שמן זית כתית מעולה 500 מל CIRIO",
+    "price": 2790,
+    "substituted": true,
+    "swapBy": "store",
+    "link": "https://www.tivtaam.co.il/search/8004275058775",
+    "reason": "שמן זית → שמן זית כתית מעולה 500 מל CIRIO"
+   },
+   "e": {
+    "productName": "פילה סלמון במיץ טבעי 170 גרם",
+    "price": 1390,
+    "link": "https://www.tivtaam.co.il/search/4751007734004"
+   }
+  },
+  "carrefour-online": {
+   "b": {
+    "link": "https://www.carrefour.co.il/search/7290001201510",
+    "productName": "ביצים 30 יח`ארוזות M פיקוח",
+    "price": 3282
+   },
+   "h": {
+    "price": 1990,
+    "productName": "טופו קשה משפחתי 500 גרם",
+    "link": "https://www.carrefour.co.il/search/7290003726516"
+   },
+   "c": {
+    "productName": "לחם אחיד פרוס אנג׳ל 900 גרם | מוצר בפיקוח",
+    "link": "https://www.carrefour.co.il/search/7290018500361",
+    "price": 940
+   },
+   "a": {
+    "productName": "חלב טרי 3% תנובה 1.5 ליטר | מוצר בפיקוח",
+    "price": 1102,
+    "link": "https://www.carrefour.co.il/search/7290000056845"
+   },
+   "d": {
+    "link": "https://www.carrefour.co.il/search/7290004127329",
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ",
+    "price": 590
+   },
+   "e": {
+    "productName": "פילה סלמון מעושן מצונן 200 גרם",
+    "price": 4690,
+    "link": "https://www.carrefour.co.il/search/5901576058622"
+   },
+   "g": {
+    "reason": "שמן זית → שמן זית כתית מעולה 750 מ\"ל כשר לפסח",
+    "substituted": true,
+    "productName": "שמן זית כתית מעולה 750 מ\"ל כשר לפסח",
+    "price": 2990,
+    "link": "https://www.carrefour.co.il/search/7290019603498",
+    "swapBy": "store"
+   },
+   "f": {
+    "link": "https://www.carrefour.co.il/search/%D7%91%D7%A0%D7%A0%D7%94%20%D7%9E%D7%95%D7%91%D7%97%D7%A8%D7%AA",
+    "price": 1290,
+    "productName": "בננה מובחרת"
+   }
+  },
+  "rami-levy-online": {
+   "b": {
+    "productName": "ביצים 30 יח`ארוזות M פיקוח",
+    "gtin": "7290001201510",
+    "price": 3240,
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290001201510"
+   },
+   "g": {
+    "swapBy": "store",
+    "reason": "שמן זית → שמן זית מזוכך אופיר 750מ\"ל",
+    "productName": "שמן זית מזוכך אופיר 750מ\"ל",
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290120348004",
+    "gtin": "7290120348004",
+    "substituted": true,
+    "price": 1490
+   },
+   "e": {
+    "productName": "פילה סלמון במיץ טבעי 170 גרם",
+    "gtin": "4751007734004",
+    "price": 1410,
+    "link": "https://www.rami-levy.co.il/he/online/search?item=4751007734004"
+   },
+   "a": {
+    "gtin": "7290003029815",
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290003029815",
+    "price": 1330,
+    "productName": "חלב יטבתה 3% מועשר בסידן ובויטמין D - בקבוק 2 ליטר"
+   },
+   "h": {
+    "productName": "טופו טבעי 300גרם ליב",
+    "gtin": "7290011923303",
+    "price": 1000,
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290011923303"
+   },
+   "c": {
+    "gtin": "7290002079477",
+    "productName": "לחם אחיד פרוס 750 גרם",
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290002079477",
+    "price": 670
+   },
+   "f": {
+    "productName": "בננה",
+    "price": 990,
+    "link": "https://www.rami-levy.co.il/he/online/search?q=%D7%91%D7%A0%D7%A0%D7%94"
+   },
+   "d": {
+    "link": "https://www.rami-levy.co.il/he/online/search?item=7290004127329",
+    "gtin": "7290004127329",
+    "price": 610,
+    "productName": "קוטג' תנובה 5% שומן 250 ג' בד\"צ"
+   }
+  }
+ },
+ "branchStock": {},
+ "drive": {
+  "branches": [
+   {
+    "pricedAt": "2026-09-13T03:32:39.636Z",
+    "distanceKm": 0.9,
+    "sameLines": {
+     "items": 5850,
+     "brand": "רמי לוי אונליין",
+     "delivered": 9440
+    },
+    "brand": "רמי לוי",
+    "coveredLines": 4,
+    "storefrontId": "branch:rami-levy:731",
+    "driveCost": 450,
+    "totalLines": 8,
+    "missingLineIds": [
+     "e",
+     "f",
+     "g",
+     "h"
+    ],
+    "branchName": "ביאליק רמת גן",
+    "minutes": 4,
+    "chain": "rami-levy",
+    "address": "ביאליק 79",
+    "itemsSubtotal": 6502
+   }
+  ],
+  "status": "ready"
+ },
+ "fromMemory": [
+  "g"
+ ],
+ "rejected": [
+  {
+   "reason": "basket is below the storefront minimum",
+   "requestedLines": 8,
+   "minimumOrder": 30000,
+   "amountToMinimum": 16691,
+   "storefrontId": "tiv-taam-519",
+   "code": "minimum",
+   "pricedLines": 8,
+   "itemsSubtotal": 13309,
+   "brand": "טיב טעם אונליין (רמת החייל)"
+  },
+  {
+   "requestedLines": 8,
+   "brand": "ויקטורי | אלנבי (וולט)",
+   "code": "coverage",
+   "pricedLines": 4,
+   "minimumOrder": 7000,
+   "itemsSubtotal": 4225,
+   "reason": "prices only 4/8 lines (50%) — below the 90% floor",
+   "storefrontId": "wolt-victory-allenby"
+  },
+  {
+   "requestedLines": 8,
+   "reason": "prices only 4/8 lines (50%) — below the 90% floor",
+   "code": "coverage",
+   "brand": "ויקטורי | אחד העם (וולט)",
+   "itemsSubtotal": 4225,
+   "pricedLines": 4,
+   "storefrontId": "wolt-victory-tel-aviv-ahad-haam",
+   "minimumOrder": 7000
+  },
+  {
+   "brand": "מחסני השוק | רמת גן (וולט)",
+   "code": "coverage",
+   "reason": "prices only 3/8 lines (38%) — below the 90% floor",
+   "itemsSubtotal": 2375,
+   "minimumOrder": 7000,
+   "pricedLines": 3,
+   "requestedLines": 8,
+   "storefrontId": "wolt-machsanei-hashuk-ramat-gan"
+  },
+  {
+   "pricedLines": 3,
+   "itemsSubtotal": 3963,
+   "storefrontId": "wolt-victory-rothschild",
+   "code": "coverage",
+   "brand": "ויקטורי | רוטשילד (וולט)",
+   "requestedLines": 8,
+   "minimumOrder": 7000,
+   "reason": "prices only 3/8 lines (38%) — below the 90% floor"
+  },
+  {
+   "brand": "ויקטורי אונליין",
+   "minimumOrder": 25000,
+   "storefrontId": "victory-online",
+   "requestedLines": 8,
+   "reason": "basket is below the storefront minimum",
+   "amountToMinimum": 11610,
+   "itemsSubtotal": 13390,
+   "code": "minimum",
+   "pricedLines": 8
+  },
+  {
+   "code": "coverage",
+   "storefrontId": "yeinot-bitan-online",
+   "itemsSubtotal": 6591,
+   "requestedLines": 8,
+   "brand": "יהלומים ביתן",
+   "reason": "prices only 6/8 lines (75%) — below the 90% floor",
+   "pricedLines": 6,
+   "minimumOrder": 20000
+  },
+  {
+   "amountToMinimum": 40292,
+   "code": "minimum",
+   "minimumOrder": 50000,
+   "requestedLines": 8,
+   "reason": "basket is below the storefront minimum",
+   "storefrontId": "hazi-hinam-online",
+   "pricedLines": 7,
+   "itemsSubtotal": 9708,
+   "brand": "חצי חינם אונליין"
+  },
+  {
+   "reason": "basket is below the storefront minimum",
+   "brand": "קוויק",
+   "storefrontId": "quik",
+   "minimumOrder": 20000,
+   "amountToMinimum": 8927,
+   "code": "minimum",
+   "pricedLines": 7,
+   "requestedLines": 8,
+   "itemsSubtotal": 11073
+  },
+  {
+   "pricedLines": 8,
+   "code": "minimum",
+   "itemsSubtotal": 15428,
+   "storefrontId": "carrefour-online",
+   "requestedLines": 8,
+   "minimumOrder": 20000,
+   "amountToMinimum": 4572,
+   "brand": "קרפור אונליין",
+   "reason": "basket is below the storefront minimum"
+  }
+ ],
+ "warnings": [
+  "Line \"פילה סלמון\" (e) varies 3.4x across chains — probably matched to different products, not a bargain",
+  "Line \"שמן זית\" (g) varies 3.3x across chains — probably matched to different products, not a bargain"
+ ]
+}
