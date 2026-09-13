@@ -69,7 +69,7 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     const q = query.trim();
     if (!pricing || q.length < 2) { setHits(null); setVariants(null); setSearching(false); return; }
     const mine = ++seq.current;
-    setSearching(true); setFlat(false);
+    setSearching(true);
     const h = setTimeout(() => {
       api.search(household.id, q).then(async (r) => {
         if (mine !== seq.current) return;
@@ -88,6 +88,10 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
     }, 280);
     return () => clearTimeout(h);
   }, [query, api, household.id, pricing]);
+  // A new search starts from the choices again — but only a *new search* does. This used to sit
+  // inside the effect above, which also depends on `api`, so any re-render that handed the screen
+  // a fresh Api put the family back on the cards a moment after they asked for every product.
+  useEffect(() => { setFlat(false); }, [query]);
 
   // A line the family typed has no barcode and so no picture. Ask for one by name, once per line,
   // and keep it on the line: a list of drawn glyphs is what makes an app look unfinished.
@@ -202,6 +206,11 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
         {showSearch ? (
           <View style={[s.card, { paddingVertical: 6 }]}>
             {searching && !hits ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('searching')}</Text> : null}
+            {/* Above the results, both ways. The design drew this link under the cards, which is
+                where it reads best on paper — and on a phone it lands under the keyboard, where
+                a person searching cannot reach it without dismissing the keyboard first. One tap
+                each way, always on screen, beats the tidier drawing. */}
+            {canGroup ? <FlatToggle flat={flat} onPress={() => { tap(); setFlat((f) => !f); }} n={hits!.length} /> : null}
             {grouped ? variants!.map((v, i) => <VariantRow key={variantId(v)} i={i} v={v} onAdd={() => addVariant(v)} />) : null}
             {grouped ? null : (hits ?? []).map((h) => (
               <Pressable key={h.productId} onPress={() => addHit(h)} style={({ pressed }) => [s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }, pressed && { opacity: 0.6 }]}>
@@ -227,12 +236,6 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
                 <Pressable onPress={() => { setSearchFailed(false); setQuery((q) => q + ' '); setTimeout(() => setQuery((q) => q.trimEnd()), 50); }} hitSlop={8}><Text style={s.link}>{tr('tryAgain')}</Text></Pressable>
               </View>
             ) : hits && hits.length === 0 ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('noResults')}</Text> : null}
-            {/* The flat list never goes away — it is one tap under the choices, for the rare exact hunt. */}
-            {canGroup ? (
-              <Pressable onPress={() => { tap(); setFlat((f) => !f); }} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, alignItems: 'center' }}>
-                <Text style={s.link}>{flat ? tr('showVariants') : tr('showAllProducts', { n: hits!.length })}</Text>
-              </Pressable>
-            ) : null}
             <Pressable onPress={addTyped} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }}><Text style={s.link}>{tr('addAsTyped', { q: query.trim() })}</Text></Pressable>
           </View>
         ) : null}
@@ -358,6 +361,16 @@ export function ListScreen({ api, household, onQuote, onInvite }: {
       </View>
       <Toast text={toast} />
     </View>
+  );
+}
+
+/** The one tap between the few choices and every product behind them, and the one tap back. */
+function FlatToggle({ flat, n, onPress }: { flat: boolean; n: number; onPress: () => void }) {
+  const s = S();
+  return (
+    <Pressable testID="search-flat-toggle" onPress={onPress} style={{ paddingVertical: 9, alignItems: 'center' }}>
+      <Text style={s.link}>{flat ? tr('showVariants') : tr('showAllProducts', { n })}</Text>
+    </Pressable>
   );
 }
 
