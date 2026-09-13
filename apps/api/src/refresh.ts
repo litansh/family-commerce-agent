@@ -15,6 +15,11 @@ const svc = new BranchPrices(process.env['TABLE_NAME'] ?? 'fca-main', process.en
  * branch will fill a family's basket before their first order - Kfar Saba has no online branch of
  * its own, and the site's default branch is an hour away, which is how an out-of-stock line reaches
  * a family at the till. Geocoding is one request a second, so it belongs here, not in a quote.
+ *
+ * ADR 0011: this Lambda call to Rami Levy's own site is expected to fail (a data centre gets a
+ * block page) and is best-effort only, kept for the rare case it slips through; the ops Mac's
+ * `services/retailer-connectors/refresh-branches.mjs`, run nightly, is what actually reaches Rami
+ * Levy and writes this row - the source of truth this handler only ever tries to add to.
  */
 async function placeRamiLevyBranches(): Promise<number> {
   const list = await new RamiLevyStock(15_000).branches();

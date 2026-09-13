@@ -253,7 +253,7 @@ resource "aws_lambda_function" "api" {
   handler          = "index.handler"
   filename         = data.archive_file.api.output_path
   source_code_hash = data.archive_file.api.output_base64sha256
-  timeout          = 120 # a whole-basket quote takes ~15 s; the background compare job may retry a slow provider
+  timeout          = 300 # the background compare job: a long list is several provider calls a pass, and it may retry
   memory_size      = 512
   architectures    = ["arm64"]
 

@@ -18,7 +18,6 @@ import type { Api } from './lib/api';
 import { STORES } from './lib/stores';
 import { markLinked, markNeedsRelink, useLinked } from './lib/linked';
 import { confirmFromHistory } from './lib/pending';
-import { HISTORY_JS } from './lib/inject';
 import { BUILD } from './lib/config';
 import { captureSessionJs, GUARD_JS, hasAuthSession, parseCapturedSession, sessionSummary } from './lib/session';
 
@@ -94,7 +93,7 @@ function Keeper({ storeId, api, householdId, onDone }: { storeId: string; api: A
             ref.current?.injectJavaScript(capture);
             // Signed in: read the store's own orders too - the memory learns from what was really
             // bought, and a cart Kaniti filled earlier is confirmed without asking anyone.
-            const h = store.historyJs ?? (storeId === 'shufersal' ? HISTORY_JS : undefined);
+            const h = store.historyJs;
             if (h) { ref.current?.injectJavaScript(h); setTimeout(() => finish('in'), 12_000); } else finish('in');
           }
           // "Out" only when three looks agree AND the store is actually showing its sign-in: a page still
