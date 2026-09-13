@@ -133,6 +133,51 @@ const stem = (w) => { const x = finals(w); return x.length > 4 ? x.replace(/(י�
 const same = (a, b) => { if (a === b) return true; const [x, y] = [stem(a), stem(b)]; return x.length >= 3 && y.length >= 3 && (x === y || x.startsWith(y) || y.startsWith(x)); };
 const badSubs = Object.values(q.storefrontLines ?? {}).flatMap((m) => Object.entries(m)).filter(([id, l]) => l.substituted && l.reason && /→/.test(l.reason) && l.swapBy !== 'store').filter(([id, l]) => { const orig = norm(LIST.find((x) => x.id === id)?.query ?? ''); const alt = norm(l.productName); return orig.length && !orig.some((w) => alt.some((v) => same(v, w))); });
 check('substitutes are the same kind of product', badSubs.length === 0, badSubs.length ? badSubs.slice(0, 3).map(([, l]) => l.reason).join('; ') : 'all share a word with the line');
+
+// A full basket at every store (docs/design/a-full-basket-everywhere.md): every delivering
+// storefront gets a FULL-basket total (its own alternatives) and an EXACT-basket total (the
+// family's own products) side by side, with the swaps that separate them - the checks the design
+// itself names.
+const fullBasket = q.fullBasket ?? {};
+const fbEntries = Object.entries(fullBasket);
+check('every delivering storefront gets a full-basket total, not just the optimizer\'s picks', fbEntries.length > 0, `${fbEntries.length} storefronts`);
+
+// A size class, roughly: the unit family (weight / volume / count) and its rounded magnitude, read
+// from either the catalogue's own number or one written into the name ("1 ליטר", "250 גרם").
+const SIZE_RE = /(\d+(?:\.\d+)?)\s*(ליטר|ל'|ל׳|מ"ל|מ״ל|מל|ק"ג|ק״ג|קג|גרם|גר'|גר|יחידות|יח'|יח׳|יח|kg|ml|g|l|יח)(?![\p{L}])/iu;
+const sizeClassOf = (name) => {
+  const m = SIZE_RE.exec((name ?? '').replace(/,/g, '.'));
+  if (!m) return null;
+  const qty = Number(m[1]); const u = m[2].toLowerCase();
+  const family = /^(ליטר|ל'|ל׳|מ"ל|מ״ל|מל|ml|l)$/.test(u) ? 'volume' : /^(ק"ג|ק״ג|קג|גרם|גר'|גר|kg|g)$/.test(u) ? 'weight' : 'count';
+  const grams = /^(ק"ג|ק״ג|קג|kg)$/.test(u) ? qty * 1000 : /^(ליטר|ל'|ל׳|l)$/.test(u) ? qty * 1000 : qty;
+  return { family, grams };
+};
+const sameSizeClass = (a, b) => { const [x, y] = [sizeClassOf(a), sizeClassOf(b)]; return !x || !y || (x.family === y.family && x.grams === y.grams); };
+const allSwaps = fbEntries.flatMap(([sid, fb]) => (fb.swaps ?? []).map((s) => ({ sid, ...s })));
+const badSizeSwaps = allSwaps.filter((s) => !sameSizeClass(s.requestedQuery, s.productName));
+check('every swap is the same kind and size class', badSizeSwaps.length === 0, badSizeSwaps.length ? badSizeSwaps.slice(0, 3).map((s) => `${s.sid}: ${s.requestedQuery} → ${s.productName}`).join('; ') : `${allSwaps.length} swap(s), all same size class`);
+const badWordSwaps = allSwaps.filter((s) => { const orig = norm(s.requestedQuery ?? ''); const alt = norm(s.productName ?? ''); return orig.length && !orig.some((w) => alt.some((v) => same(v, w))); });
+check('every full-basket swap is the same kind of product', badWordSwaps.length === 0, badWordSwaps.length ? badWordSwaps.slice(0, 3).map((s) => `${s.sid}: ${s.requestedQuery} → ${s.productName}`).join('; ') : `${allSwaps.length} swap(s), all share a word with the line`);
+
+// The two totals must always differ by exactly the sum of the swaps - never two numbers that
+// merely look plausible next to each other.
+const totalsMismatch = fbEntries.filter(([, fb]) => {
+  const sumOfSwaps = (fb.swaps ?? []).reduce((n, s) => n + (s.exactPrice - s.swapPrice), 0);
+  return Math.abs((fb.exactBasketTotal - fb.fullBasketTotal) - sumOfSwaps) > 1; // integer agorot; 1 for rounding
+});
+check('the full and exact basket totals differ by exactly the sum of the swaps', totalsMismatch.length === 0, totalsMismatch.length ? totalsMismatch.map(([sid]) => sid).join(', ') : `${fbEntries.length} storefronts checked`);
+
+// No card is priced for a basket it cannot fill: a line missing from the store's own priced lines
+// must be named in unresolvedLineIds, never silently folded into a total that looks complete.
+const badCoverage = fbEntries.filter(([sid, fb]) => {
+  const priced = new Set(Object.keys(q.storefrontLines?.[sid] ?? {}));
+  const requestedIds = LIST.map((l) => l.id);
+  const actuallyMissing = requestedIds.filter((id) => !priced.has(id));
+  return actuallyMissing.length !== (fb.unresolvedLineIds ?? []).length || actuallyMissing.some((id) => !(fb.unresolvedLineIds ?? []).includes(id));
+});
+check('no card is priced for a basket it cannot fill — every gap left is named', badCoverage.length === 0, badCoverage.length ? badCoverage.map(([sid]) => sid).join(', ') : `${fbEntries.length} storefronts, every gap named`);
+
 // Promise 4 — in-store rows compare like with like: a partial branch never claims a saving against the full cart.
 const driveRows = q.drive?.branches ?? [];
 check('in-store rows compare the same lines', driveRows.every((b) => b.coveredLines === b.totalLines || b.sameLines || b.coveredLines === 0), driveRows.map((b) => `${b.brand} ${b.coveredLines}/${b.totalLines}${b.sameLines ? ' vs ' + b.sameLines.brand : ''}`).join('; ') || 'no rows');

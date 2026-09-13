@@ -41,9 +41,11 @@ import {
   type StorefrontQuote,
   type SubstitutionPolicy,
   groupIntoVariants,
+  cheapestExactPricePerLine,
+  fullBasketFor,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
-import { quoteWithFallback, substituteMissing } from '@fca/shopping-agent';
+import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
 import { chainWindow, etaForStorefront, woltNextOpen, woltEtasNear, type CatalogProvider, type Promotion, type QuoteProvider, type QuoteRequest, type QuoteResponse, RamiLevyStock, RAMI_LEVY_DEFAULT_BRANCH, branchForCity, dropUnavailable, nearestBranch, type RamiLevyBranch } from '@fca/retailer-connectors';
 import { callerOf, HttpError } from './auth.ts';
 import { HouseholdStore, type Household } from './households.ts';
@@ -637,6 +639,21 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       const { quote: quoteProvider, catalog } = requirePricing();
       return ok(await buildCompare(hid, household, body, { quoteProvider, catalog, repo, region }, SYNC_BUDGET));
     }
+    // "עשה את זה זול יותר" (docs/design/a-full-basket-everywhere.md, rule 4): one store, the
+    // family's own chosen products, swapped for the cheapest same-kind-same-size product at that
+    // store wherever a real saving confirms. Never touches a line the store already substituted -
+    // that swap is already named on the card.
+    if (method === 'POST' && rest === 'cheaper') {
+      const { quote: quoteProvider, catalog } = requirePricing();
+      const storefrontId = str(body['storefrontId'], 'storefrontId');
+      const lines = toLines(body['lines']);
+      const address = typeof body['address'] === 'string' ? body['address'] : household.address;
+      const serviceType = (body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery') as 'pickup' | 'delivery';
+      const res = await quoteProvider.quoteBasket({ lines, address, serviceType });
+      const quote = res.quotes.find((q) => q.storefrontId === storefrontId);
+      if (!quote) throw new HttpError(404, 'storefront not in this compare');
+      return ok(await cheapestBasketFor(quoteProvider, catalog, quote, lines, address));
+    }
     // The phone's path: start the compare, collect it when it is done. No gateway clock, no timeout
     // on the family's side; the job retries a slow provider by itself. If the API may not invoke
     // itself yet (a fresh deploy before its IAM grant), the compare is built here and now instead.
@@ -790,7 +807,10 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       type Eta = { kind: 'live'; minutes?: number; range?: string; name?: string } | { kind: 'closed'; nextOpen?: string; text?: string } | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
       const etas: Record<string, Eta> = {};
       const wolt = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltEtasNear(ad.lat, ad.lng) : {};
-      const shownStorefronts = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
+      // Every delivering storefront is shown now, not only the optimizer's picks and rejects
+      // (docs/design/a-full-basket-everywhere.md): coverage is a fact on its own card, never a
+      // reason the family never saw it at all.
+      const shownStorefronts = new Set<string>([...couponed.map((q) => q.storefrontId), ...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
       // Base pass, no extra network: what the compare shows if the enrichment below misses its budget.
       for (const sid of shownStorefronts) {
         const w = etaForStorefront(sid, wolt);
@@ -817,7 +837,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       ]);
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
-      const shownIds = new Set<string>([...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
+      const shownIds = new Set<string>([...couponed.map((q) => q.storefrontId), ...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
       const storefrontLines: Record<string, Record<string, { gtin?: string; productName: string; price?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>> = {};
       // A substitution's reason is for people: "what you asked → what this store has". The provider's own
       // codes (confirmed_product_unavailable) never reach a card.
@@ -826,6 +846,15 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Per-store price per line (docs/design/item-identity.md: "רמי לוי ₪6.20 (תנובה 1 ל')" needs one):
       // this store's own unit price, never the winner's or another store's.
       for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      // The engine half of "a full basket everywhere" (docs/design/a-full-basket-everywhere.md):
+      // every delivering storefront's FULL-BASKET total (this store's own nearest product wherever
+      // it lacks the exact one - substituteMissing already tried every gap, not just the near-complete
+      // stores'), the family's EXACT-BASKET total beside it, and the swaps between them. Computed once
+      // per compare, shared by every card - never a rejection gate, a fact each one can show.
+      const exactPriceByLine = cheapestExactPricePerLine(couponed);
+      const fullBasket = Object.fromEntries(
+        couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, fullBasketFor(q, lines.map((l) => l.id), lineQuery, exactPriceByLine)]),
+      );
       // In-store, if the family drives: the same list priced at the branches near home,
       // from the chains' published price files. Never blocks the quote.
       // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
@@ -848,6 +877,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         etas,
         drive: driveOut,
         storefrontLines,
+        fullBasket,
         lines,
         fromMemory: applied.filter((a) => a.fromMemory).map((a) => a.line.id),
         options: result.options,
