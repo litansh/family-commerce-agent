@@ -10,8 +10,19 @@ Israel already has at least eight grocery price-comparison products, and a free 
 resolves products across 16 chains, prices a whole basket per address, and knows every storefront's
 verified delivery terms. Building another price engine would mean arriving ninth.
 
-What no product in this market has: **memory of what a particular family actually buys** — so the shop is
-complete and nobody pays makolet prices for the thing they forgot — and **not having to re-type 40 items**.
+Comparing a whole basket is **not** what sets Kaniti apart: most of those eight optimise a full basket
+and three of them split it across two to four stores. Four things are genuinely missing from all of
+them, every claim verified live in [`docs/product-landscape.md`](docs/product-landscape.md):
+
+| | The market | Kaniti |
+|---|---|---|
+| **Actually buying** | nobody builds a cart on a retailer's site — every product ends at "here is the cheapest, now go type in your forty items" | fills the store's own cart from the family's phone, as the family; payment stays with the store |
+| **Family memory** | a saved list at best, single user | preferred brand per product, acceptable alternatives, what is never bought, what runs out when |
+| **Driving vs delivery** | the free price layer prices online storefronts only | the same basket priced at the branches you could drive to, from the published price files |
+| **Real availability** | the transparency feed carries no stock data at all | per-branch stock read from the chains' own APIs, so a line missing at *your* branch is missing before you shop |
+
+The only proof anyone has that the first is even possible is a hobby script that drives Shufersal's
+wishlist. The rest end at the comparison.
 
 Measured on this household's real 36-line weekly basket: the same list costs **₪836 at Rami Levy and ₪1,083
 at Shufersal** — a ₪247 spread, ~₪12,800/year, on chain choice alone.
