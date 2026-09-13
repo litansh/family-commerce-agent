@@ -52,6 +52,7 @@ import { productDetail } from './product-detail.ts';
 import { ImageResolver } from '@fca/product-images';
 import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
+import { CachedCatalog } from './cached-catalog.ts';
 import { isSlowError, withDeadline } from './deadline.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
@@ -213,7 +214,10 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     const providers = providersFor(region);
     const requirePricing = () => {
       if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
-      return providers;
+      // Catalogue answers are cached (12 hours, keyed by words + brand + city): a compare asks for an
+      // alternative to every gap, the same everyday words repeat across every family's list, and the
+      // provider is a free service that errs when hammered.
+      return { ...providers, catalog: new CachedCatalog(providers.catalog, TABLE) };
     };
 
     if (method === 'POST' && rest === 'invites') return ok(await households.createInvite(hid), 201);
@@ -750,9 +754,13 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // API Gateway answers 503 after 30 s, so the extra quote for substitutes has a budget: past it the
       // compare goes out without substitutes rather than not at all (the log says which).
       // One shared clock: on the sync route the substitutes get what is left of it (never more than 9 s).
-      const budgetMs = Math.max(0, Math.min(9_000, budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
+      // Alternatives are not a nicety: a store that cannot fill the basket is no use to a family, who
+      // will not order a partial one. So the background job - which has minutes, not seconds - looks
+      // up every gap it can, and only the sync route (the ops checks) keeps the tight old ceiling.
+      const budgetMs = Math.max(0, Math.min(budget.totalMs > 60_000 ? 45_000 : 9_000, budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
+      const maxSubstituteSearches = budget.totalMs > 60_000 ? 60 : 12;
       const substituted = await Promise.race([
-        substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
+        substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address, maxSubstituteSearches).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
         new Promise<typeof res>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs)),
       ]);
       // Personal coupons the worker read from the family's accounts change
@@ -890,7 +898,9 @@ async function runCompareJob(job: CompareJob): Promise<void> {
     const providers = providersFor(region);
     if (!providers) throw new HttpError(422, `pricing is not available in ${region.country} yet`);
     const lineCount = Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0;
-    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog: providers.catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, jobBudget(lineCount));
+    const catalog = new CachedCatalog(providers.catalog, TABLE);
+    const result = await buildCompare(job.hid, household, job.body, { quoteProvider: providers.quote, catalog, repo: new DynamoMemoryRepository(job.hid, TABLE), region }, jobBudget(lineCount));
+    console.log(JSON.stringify({ event: 'catalog-cache', hid: job.hid, ...catalog.stats() }));
     const kept = fitRow(result);
     console.log(JSON.stringify({ event: 'compare-done', hid: job.hid, lines: Array.isArray(job.body['lines']) ? (job.body['lines'] as unknown[]).length : 0, ms: Date.now() - started, kb: Math.round(JSON.stringify(kept).length / 1024) }));
     await writeRow(TABLE, job.hid, `COMPARE#${job.id}`, { status: 'done', result: kept, at: new Date().toISOString(), ms: Date.now() - started, ttl: Math.floor(Date.now() / 1000) + COMPARE_TTL_S });

@@ -33,17 +33,20 @@ export function pickSubstitute<T extends { gtin?: string; name: string; pricedAt
   return same.sort((a, b) => b.pricedAtChains - a.pricedAtChains || a.name.length - b.name.length)[0];
 }
 
-export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => Promise<QuoteResponse> }, catalog: CatalogProvider, res: QuoteResponse, lines: readonly ListLine[], address: string): Promise<QuoteResponse> {
+export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => Promise<QuoteResponse> }, catalog: CatalogProvider, res: QuoteResponse, lines: readonly ListLine[], address: string,
+  /** How many distinct missing lines to look up. The sync route has seconds; the background job has minutes. */
+  maxSearches = 12,
+): Promise<QuoteResponse> {
   const nearly = res.quotes.filter((q) => q.serviceType === 'delivery' && q.requestedLines > 0 && q.pricedLines < q.requestedLines && q.pricedLines / q.requestedLines >= PARTIAL_LEG_MIN_COVERAGE);
   const missing = new Map<string, ListLine>();
   for (const q of nearly) { const have = new Set(q.lines.map((l) => l.lineId)); for (const l of lines) if (!have.has(l.id)) missing.set(l.id, l); }
   if (missing.size === 0) return res;
-  // One catalogue search per distinct missing line, at most twelve: a ten-line list with four near-complete
+  // One catalogue search per distinct missing line, up to `maxSearches`: a ten-line list with four near-complete
   // stores must not bail out because their gaps differ - that left every alternative unpriced.
   // The closest catalogue product for each missing line: same words, a different product.
   const picks = new Map<string, { gtin: string; name: string }>();
   // Four at a time: twelve searches at once is what a provider answers with `internal_error`.
-  const wanted = [...missing.values()].slice(0, 12);
+  const wanted = [...missing.values()].slice(0, maxSearches);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(4, wanted.length) }, async () => {
     for (let i = next++; i < wanted.length; i = next++) await (async (l) => {
