@@ -416,3 +416,32 @@ exact basket stays one tap away with its difference in shekels.
   a store is moved to the partial section.
 - **The partial section still gets everything it needs to be read**: each store, what it would cost,
   and precisely which lines it cannot fill.
+
+## Three sections, not two (the owner, 13 September, late)
+
+> "אולי צריכים להיות 3 סקשנים: בדיוק אותם המוצרים, אלטרנטיבה זולה יותר, אלטרנטיבה מהירה יותר
+> (דוגמת וולט שמגיעה מעכשיו לעכשיו)", and: "חלקי זה רק אם אין בכלל מוצרים קשורים".
+
+The compare answers three different questions a family actually asks, and each gets its own section:
+
+| Section | What is in it | The question it answers |
+|---|---|---|
+| **בדיוק מה שביקשתם** | stores carrying every product the family chose, unswapped | "I want my brands" |
+| **זול יותר, עם חלופות** | complete baskets where some lines are this store's nearest product, each named | "what if I'm flexible" |
+| **מהר יותר** | complete baskets ranked by when they arrive, not by price — Wolt in forty minutes against tomorrow morning | "I need it now" |
+
+A store can appear in more than one section, and that is fine: the same Rami Levy basket may be both
+the cheapest with alternatives and among the fastest. Each section is ordered by its own measure —
+price, price, time — and never by a number that mixes cash and minutes.
+
+**"חלקי" means nothing related exists.** Not "this store lacks the exact barcode" — that is what
+alternatives are for. A store goes to the partial section only when, having looked, there is no
+product of the same kind at that store at all. With sixteen chains that should be rare, and when it
+happens the card names the line so the family can decide.
+
+### What the engine now does for this
+
+`substituteMissing` sends **several candidates per missing line** rather than one global pick, each
+under its own line id, and every store answers for whichever it actually carries. One shop lacking
+the eggs the catalogue suggested no longer makes that shop partial while the store plainly has eggs
+of its own.

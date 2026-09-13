@@ -11,7 +11,9 @@ test('a store missing the salmon gets the closest salmon it does carry, flagged 
   const shufersal = quote('shufersal', [line('a', 'חלב', 800), line('b', 'לחם', 900), line('c', 'סלמון טרי', 6000)], 3);
   const rami = quote('rami-levy', [line('a', 'חלב', 500), line('b', 'לחם', 600)], 3);
   const catalog = { searchProducts: async () => [{ productId: 'p1', gtin: '7290000000001', name: 'פילה סלמון נורבגי', pricedAtChains: 3 }] } as never;
-  const qp = { quoteBasket: async () => ({ quotes: [quote('rami-levy', [line('c', 'פילה סלמון נורבגי', 5500, { gtin: '7290000000001' })], 1), quote('shufersal', [], 1)], assumptions: [] }) } as never;
+  // Candidates now come back under their own ids ("c~0"), because each store answers for whichever
+  // of several alternatives it actually carries.
+  const qp = { quoteBasket: async () => ({ quotes: [quote('rami-levy', [line('c~0', 'פילה סלמון נורבגי', 5500, { gtin: '7290000000001' })], 1), quote('shufersal', [], 0)], assumptions: [] }) } as never;
   const out = await substituteMissing(qp, catalog, { quotes: [shufersal, rami], assumptions: [] } as never, lines, 'x');
   const r = out.quotes.find((q) => q.storefrontId === 'rami-levy')!;
   assert.equal(r.pricedLines, 3);
@@ -36,7 +38,7 @@ test('nothing missing means no extra quote', async () => {
 test('a store missing almost everything still gets a full-basket try, not a coverage floor', async () => {
   const thin = quote('t', [line('a', 'חלב', 500)], 3); // 1 of 3 — no partial-coverage floor stops it now
   const catalog = { searchProducts: async () => [{ productId: 'p1', gtin: '7290000000001', name: 'פילה סלמון נורבגי', pricedAtChains: 3 }, { productId: 'p2', gtin: '7290000000002', name: 'לחם אחיד', pricedAtChains: 3 }] } as never;
-  const qp = { quoteBasket: async () => ({ quotes: [quote('t', [line('b', 'לחם אחיד', 700, { gtin: '7290000000002' }), line('c', 'פילה סלמון נורבגי', 5500, { gtin: '7290000000001' })], 2)], assumptions: [] }) } as never;
+  const qp = { quoteBasket: async () => ({ quotes: [quote('t', [line('b~0', 'לחם אחיד', 700, { gtin: '7290000000002' }), line('c~0', 'פילה סלמון נורבגי', 5500, { gtin: '7290000000001' })], 2)], assumptions: [] }) } as never;
   const out = await substituteMissing(qp, catalog, { quotes: [thin], assumptions: [] } as never, lines, 'x');
   const r = out.quotes.find((q) => q.storefrontId === 't')!;
   assert.equal(r.pricedLines, 3);
@@ -63,4 +65,31 @@ test('plural and singular are the same word: tomatoes ~ a packed tomato, cucumbe
   assert.ok(!sameWord('חלב', 'לחם'));
   const c = (name: string, chains = 2) => ({ gtin: name, name, pricedAtChains: chains });
   assert.equal(pickSubstitute('עגבניות', [c('עגבניה ארוזה 4 יחידות'), c('רסק עגבניות')])?.name, 'עגבניה ארוזה 4 יחידות');
+});
+
+test('stores with different assortments each fill the line with what they carry', async () => {
+  // The owner, 13 September: "חלקי זה רק אם אין בכלל מוצרים קשורים". One global pick left every store
+  // that happened not to stock it with an empty line, and the card called itself partial although the
+  // store plainly has eggs. Several candidates go out; each store answers for the one it has.
+  const a = quote('a', [line('a', 'חלב', 500)], 3);
+  const b = quote('b', [line('a', 'חלב', 520)], 3);
+  const catalog = { searchProducts: async () => [
+    { productId: 'p1', gtin: '111', name: 'ביצים L ארוזות', pricedAtChains: 3 },
+    { productId: 'p2', gtin: '222', name: 'ביצים XL אורגניות', pricedAtChains: 2 },
+  ] } as never;
+  // Store a carries only the first candidate, store b only the second.
+  const qp = { quoteBasket: async () => ({ quotes: [
+    quote('a', [line('b~0', 'ביצים L ארוזות', 1400, { gtin: '111' })], 1),
+    quote('b', [line('b~1', 'ביצים XL אורגניות', 1900, { gtin: '222' })], 1),
+  ], assumptions: [] }) } as never;
+  const asked = [{ id: 'a', query: 'חלב', qty: 1 }, { id: 'b', query: 'ביצים', qty: 1 }];
+  const out = await substituteMissing(qp, catalog, { quotes: [a, b], assumptions: [] } as never, asked as never, 'x');
+  for (const sid of ['a', 'b']) {
+    const q = out.quotes.find((x) => x.storefrontId === sid)!;
+    assert.equal(q.pricedLines, 2, `${sid} should have filled the eggs with what it carries`);
+    assert.equal(q.lines.find((l) => l.lineId === 'b')?.substituted, true);
+  }
+  // Each got its own product, at its own price.
+  assert.equal(out.quotes.find((x) => x.storefrontId === 'a')!.lines.find((l) => l.lineId === 'b')?.lineTotal, 1400);
+  assert.equal(out.quotes.find((x) => x.storefrontId === 'b')!.lines.find((l) => l.lineId === 'b')?.lineTotal, 1900);
 });
