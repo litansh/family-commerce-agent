@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { shekels, type Agorot } from '../src/money.ts';
-import { cheapestExactElsewhere, storefrontFacts, isRealAlternative } from '../src/full-basket.ts';
+import { cheapestExactElsewhere, storefrontFacts, isRealAlternative, wrongProductLineIds } from '../src/full-basket.ts';
 import type { QuotedLine, StorefrontQuote } from '../src/types.ts';
 
 const line = (id: string, total: number, over: Partial<QuotedLine> = {}): QuotedLine => ({
@@ -110,4 +110,18 @@ test('a substitution that is not really an alternative does not fill its line', 
   const q = quote('v', 'ויקטורי', [line('l0', 24, { productName: 'אל אמ קליק קפסולה חפיסה', substituted: true })], 5, 1);
   const facts = storefrontFacts(q, ['l0'], new Set(), new Map(), new Map([['l0', 'אבקת כביסה']]));
   assert.deepEqual(facts.fullBasket.unfillableLineIds, ['l0'], 'the wrong product does not count as filled');
+});
+
+test('a wrong product is caught even when nobody flagged it as a substitution', () => {
+  // Production, 13 September, wolt-victory-tel-aviv-ahad-haam: "אבקת כביסה" came back as
+  // "אל אמ קליק קפסולה חפיסה" with `substituted` unset, so the card would have shown a capsule pack
+  // as though it were the laundry powder asked for. A flag we do not control cannot decide this.
+  const q = quote('v', 'ויקטורי', [line('l0', 24, { productName: 'אל אמ קליק קפסולה חפיסה' })], 5, 1);
+  const wrong = wrongProductLineIds(q, new Map([['l0', 'אבקת כביסה']]));
+  assert.ok(wrong.has('l0'), 'judged on the product, not on a flag');
+  const facts = storefrontFacts(q, ['l0'], new Set(), new Map(), new Map([['l0', 'אבקת כביסה']]));
+  assert.deepEqual(facts.fullBasket.unfillableLineIds, ['l0']);
+  // And a store that really does have it keeps it, flag or no flag.
+  const ok = quote('r', 'רמי לוי', [line('l0', 22, { productName: 'אבקת כביסה סנו מקסימה' })], 5, 1);
+  assert.equal(wrongProductLineIds(ok, new Map([['l0', 'אבקת כביסה']])).size, 0);
 });

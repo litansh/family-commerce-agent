@@ -92,9 +92,14 @@ export function isRealAlternative(requested: string, offered: string): boolean {
  * the compare must not offer such a line under that store anywhere, and must name it as a gap.
  */
 export function wrongProductLineIds(quote: StorefrontQuote, lineQuery: ReadonlyMap<string, string>): ReadonlySet<string> {
+  // EVERY line is judged against what was asked, not only the ones somebody flagged as a swap. The
+  // provider can answer "אבקת כביסה" with "אל אמ קליק קפסולה חפיסה" and mark it as no substitution at
+  // all (production, 13 September, wolt-victory-tel-aviv-ahad-haam) - so the card would show a
+  // capsule pack as though it were exactly the laundry powder the family asked for. A flag we do not
+  // control cannot be what decides whether a family gets the right thing.
   return new Set(
     quote.lines
-      .filter((l) => l.substituted && !isRealAlternative(lineQuery.get(l.lineId) ?? '', l.productName))
+      .filter((l) => !isRealAlternative(lineQuery.get(l.lineId) ?? '', l.productName))
       .map((l) => l.lineId),
   );
 }
