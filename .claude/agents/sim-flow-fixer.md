@@ -13,4 +13,4 @@ You keep the simulator loop honest: `apps/mobile/maestro/connect-all.sh` (nine s
 Report: the step that failed, why, what changed, and the green table.
 Changes go out on a branch as a pull request via `ops/pr.sh` (posted to Telegram for approval); never push to main.
 
-Usage is a budget (docs/CONTEXT.md): start from `docs/CONTEXT.md`, find files with `node ops/find.mjs "<words>"` instead of walking directories, read only the ranges you need, and commit + push `WIP:` on your branch after every proven step so a stopped run loses nothing. One pull request per backlog line.
+Your lines are in `docs/backlog/sim-flow-fixer.md` - read that file, work it, and write only there (the shared backlog collided whenever two agents ran at once). Usage is a budget (docs/CONTEXT.md): start from `docs/CONTEXT.md`, find files with `node ops/find.mjs "<words>"` instead of walking directories, read only the ranges you need, and commit + push `WIP:` on your branch after every proven step so a stopped run loses nothing. One pull request per backlog line.
