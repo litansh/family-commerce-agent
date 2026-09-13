@@ -27,7 +27,10 @@ export function TabBar({ active, onChange, badge, ordersBadge }: { active: Tab; 
         {TABS.map((tab) => {
           const on = tab.key === active;
           return (
-            <Pressable key={tab.key} onPress={() => onChange(tab.key)} hitSlop={6} style={({ pressed }) => [{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 20 }, pressed && { opacity: 0.5 }]}>
+            // A handle per tab, so a flow reaches a tab by name and not by a Hebrew label that
+            // can collide with whatever else is on the screen (".*רשימה" landed on the compare
+            // button once the list had lines in it).
+            <Pressable key={tab.key} testID={`tab-${tab.key}`} onPress={() => onChange(tab.key)} hitSlop={6} style={({ pressed }) => [{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 20 }, pressed && { opacity: 0.5 }]}>
               <View>
                 <Icon name={tab.icon} size={22} color={on ? t.ink : t.faint} />
                 {(tab.key === 'list' && badge) || (tab.key === 'orders' && ordersBadge) ? (

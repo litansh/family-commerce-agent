@@ -102,6 +102,9 @@ suggestion "תמיד קונים טרה. לקבע?" — the family answers once, 
 | One product only | the product itself as the card, with its brand, no variant row |
 | A variant no nearby store carries | greyed, with "אין בחנויות שמגיעות אליכם" — never silently dropped |
 | A pinned product that vanished from every store | the line stays, the chip turns to "כל מותג" with a note, never an empty list |
+| A product with neither barcode nor brand | the card is the product's own words, and the chip honestly reads "כל מותג": nothing identifies one product across stores, so each store prices its own cheapest of those words. A chip claiming a pin the compare cannot keep is the worse lie. (A **brand with no barcode still pins** — the resolver honours `brand` at every store.) |
+| The catalogue offers no brands for the line | the sheet keeps its "כל מותג" row and says so — "לא מצאנו מותגים לפריט הזה" — rather than showing one row and no reason |
+| Grouping collapses nothing | the cards *are* the flat list, so the flat list is what is shown and the toggle is not offered: a choice about nothing is not a choice |
 | Offline / search failed | the family's own words go on the list unresolved; the compare resolves them |
 
 ## Why not the alternatives
@@ -117,6 +120,15 @@ suggestion "תמיד קונים טרה. לקבע?" — the family answers once, 
    with the brand kept aside; tested against real Israeli product names (חלב, ביצים, קפה, שמנת).
 2. **API** — `/search` answers variants (brand count, price range, the products behind each) and keeps
    the flat list behind a flag for "הצגת כל המוצרים".
+
+   **This is where the design is still not kept, and it is the API's search width, not the screen.**
+   `/search` asks the catalogue for `limit: 12` and groups *after* truncating, so "חלב" comes back as
+   twelve distinct products and groups into twelve cards — the wall of milk this page set out to
+   remove, one rename later. `variant-cards.mjs` prints the ratio per query: ביצים collapses 12 → 7,
+   חלב / קפה / שמנת collapse nothing. Grouping only earns its keep when it sees the whole shelf: the
+   catalogue search has to run wide (the design wants "two hundred products → three rows"), and only
+   the *cards* are then capped, not the products behind them. **api-fixer owns this** — the screen
+   already behaves honestly either way (see "Grouping collapses nothing" above), so it can ship first.
 3. **App** — variant cards in the add flow; the brand chip on every list line; the brand sheet;
    memory wired to the chip (any ↔ `substitution: 'equivalent'`, pinned ↔ `'never'`).
 4. **Compare** — for *any brand* lines, name the product each store used, next to its price.

@@ -1,0 +1,89 @@
+# The choice a line carries (docs/design/item-identity.md): variant cards in the add flow, the
+# chip on every list line, the brand sheet behind it. Every state the design draws, in order,
+# with a screenshot each — the cards, the flat list one tap under them, the chip, the sheet,
+# a brand chosen, and כל מותג again.
+#
+#     ./maestro/run.sh choice
+#
+# "ביצים" is the query on purpose: it is the one the catalogue actually collapses today (twelve
+# products into seven cards). "חלב" comes back as twelve distinct products, so the screen shows
+# the flat list and offers no toggle — the honest thing when grouping collapses nothing, and the
+# reason the search-width note is in the design doc.
+#
+# What this flow proves is *reachability*: every state is on a phone, one tap apart. What each
+# choice then means — a brand pins even without a barcode, unpinning returns the line to כל מותג —
+# is held by `test/choice.test.ts` and `e2e/variant-cards.mjs`, against the real catalogue.
+appId: com.litansh.kaniti
+---
+- tapOn: { text: "Open", optional: true }
+# The tab bar, not a screen: the app reopens on whichever tab it was left on. By handle, not by
+# label — ".*רשימה" landed on the compare button once the list had lines in it.
+- extendedWaitUntil:
+    visible: { id: "tab-list" }
+    timeout: 120000
+- tapOn: { text: "Continue", optional: true }
+- tapOn: { text: "Close", optional: true }
+- tapOn: { id: "tab-list" }
+
+# ── The add flow shows variants, not a wall of products.
+- tapOn: { id: "list-input" }
+- inputText: "ביצים"
+- extendedWaitUntil:
+    visible: { id: "variant-0" }
+    timeout: 25000
+- takeScreenshot: maestro/shots/choice-variants
+
+# The flat list never goes away: one tap under the choices, and one tap back — and the way back
+# sits *above* the products, not forty rows below them.
+- tapOn: { id: "search-flat-toggle" }
+- assertVisible: { text: ".*חזרה לאפשרויות.*" }
+- assertNotVisible: { id: "variant-0" }
+- takeScreenshot: maestro/shots/choice-flat
+- tapOn: { id: "search-flat-toggle" }
+- assertVisible: { id: "variant-0" }
+
+# One tap adds it and closes the search — and it decides no brand for the family.
+- tapOn: { id: "variant-0" }
+- extendedWaitUntil:
+    notVisible: { id: "variant-0" }
+    timeout: 10000
+# The search closes onto the list, which sits below the deals and the usuals — and below the
+# keyboard while it is still up.
+- hideKeyboard
+- scrollUntilVisible:
+    element: { id: "choice-0" }
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible: { text: ".*כל מותג.*" }
+- takeScreenshot: maestro/shots/choice-chip
+
+# ── The chip is the only place brand is ever asked. `choice-0` is the first line on the list.
+- tapOn: { id: "choice-0" }
+- extendedWaitUntil:
+    visible: { text: ".*איזה מותג.*" }
+    timeout: 25000
+- assertVisible: { id: "brand-any" }
+- assertVisible: { text: ".*הזול ביותר בכל חנות.*" }
+- takeScreenshot: maestro/shots/choice-sheet
+
+# Choosing a brand closes the sheet and the line's chip carries that brand's name.
+- tapOn: { id: "brand-0" }
+- tapOn: { id: "brand-save" }
+- extendedWaitUntil:
+    notVisible: { text: ".*איזה מותג.*" }
+    timeout: 15000
+- takeScreenshot: maestro/shots/choice-pinned
+
+# And the way back is open: the same chip, כל מותג again.
+- tapOn: { id: "choice-0" }
+- extendedWaitUntil:
+    visible: { id: "brand-any" }
+    timeout: 25000
+- tapOn: { id: "brand-any" }
+- tapOn: { id: "brand-save" }
+- extendedWaitUntil:
+    notVisible: { text: ".*איזה מותג.*" }
+    timeout: 15000
+- assertVisible: { text: ".*כל מותג.*" }
+- takeScreenshot: maestro/shots/choice-unpinned

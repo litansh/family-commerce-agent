@@ -1,4 +1,4 @@
-import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, Suggestion } from '@fca/domain';
+import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, SubstitutionPolicy, Suggestion } from '@fca/domain';
 
 export type SearchHit = ProductCandidate & { imageUrl: string | null; priceMin?: number; priceMax?: number; bought?: boolean };
 
@@ -158,7 +158,11 @@ export class Api {
   resolve = (hid: string, lines: Omit<ListLine, 'id'>[]) =>
     this.#call<{ choices: Record<string, ProductChoice | null>; fromMemory: string[] }>('POST', `/households/${hid}/resolve`, { lines });
   suggest = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<{ suggestions: Suggestion[] }>('POST', `/households/${hid}/suggest`, { lines });
-  confirm = (hid: string, c: { phrase: string; gtin: string; productName: string; brand?: string }) =>
+  /**
+   * "Yes, that one." `substitution` is what the brand chip means next time: a pinned brand is
+   * `'never'`, "כל מותג" is `'cheapest'` (docs/design/item-identity.md).
+   */
+  confirm = (hid: string, c: { phrase: string; gtin: string; productName: string; brand?: string; substitution?: SubstitutionPolicy }) =>
     this.#call<unknown>('POST', `/households/${hid}/memory/confirm`, c);
   /** The stores' own orders, imported from the phone. */
   history = (hid: string) => this.#call<{ stores: Record<string, { at: string; orders: StoreOrder[] }> }>('GET', `/households/${hid}/history`);
