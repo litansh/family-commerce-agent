@@ -36,6 +36,10 @@ const CHECKS = {
   stores: () => run('stores', `node --experimental-strip-types e2e/store-health.mjs --json ${homedir()}/.kaniti/health/stores.json`, `${ROOT}/apps/mobile`, 600_000, (o, c) => ({ ok: c === 0, summary: (o.match(/all stores healthy|\d+ unhealthy: .*/)?.[0] ?? 'no verdict') })),
   // Promise 9: the lab's own claim ("added") must match the store's own state (its basket count, the real product behind a barcode); a PROMISE9-VIOLATION line from the lab is a red check regardless of how many lines were "added".
   cart: () => run('cart', 'node --experimental-strip-types e2e/cart-recipe-lab.mjs rami-levy', `${ROOT}/apps/mobile`, 240_000, (o) => { const added = Number(/"added":(\d+)/.exec(o)?.[1] ?? 0); const badge = /basket page count: (\d+)/.exec(o)?.[1]; const violations = [...o.matchAll(/PROMISE9-VIOLATION: (.+)/g)].map((m) => m[1]); return { ok: added >= 2 && Number(badge) >= 2 && violations.length === 0, summary: violations.length ? `rami-levy guest cart: ${violations.join('; ')}` : `rami-levy guest cart: ${added} added, basket shows ${badge ?? '?'}` }; }),
+  // ADR 0011's "read on the device": every store's historyJs, against the live login page,
+  // logged out — it must still post without dying (mechanical), and turn a mocked-network order
+  // shaped the way that store's own API ships it into {at,lines:[{name,code,qty}]} (field mapping).
+  history: () => run('history', 'node --experimental-strip-types e2e/history-lab.mjs', `${ROOT}/apps/mobile`, 240_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').filter(Boolean).slice(-2).join(' · ') })),
   prices: () => run('prices', 'node --experimental-strip-types services/branch-prices/lab.mjs', ROOT, 900_000, (o) => { const priced = (o.match(/basket ₪/g) ?? []).length; const failed = (o.match(/FAILED/g) ?? []).length; return { ok: priced >= 3 && failed === 0, summary: `${priced} branches priced, ${failed} portal failures` }; }),
   api: () => run('api', 'node ops/api-health.mjs', ROOT, 120_000, (o, c) => ({ ok: c === 0, summary: strip(o).trim().split('\n').pop() })),
   // Everyday Hebrew groceries through the catalogue search, not the provider's own vocabulary
@@ -82,13 +86,16 @@ function ladderHealth(results) {
     ladders.push({ ladder: 'Compare', rungs });
   }
   if (has('cart')) ladders.push({ ladder: 'Fill the cart', rungs: [{ name: 'rami-levy guest cart (cart)', ok: by.cart.ok }] });
-  if (has('stores') || has('cart')) ladders.push({ ladder: 'Read history', rungs: [] }); // no daily lab exercises this at all — docs/BACKLOG.md
+  if (has('history')) {
+    const rung = (label) => { const m = new RegExp(`${label}: (\\d+)/(\\d+) stores`).exec(by.history.tail); return m ? m[1] === m[2] : false; };
+    ladders.push({ ladder: 'Read history', rungs: [{ name: 'every store posts, logged out (history)', ok: rung('mechanical') }, { name: "field mapping matches the store's own shape (history)", ok: rung('field mapping') }] });
+  }
   if (has('prices')) ladders.push({ ladder: 'Prices in-store', rungs: [{ name: 'six chains\' portals (prices)', ok: by.prices.ok }] });
   return ladders.map((l) => { const working = l.rungs.filter((r) => r.ok).length; return { ...l, working, of: l.rungs.length, ok: working >= 2 }; });
 }
 
 mkdirSync(`${homedir()}/.kaniti/health`, { recursive: true });
-const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'prices', 'api', 'search', 'deals', 'shopper', 'topup', 'chaos']).filter((n) => CHECKS[n]);
+const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'history', 'prices', 'api', 'search', 'deals', 'shopper', 'topup', 'chaos']).filter((n) => CHECKS[n]);
 if (withSim && !only) names.push('sim');
 // Browser checks share the network but not the simulator: everything but `sim` runs in parallel.
 const parallel = names.filter((n) => n !== 'sim');

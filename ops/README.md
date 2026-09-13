@@ -12,6 +12,7 @@ stay on top of them without a person noticing. This directory is that loop.
 | `unit` | every package's tests | node |
 | `stores` | each of the 9 stores: page loads, no Cloudflare block/challenge, its own sign-in on screen, the detector says logged-out, the sign-up filler finds fields | WebKit, iPhone emulation, this network |
 | `cart` | Rami Levy's guest cart recipe adds real lines | WebKit |
+| `history` | every store's order-history recipe posts, logged out; field mapping matches a mocked order shaped as that store's own API ships it | WebKit |
 | `prices` | the price-transparency portals answer and price a basket at nearby branches | node, portals |
 | `api` | sign in as the test family, get a quote with options (and the in-store view) | the live API |
 | `sim` (`--sim`) | the iOS simulator connect flow for all 9 stores and the order flow | Xcode simulator + Maestro |
