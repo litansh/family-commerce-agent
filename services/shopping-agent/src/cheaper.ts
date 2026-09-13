@@ -27,13 +27,15 @@ export function pickCheaper(current: ProductCandidate, candidates: readonly Prod
   return cheaper.sort((a, b) => a.fromPrice! - b.fromPrice!)[0];
 }
 
+/** Named to match docs/design/a-full-basket-everywhere.md's own wire shape exactly ("the engine
+ * line", read by the mobile app's `lib/fullBasket.ts`): the original name is not repeated here
+ * because the screen already has it from `storefrontLines[sid][lineId]`. */
 export interface CheaperSwap {
   readonly lineId: string;
-  readonly fromName: string;
-  readonly toName: string;
-  readonly toGtin: string;
-  readonly fromPrice: Agorot;
-  readonly toPrice: Agorot;
+  readonly gtin: string;
+  readonly productName: string;
+  readonly lineTotal: Agorot;
+  readonly wasLineTotal: Agorot;
 }
 
 export interface CheaperResult {
@@ -88,7 +90,7 @@ export async function cheapestBasketFor(
     // The catalogue's indicative price is only ever a candidate to check - only a real, lower
     // quote at this exact store counts as a saving (the same guard `substituteMissing` applies).
     if (!priced || priced.lineTotal >= original.lineTotal) continue;
-    swaps.push({ lineId: original.lineId, fromName: original.productName, toName: priced.productName, toGtin: picks.get(original.lineId)!.gtin, fromPrice: original.lineTotal, toPrice: priced.lineTotal });
+    swaps.push({ lineId: original.lineId, gtin: picks.get(original.lineId)!.gtin, productName: priced.productName, lineTotal: priced.lineTotal, wasLineTotal: original.lineTotal });
     cheaperTotal = (cheaperTotal - original.lineTotal + priced.lineTotal) as Agorot;
   }
   return { storefrontId: quote.storefrontId, total, cheaperTotal, swaps };
