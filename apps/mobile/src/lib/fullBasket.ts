@@ -209,7 +209,7 @@ export function cardFor(quote: BasketLike, sid: string): StoreCardFacts {
   // saying "you pinned a product I have not got"; a free-text line has no exact version and so never
   // appears here, which is why an ordinary list shows one number per card and not two.
   const cheaperById = new Map((quote.cheaper?.[sid] ?? []).map((c) => [c.lineId, c]));
-  const swaps: BasketSwap[] = filledLines.flatMap((l) => {
+  const swaps: BasketSwap[] = filledLines.flatMap((l): BasketSwap[] => {
     const x = sl[l.id]!;
     const cheap = cheaperById.get(l.id);
     if (cheap) {

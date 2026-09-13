@@ -167,6 +167,25 @@ export function Chip({ text, tone = 'neutral' }: { text: string; tone?: 'neutral
   );
 }
 
+/**
+ * The price column of a row or a card: the number, with its note wrapping underneath it.
+ *
+ * Bounded so the name column keeps its width, and hugging the card's outer edge so the prices read as
+ * one column down a list. The note is where a number says what it is not — "+ משלוח", "ל־3 מתוך 8",
+ * "≈ כולל השלמה" — which is how two numbers that are not comparable are kept from looking as if they
+ * are (promise 4, docs/design/compare-accuracy.md).
+ */
+export function PriceCol({ price, note, color, size = 18 }: { price: string; note?: string; color?: string; size?: number }) {
+  const s = S(); const rtl = isRTL();
+  const edge = rtl ? ('left' as const) : ('right' as const);
+  return (
+    <View style={{ maxWidth: '45%', alignItems: rtl ? 'flex-start' : 'flex-end' }}>
+      <Text style={[s.price, { fontSize: size, color: color ?? t.ink, textAlign: edge }]}>{price}</Text>
+      {note ? <Text style={[s.faint, { fontSize: 11, textAlign: edge }]}>{note}</Text> : null}
+    </View>
+  );
+}
+
 export const Loading = ({ label }: { label?: string }) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
     <ActivityIndicator color={t.accent} size="large" />
