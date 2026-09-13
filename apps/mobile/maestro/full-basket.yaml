@@ -73,8 +73,9 @@ appId: com.litansh.kaniti
 - tapOn: { text: ".*(החלפה אחת|[0-9]+ החלפות).*" }
 - waitForAnimationToEnd
 - takeScreenshot: maestro/shots/full-basket-swaps
-# What was asked, an arrow, what this store gives — and, under it, why it is not what they asked for.
-- assertVisible: { text: ".*→.*" }
+# A difference inside an offer is one quiet line carrying both prices — "במקום X — Y, ₪14.90 במקום
+# ₪49.90 בשופרסל" (the owner, 13 September evening). Matched by id: a long Hebrew regex through the
+# XCUITest driver is what made this flow go red for reasons that were not the product.
 - assertVisible: { id: "swap-why" }
 
 # --- "אין סל חלקי": an offer that does not cover the whole list is not an answer and does not sit

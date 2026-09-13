@@ -104,5 +104,20 @@ proof lives. The whole list, and what it means, is `docs/BACKLOG.md`.
   "כל החנויות שמגיעות אליכם". A store that cannot fill the basket keeps its way to be bought from —
   as a quiet link reading "קנו כאן את N הפריטים שיש", never a primary button offering a basket it has
   not got (promises 1 and 6; the charter's "move it, size it, but keep it reachable").
-- [ ] **A full basket at every store** (docs/design/a-full-basket-everywhere.md), the owner's central ask: every store priced for the whole list using its own alternatives, the family's exact basket priced beside it with the difference in shekels, and a 'make it cheaper' action. Coverage becomes a fact on the card, not a reason to hide a store. *app-designer*
-- [ ] **Complete offers only, partial ones in their own section** (docs/design/a-full-basket-everywhere.md, the owner's 13 September refinement): every offer covers the whole basket with that store's alternatives; a store that cannot fill a line even with its nearest alternative moves to a collapsed "הצעות חלקיות ב-N חנויות" section; inside an offer a difference is one quiet line, "במקום X — Y, ₪n במקום ₪m". *app-designer*
+- [x] **Complete offers only, partial ones in their own section** (docs/design/a-full-basket-everywhere.md, the owner's 13 September refinement): every offer covers the whole basket with that store's alternatives; a store that cannot fill a line even with its nearest alternative moves to a collapsed "הצעות חלקיות ב-N חנויות" section; inside an offer a difference is one quiet line, "במקום X — Y, ₪n במקום ₪m". *app-designer* — in the same PR as the cards, since it changes them. Proof: `e2e/full-basket.mjs` asserts every offer among the answers covers the whole list and that each difference states both prices; `maestro/full-basket.yaml` opens the folded section and checks what is inside it.
+
+## What the refinement taught
+
+- **It arrived mid-build, and it was right to override.** The cards were already green when #119
+  merged the owner's own words. Two of the things it settles are things the build had got *wrong*, not
+  merely differently: partial offers were sitting in the same list as complete ones (so the eye
+  compared ₪100.51 for three lines against ₪103.95 for four), and every ordinary substitution was
+  amber — the colour that says "deal with this" — when a different size of egg is just a fact about
+  that store. Ordering and colour are the two things a card says before anyone reads a word of it.
+- **The second price needs a place, and it is another shop.** "₪14.90 במקום ₪49.90" only works
+  because the engine's `exactBasket.elsewhere[]` prices the family's own product at the store that
+  *has* it. So the line names that store: a number from somewhere else may never look like this
+  shop's. Where the engine has not priced it, the line simply stops after the first price.
+- **The card had no "when it delivers" at all** until this pass, though it is step one of the design's
+  own read order. Worth a habit: draw the read order, then check each step off against the built
+  screen, because the ones that carry no data are the ones that quietly never get built.
