@@ -2,7 +2,7 @@
  * Substitutes: a store that lacks a line must not vanish from the compare
  * (docs/design/a-full-basket-everywhere.md — coverage is a fact, never a gate).
  */
-import { type Agorot, type ListLine, type QuotedLine, isRealAlternative } from '@fca/domain';
+import { type Agorot, type ListLine, type QuotedLine, isRealAlternative, sizeFromName } from '@fca/domain';
 import type { CatalogProvider, QuoteRequest, QuoteResponse } from '@fca/retailer-connectors';
 
 /**
@@ -45,6 +45,22 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   const missingSome = res.quotes.filter((q) => q.serviceType === 'delivery' && q.requestedLines > 0 && q.pricedLines < q.requestedLines);
   const missing = new Map<string, ListLine>();
   for (const q of missingSome) { const have = new Set(q.lines.map((l) => l.lineId)); for (const l of lines) if (!have.has(l.id)) missing.set(l.id, l); }
+  /**
+   * What the family actually chose, in the words a shop uses for it.
+   *
+   * A line says "שמן זית"; the product behind it is "שמן זית מזוכך אופיר 750 מ\"ל". Searching the bare
+   * word finds a three-litre tin and calls it an alternative. Any store that DID price this line knows
+   * the real name, and reading it costs nothing - so the nearest product is looked for, and judged,
+   * against the thing itself rather than against one word of it.
+   */
+  const chosenName = new Map<string, string>();
+  for (const q of res.quotes) {
+    for (const l of q.lines) {
+      if (!missing.has(l.lineId) || chosenName.has(l.lineId)) continue;
+      const wanted = missing.get(l.lineId)!.gtin;
+      if (!wanted || l.gtin === wanted) chosenName.set(l.lineId, l.productName);
+    }
+  }
   if (missing.size === 0) return res;
   // One catalogue search per distinct missing line, up to `maxSearches`: a ten-line list with four near-complete
   // stores must not bail out because their gaps differ - that left every alternative unpriced.
@@ -67,11 +83,20 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
     // Several candidates, not one. Stores carry different things: a single global pick leaves every
     // store that happens not to stock it with an empty line, and the card then calls itself partial
     // although the store plainly has eggs. Each store fills the line with whichever it carries.
-    // Widely-carried products first: a store with a thin assortment is far likelier to have the one
-    // everybody stocks than the one the catalogue happened to rank first.
+    // Closest to what was chosen first, then whatever most chains carry - a store with a thin
+    // assortment is likelier to have the product everybody stocks than the catalogue's first guess.
+    // "Closest" counts how many
+    // words of the chosen product's own name a candidate shares, and whether it is the same size: a
+    // 750 ml bottle for a 750 ml bottle, not a 3 litre tin that happens to say olive oil.
+    const wantWords = new Set(words(chosenName.get(l.id) ?? l.query));
+    const wantSize = sizeFromName(chosenName.get(l.id) ?? '');
+    const closeness = (c: { name: string }) => {
+      const shared = words(c.name).filter((w) => wantWords.has(w)).length;
+      return shared + (wantSize && wantSize === sizeFromName(c.name) ? 2 : 0);
+    };
     const rest = found
       .filter((c) => c.gtin !== l.gtin)
-      .sort((a, b) => b.pricedAtChains - a.pricedAtChains);
+      .sort((a, b) => closeness(b) - closeness(a) || b.pricedAtChains - a.pricedAtChains);
     const best = pickSubstitute(l.query, rest);
     const alts = [best, ...rest.filter((c) => c !== best && isRealAlternative(l.query, c.name))]
       .filter((c): c is NonNullable<typeof c> => !!c?.gtin)
