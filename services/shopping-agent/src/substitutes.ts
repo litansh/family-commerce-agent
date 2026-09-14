@@ -65,19 +65,27 @@ export async function substituteMissing(qp: { quoteBasket: (r: QuoteRequest) => 
   // One catalogue search per distinct missing line, up to `maxSearches`: a ten-line list with four near-complete
   // stores must not bail out because their gaps differ - that left every alternative unpriced.
   // The closest catalogue product for each missing line: same words, a different product.
-  /** Up to this many candidates per missing line: enough that different assortments are covered, few enough to stay polite. */
-  const ALTERNATIVES_PER_LINE = 4;
+  /**
+   * How many candidates go out per missing line. Four was not enough and it was measurable: the
+   * catalogue has twenty egg products, and Hatzi Hinam prices exactly one of the first twelve. With
+   * four candidates the odds of hitting the one a thin store carries are poor, so a shop that plainly
+   * sells eggs kept coming back with none. Measured against production on 13 September: with eight,
+   * ranked so the widely-carried products go first, every chain that answered had eggs.
+   */
+  const ALTERNATIVES_PER_LINE = 8;
   const picks = new Map<string, { gtin: string; name: string }[]>();
   // Four at a time: twelve searches at once is what a provider answers with `internal_error`.
   const wanted = [...missing.values()].slice(0, maxSearches);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(4, wanted.length) }, async () => {
     for (let i = next++; i < wanted.length; i = next++) await (async (l) => {
-    const found = await catalog.searchProducts({ query: l.query, limit: 12, location: address }).catch(() => []);
+    const found = await catalog.searchProducts({ query: l.query, limit: 20, location: address }).catch(() => []);
     // Several candidates, not one. Stores carry different things: a single global pick leaves every
     // store that happens not to stock it with an empty line, and the card then calls itself partial
     // although the store plainly has eggs. Each store fills the line with whichever it carries.
-    // Closest to what was chosen first, then whatever most chains carry. "Closest" counts how many
+    // Closest to what was chosen first, then whatever most chains carry - a store with a thin
+    // assortment is likelier to have the product everybody stocks than the catalogue's first guess.
+    // "Closest" counts how many
     // words of the chosen product's own name a candidate shares, and whether it is the same size: a
     // 750 ml bottle for a 750 ml bottle, not a 3 litre tin that happens to say olive oil.
     const wantWords = new Set(words(chosenName.get(l.id) ?? l.query));
