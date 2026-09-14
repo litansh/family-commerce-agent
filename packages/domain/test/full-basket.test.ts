@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { shekels, type Agorot } from '../src/money.ts';
-import { cheapestExactElsewhere, storefrontFacts, isRealAlternative, wrongProductLineIds } from '../src/full-basket.ts';
+import { cheapestExactElsewhere, storefrontFacts, isRealAlternative, wrongProductLineIds, stripWrongProducts } from '../src/full-basket.ts';
 import type { QuotedLine, StorefrontQuote } from '../src/types.ts';
 
 const line = (id: string, total: number, over: Partial<QuotedLine> = {}): QuotedLine => ({
@@ -124,4 +124,23 @@ test('a wrong product is caught even when nobody flagged it as a substitution', 
   // And a store that really does have it keeps it, flag or no flag.
   const ok = quote('r', 'רמי לוי', [line('l0', 22, { productName: 'אבקת כביסה סנו מקסימה' })], 5, 1);
   assert.equal(wrongProductLineIds(ok, new Map([['l0', 'אבקת כביסה']])).size, 0);
+});
+
+test('stripping a wrong product leaves a quote nobody can disagree about', () => {
+  // The failure this prevents: the line stayed in the quote the optimizer ranked, so a winning leg
+  // listed it, while the cards refused to show it — "the winning cart is fillable" went 9 of 17 on
+  // production. Remove it once, before anything is ranked, and every reader sees the same basket.
+  const q = quote('v', 'ויקטורי', [
+    line('l0', 20, { productName: 'חלב תנובה 3%' }),
+    line('l1', 24, { productName: 'אל אמ קליק קפסולה חפיסה' }),
+  ], 5, 2);
+  const asked = new Map([['l0', 'חלב'], ['l1', 'אבקת כביסה']]);
+  const out = stripWrongProducts(q, asked);
+  assert.deepEqual(out.lines.map((l) => l.lineId), ['l0'], 'the wrong product is gone from the quote itself');
+  assert.equal(out.pricedLines, 1);
+  assert.equal(out.itemsSubtotal, q.itemsSubtotal - 2400, 'and its money with it');
+  assert.equal(out.deliveredTotal, out.itemsSubtotal + q.deliveryFee);
+  // A quote with nothing wrong is returned untouched, object and all.
+  const clean = quote('r', 'רמי לוי', [line('l0', 20, { productName: 'חלב תנובה 3%' })], 5, 1);
+  assert.equal(stripWrongProducts(clean, asked), clean);
 });

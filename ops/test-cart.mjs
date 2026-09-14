@@ -207,7 +207,8 @@ check('in-store prices present', q.drive && (q.drive.status === 'ready' ? q.driv
 if (best) {
   const sl = q.storefrontLines?.[best.legs[0].storefrontId] ?? {};
   const fillable = best.legs[0].lineIds.filter((id) => sl[id]?.gtin || sl[id]?.link).length;
-  check('the winning cart is fillable on the phone (barcode or link per line)', fillable >= best.legs[0].lineIds.length * 0.9, `${fillable}/${best.legs[0].lineIds.length}`);
+  const notFillable = best.legs[0].lineIds.filter((id) => !(sl[id]?.gtin || sl[id]?.link)).map((id) => `${LIST.find((l) => l.id === id)?.query ?? id}${sl[id] ? '' : ' (no line at all)'}`);
+  check('the winning cart is fillable on the phone (barcode or link per line)', fillable >= best.legs[0].lineIds.length * 0.9, `${fillable}/${best.legs[0].lineIds.length}` + (notFillable.length ? ` · ${notFillable.slice(0, 6).join(', ')}` : '') + `s.length}`);
 }
 // A picture on every line of a real list: a drawn glyph where a photograph belongs is the commonest
 // "the app looks unfinished". quotedLines is the winner's cart as the phone renders it.

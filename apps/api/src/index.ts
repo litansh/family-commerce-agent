@@ -44,6 +44,7 @@ import {
   cheapestExactElsewhere,
   storefrontFacts,
   wrongProductLineIds,
+  stripWrongProducts,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
@@ -806,7 +807,13 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // which chain wins; apply them before ranking.
       const couponRows = await Promise.all((household.retailers ?? []).map(async (r) => (await readRow(TABLE, hid, `COUPONS#${r}`)) as { coupons?: Coupon[] } | undefined));
       const coupons = couponRows.flatMap((r) => r?.coupons ?? []);
-      const couponed: StorefrontQuote[] = substituted.quotes.map((q) => applyCoupons(q, coupons));
+      // A line a store filled with something that is not an alternative at all is dropped here, before
+      // anything is ranked. Doing it later left the optimizer building legs around products the cards
+      // then refused to show, so a winning cart listed lines the phone could not fill (9 of 17 on
+      // production, 14 September). One removal, upstream of everyone who reads a quote.
+      const lineQueryForStrip = new Map(lines.map((l) => [l.id, l.query]));
+      const cleaned: StorefrontQuote[] = substituted.quotes.map((q) => stripWrongProducts(q, lineQueryForStrip));
+      const couponed: StorefrontQuote[] = cleaned.map((q) => applyCoupons(q, coupons));
       const result = optimize({ quotes: couponed, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
       const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
@@ -867,9 +874,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // disagree once a promotion applies (docs/design/a-full-basket-everywhere.md, "the screen may
       // not add the line prices up"), so a card that shows a swap's cost must read this field, never
       // sum `price` fields itself.
-      // A line a store filled with something that is not an alternative is not offered by that store:
-      // it is left out here exactly as it is named in that card's gaps, so the two never disagree.
-      for (const q of substituted.quotes) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.filter((l) => !wrongProductLineIds(q, lineQuery).has(l.lineId)).map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      for (const q of cleaned) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // The engine half of "a full basket everywhere" (docs/design/a-full-basket-everywhere.md):
       // every delivering storefront's full-basket facts (this store's own nearest product wherever
       // it lacks the exact one - substituteMissing already tried every gap, not just the near-complete
