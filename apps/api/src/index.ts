@@ -45,6 +45,7 @@ import {
   storefrontFacts,
   wrongProductLineIds,
   stripWrongProducts,
+  isRealAlternative,
 } from '@fca/domain';
 import { DynamoMemoryRepository, VersionConflict } from '@fca/memory-store';
 import { quoteWithFallback, substituteMissing, cheapestBasketFor } from '@fca/shopping-agent';
@@ -817,14 +818,33 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const result = optimize({ quotes: couponed, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
       const couponSavings = Object.fromEntries(couponed.map((q) => [q.storefrontId, (q as { couponSavings?: number }).couponSavings ?? 0]));
       const bestId = result.options[0]?.legs[0]?.storefrontId;
-      const bestLines = substituted.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
+      const bestLines = cleaned.find((q) => q.storefrontId === bestId)?.lines ?? [];
+      /**
+       * A barcode for every line of the cart the family is about to buy.
+       *
+       * Some storefronts price a line and give no barcode at all - just a name ("מלפפון ישראל").
+       * The phone can still fall back to the store's own search, but that is a worse shop: a barcode
+       * adds the item, a search makes a person choose again. The catalogue usually knows the barcode
+       * for a name, and those lookups are cached and shared, so this costs almost nothing and only
+       * ever adds. Bounded to the winning cart, which is the one being bought.
+       */
+      const needBarcode = bestLines.filter((l) => !l.gtin && !l.link && l.productName).slice(0, 24);
+      const foundBarcodes = new Map<string, string>();
+      if (needBarcode.length) {
+        await mapLimit(needBarcode, 4, async (l) => {
+          const hits = await catalog.searchProducts({ query: l.productName, limit: 4, location: typeof body['address'] === 'string' ? body['address'] : household.address }).catch(() => []);
+          const hit = hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name));
+          if (hit?.gtin) foundBarcodes.set(l.lineId, hit.gtin);
+        });
+        console.log(JSON.stringify({ event: 'barcodes-filled', hid, asked: needBarcode.length, found: foundBarcodes.size }));
+      }
       // Not on the shared clock like substitutes and etas above, this defaulted to 20s of its own -
       // on a five-person week (30+ lines, several cache misses) that alone could carry the whole
       // request past API Gateway's 30s cutoff into the 503 a family saw with no picture to show for it
       // either. A picture is worth having, not worth the compare itself; a miss here is cached for a
       // day and self-heals on the next look, same as any other resolveMany caller.
       const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, 5_000);
-      const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin, productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
+      const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin ?? foundBarcodes.get(l.lineId), productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
       // (minutes, from Wolt's own feed for the family's address); the chains deliver in
       // windows, which the phone reads from each store once it is connected.
@@ -874,7 +894,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // disagree once a promotion applies (docs/design/a-full-basket-everywhere.md, "the screen may
       // not add the line prices up"), so a card that shows a swap's cost must read this field, never
       // sum `price` fields itself.
-      for (const q of cleaned) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...(l.gtin ? { gtin: l.gtin } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
+      for (const q of cleaned) if (shownIds.has(q.storefrontId)) storefrontLines[q.storefrontId] = Object.fromEntries(q.lines.map((l) => [l.lineId, { ...((l.gtin ?? (q.storefrontId === bestId ? foundBarcodes.get(l.lineId) : undefined)) ? { gtin: l.gtin ?? foundBarcodes.get(l.lineId)! } : {}), productName: l.productName, price: l.unitPrice, lineTotal: l.lineTotal, ...(l.link ? { link: l.link } : {}), ...(l.substituted ? { substituted: true, reason: reasonFor(l), swapBy: l.substitutionReason && l.substitutionReason.includes('→') ? 'kaniti' : 'store' } : {}) }]));
       // The engine half of "a full basket everywhere" (docs/design/a-full-basket-everywhere.md):
       // every delivering storefront's full-basket facts (this store's own nearest product wherever
       // it lacks the exact one - substituteMissing already tried every gap, not just the near-complete
