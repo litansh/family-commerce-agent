@@ -104,6 +104,29 @@ export function wrongProductLineIds(quote: StorefrontQuote, lineQuery: ReadonlyM
   );
 }
 
+/**
+ * A quote with the lines nobody really filled taken out, and its money put right.
+ *
+ * This must happen before anything is ranked. Doing it afterwards left the optimizer building legs
+ * around products the cards then refused to show, and a winning cart listed lines the phone could not
+ * fill (9 of 17, production, 14 September). One removal, upstream of every reader.
+ */
+export function stripWrongProducts(quote: StorefrontQuote, lineQuery: ReadonlyMap<string, string>): StorefrontQuote {
+  const wrong = wrongProductLineIds(quote, lineQuery);
+  if (wrong.size === 0) return quote;
+  const lines = quote.lines.filter((l) => !wrong.has(l.lineId));
+  const removed = quote.lines.filter((l) => wrong.has(l.lineId)).reduce((n, l) => n + l.lineTotal, 0);
+  const itemsSubtotal = (quote.itemsSubtotal - removed) as Agorot;
+  return {
+    ...quote,
+    lines,
+    itemsSubtotal,
+    deliveredTotal: (itemsSubtotal + quote.deliveryFee) as Agorot,
+    pricedLines: lines.length,
+    ...(quote.minimumOrder !== undefined ? { meetsMinimum: itemsSubtotal >= quote.minimumOrder } : {}),
+  };
+}
+
 export function storefrontFacts(
   quote: StorefrontQuote,
   requestedLineIds: readonly string[],
