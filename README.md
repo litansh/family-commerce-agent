@@ -178,6 +178,12 @@ substitution suggestion; it can never put an old price on a card.
 its word forgotten at once, so the next family gets a fresh answer rather than the same
 disappointment.
 
+**The provider is asked gently.** SuperMCP answers "Service is busy" (`service_busy`) when too many
+calls arrive at once (from the ops Mac, 16 parallel searches get a few refusals and 8 get none). Each
+API instance therefore keeps at most six provider calls in flight, retries a busy answer once after a
+longer pause, and, if the provider is still busy, answers `503 stores_slow` (the phone already retries
+that), never `500 internal error`.
+
 ## The number that decides everything
 
 ```bash

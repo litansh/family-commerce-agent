@@ -1,5 +1,15 @@
 # Needs the owner
 
+## The AWS account's Lambda concurrency limit is 10 (docs/backlog/api-fixer.md, 2026-10-03)
+`aws lambda get-account-settings` reports `ConcurrentExecutions: 10` (a new account's default; the
+usual limit is 1000). During the 03:42Z health run fca-api peaked at 10 concurrent and was
+**throttled 4 times** (CloudWatch `Throttles`, 03:40–03:45Z), while `ops/check.mjs` ran shopper,
+topup, chaos, search and deals in parallel and each compare holds an instance for 20–40 s. A
+throttled call is a 503 from API Gateway before any Kaniti code runs. Two families comparing at once
+plus the nightly jobs would reach the same ceiling. Needs: the owner to request a quota increase in
+Service Quotas (Lambda → Concurrent executions, eu-central-1) on the personal account. It is an
+account request, not a code or terraform change.
+
 ## A full week's basket still fails to quote (docs/BACKLOG.md, api-fixer)
 The urgent evidence (2026-09-13) had two parts. Search — `searchProducts('טופו')`/`('שוקולד')`
 erring or taking 20-30s — is fixed and proven in PR api/search-fallback-ladder (a bounded retry on
