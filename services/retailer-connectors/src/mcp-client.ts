@@ -21,8 +21,28 @@ export class McpCallError extends Error {
 }
 
 /** SuperMCP's own transient failure: never a validation problem, worth one more try. */
-const TRANSIENT = /internal_error|internal server error/i;
+const TRANSIENT = /internal_error|internal server error|service_busy|service is busy|HTTP 429|HTTP 503/i;
+/**
+ * The vendor's "Service is busy. Please retry shortly." (code service_busy): it refuses calls when too
+ * many arrive at once (measured from the ops Mac 2026-10-03: 4 or 8 parallel searches all answer,
+ * 16 get three refusals; production logged 60 in two minutes of a health run, each one a 500 or an
+ * unresolved line because only internal_error was retried).
+ */
+export const isBusyError = (e: unknown): boolean => e instanceof Error && /service_busy|service is busy|HTTP 429/i.test(e.message);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * One gate per Lambda instance across every client: a resolve runs four lines at once with two
+ * searches each, a compare's substitutes four more, and the vendor starts refusing past about a dozen.
+ */
+const MAX_IN_FLIGHT = 6;
+let inFlight = 0;
+const waiting: (() => void)[] = [];
+async function gate<T>(work: () => Promise<T>): Promise<T> {
+  if (inFlight >= MAX_IN_FLIGHT) await new Promise<void>((r) => waiting.push(r));
+  inFlight++;
+  try { return await work(); } finally { inFlight--; waiting.shift()?.(); }
+}
 
 export class McpClient {
   #id = 0;
@@ -50,12 +70,13 @@ export class McpClient {
   async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await this.#callOnce<T>(name, args);
+        return await gate(() => this.#callOnce<T>(name, args));
       } catch (e) {
         if (attempt >= this.#retries || !(e instanceof McpCallError) || !TRANSIENT.test(e.message)) throw e;
         console.warn(JSON.stringify({ event: 'provider-retry', tool: name, attempt: attempt + 1, error: e.message.slice(0, 120) }));
-        // Jitter: a burst of retries in step is another burst.
-        await sleep(300 * (attempt + 1) + Math.floor(Math.random() * 300));
+        // Jitter: a burst of retries in step is another burst. "Busy" asks for a longer pause.
+        const base = isBusyError(e) ? 700 : 300;
+        await sleep(base * (attempt + 1) + Math.floor(Math.random() * base));
       }
     }
   }

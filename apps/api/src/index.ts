@@ -704,6 +704,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
     if (e instanceof HttpError) return { statusCode: e.status, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
     if (e instanceof VersionConflict) return { statusCode: 409, headers: JSON_H, body: JSON.stringify({ error: e.message }) };
     if (e instanceof SyntaxError) return { statusCode: 400, headers: JSON_H, body: JSON.stringify({ error: 'invalid JSON' }) };
+    // The provider refusing with "busy" past the client's retries is the stores being slow, not a bug
+    // in Kaniti: the same 503 'stores_slow' the compare already answers, which the phone retries.
+    if (isSlowError(e)) { console.warn(JSON.stringify({ event: 'provider-slow-503', error: e instanceof Error ? e.message.slice(0, 160) : String(e) })); return { statusCode: 503, headers: JSON_H, body: JSON.stringify({ error: 'stores_slow' }) }; }
     console.error(e);
     return { statusCode: 500, headers: JSON_H, body: JSON.stringify({ error: 'internal error' }) };
   }

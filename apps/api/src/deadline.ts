@@ -13,9 +13,13 @@ export function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([p, clock]).finally(() => clearTimeout(timer));
 }
 
-/** True for the deadline, the MCP client's abort ("This operation was aborted"), and a dropped connection. */
+/**
+ * True for the deadline, the MCP client's abort ("This operation was aborted"), a dropped connection,
+ * and the vendor's own "Service is busy" (service_busy): busy is the stores being slow in another
+ * word, worth another pass, and never a 500 'internal error' (production, 2026-10-03).
+ */
 export function isSlowError(e: unknown): boolean {
   if (e instanceof DeadlinePassed) return true;
   if (!(e instanceof Error)) return false;
-  return e.name === 'AbortError' || /aborted|timeout|timed out|fetch failed|ECONNRESET|socket hang up/i.test(e.message);
+  return e.name === 'AbortError' || /aborted|timeout|timed out|fetch failed|ECONNRESET|socket hang up|service_busy|service is busy|HTTP 429/i.test(e.message);
 }

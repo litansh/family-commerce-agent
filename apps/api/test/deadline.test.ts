@@ -20,3 +20,8 @@ test('the slow classifier: deadline, the MCP abort and a dropped socket are slow
   assert.equal(isSlowError(new Error('household not found')), false);
   assert.equal(isSlowError('string'), false);
 });
+
+test("the provider's 'Service is busy' (service_busy) is slow, so the compare tries again and the API answers 503 stores_slow, never 500", () => {
+  assert.equal(isSlowError(new Error('optimize_delivery: Error: Service is busy. Please retry shortly. (code: service_busy)')), true);
+  assert.equal(isSlowError(new Error('search_products: HTTP 429')), true);
+});
