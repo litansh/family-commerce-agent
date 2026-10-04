@@ -22,6 +22,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import {
   applyMemory,
   buildChoice,
+  repairQuery,
   confirm,
   DEFAULT_CONSTANTS,
   optimize,
@@ -630,11 +631,21 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
             catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
           ]), LINE_BUDGET_MS);
           const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
-          const c = buildChoice(merged, {
+          const choiceOpts = {
             lineId: line.id, query: line.query,
             ...(line.brand ? { requestedBrand: line.brand } : {}),
             ...(line.gtin ? { requestedGtin: line.gtin } : {}),
-          });
+          };
+          let c = buildChoice(merged, choiceOpts);
+          // Second rung: the same words as the catalogue spells them - a final letter typed as its
+          // middle form ("מלפפונימ"), an English word beside the Hebrew ("חלב milk 3%"). Unresolved
+          // in every health run since 2026-09-14; the line keeps the family's own words, with a note.
+          const repaired = c ? undefined : repairQuery(line.query);
+          if (repaired) {
+            const again = await withDeadline(catalog.searchProducts({ query: repaired, limit: 16, location: household.address }), LINE_BUDGET_MS);
+            const r = buildChoice(again, { ...choiceOpts, query: repaired });
+            if (r) c = { ...r, query: line.query, note: `Searched as "${repaired}"` };
+          }
           choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
           // A line that came back neither chosen nor thrown must still be told apart from one
           // never sent: `null` with no `unresolved` entry satisfies neither reader downstream.

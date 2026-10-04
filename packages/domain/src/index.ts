@@ -9,3 +9,4 @@ export * from './optimizer.ts';
 export * from './size.ts';
 export * from './variant.ts';
 export * from './full-basket.ts';
+export * from './query.ts';
