@@ -60,6 +60,7 @@ import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
 import { CachedCatalog } from './cached-catalog.ts';
 import { isSlowError, withDeadline } from './deadline.ts';
+import { shouldRepullPromos } from './deals-cache.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
 import { BranchPrices } from './branches.ts';
@@ -381,7 +382,7 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
       // otherwise sits there for its full 6h doing the exact thing that fix was for: one chain's
       // page. Never trust a cached spread that thin; only a fresh pull can widen it.
       const cachedChains = new Set(promos.map((p) => p.chainName)).size;
-      if (!promos.length || cachedChains < 3 || !cached?.at || Date.now() - Date.parse(cached.at) > 6 * 3600_000) {
+      if (shouldRepullPromos(promos.length, cachedChains, cached?.at, Date.now())) {
         // The feed caps at 200, ordered by soonest end - the ones worth acting on this week.
         const fresh = catalog.listPromotions ? await catalog.listPromotions(200).catch(() => null) : null;
         if (fresh?.length) {
