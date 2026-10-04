@@ -184,6 +184,12 @@ API instance therefore keeps at most six provider calls in flight, retries a bus
 longer pause, and, if the provider is still busy, answers `503 stores_slow` (the phone already retries
 that), never `500 internal error`.
 
+**A line that finds nothing gets a second search.** When the family's words resolve to no priced
+product, `/resolve` searches once more with the words written the way the catalogue spells them: a
+final letter typed as its middle form ("מלפפונימ" becomes "מלפפונים") and an English word beside the
+Hebrew dropped ("חלב milk 3%" becomes "חלב 3%"; an all-English line is left alone). The line keeps the
+family's own words, with a note saying what was searched (`repairQuery` in `packages/domain`).
+
 ## The number that decides everything
 
 ```bash
@@ -249,7 +255,8 @@ worklist in `docs/backlog/<agent>.md`.
 ```bash
 ops/lanes.sh                   # the fleet, two lanes side by side, each lane serial
 FLEET_TASK="…" ops/fleet.sh api-fixer     # one agent on one job
-ops/check.mjs && ops/repair.sh            # the daily run: check, repair, brief, then the fleet
+ops/check.mjs && ops/repair.sh            # the daily run: refresh the ops-Mac data rungs (deals files, RL branches,
+                                          # HH stock), then check, repair, brief, then the fleet
 ops/unblock.sh                            # merge main into any pull request that has drifted
 ```
 

@@ -1,5 +1,19 @@
 # Needs the owner
 
+## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
+`services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
+files this morning and then failed to write them: `CredentialsProviderError: Your session has
+expired` (same for `aws logs`). CATALOG#PROMOS_FILES has a two-day TTL, and the script ran only on a
+green day (none since 2026-09-12; fixed on branch `ops/2026-10-03-api-500-503`, it now runs every
+day before the checks). Meanwhile the provider's own `get_promotions` returns 200 of 200 from Wolt
+Market (checked 03:58Z, with and without a city), so /deals shows one chain. Needs: the owner to sign
+in again on the ops Mac (`aws login --profile personal-cfo`) and run
+`AWS_PROFILE=personal-cfo node --experimental-strip-types services/branch-prices/refresh-deals.mjs`
+once; the deals check goes green as soon as it writes. A credential that does not expire every few
+hours for this one DynamoDB write (a narrowly scoped role for the ops Mac) is an infrastructure
+decision for the owner, not something an agent should create.
+
+
 ## The AWS account's Lambda concurrency limit is 10 (docs/backlog/api-fixer.md, 2026-10-03)
 `aws lambda get-account-settings` reports `ConcurrentExecutions: 10` (a new account's default; the
 usual limit is 1000). During the 03:42Z health run fca-api peaked at 10 concurrent and was
