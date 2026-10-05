@@ -107,9 +107,20 @@ function ladderHealth(results) {
 mkdirSync(`${homedir()}/.kaniti/health`, { recursive: true });
 const names = (only ?? ['recipes', 'unit', 'stores', 'cart', 'history', 'prices', 'api', 'search', 'deals', 'shopper', 'topup', 'chaos']).filter((n) => CHECKS[n]);
 if (withSim && !only) names.push('sim');
-// Browser checks share the network but not the simulator: everything but `sim` runs in parallel.
-const parallel = names.filter((n) => n !== 'sim');
-const results = await Promise.all(parallel.map((n) => CHECKS[n]()));
+// Browser checks share the network but not the simulator: everything but `sim` runs in parallel,
+// except the checks that drive the production API, which run one after another. The account's
+// Lambda concurrency is 10 (ops/NEEDS-HUMAN.md); six of them at once (three week-long compares,
+// eight parallel searches) had API Gateway throttle fca-api, and the checks then reported the
+// gateway's own 0.3 s "Service Unavailable" as search, quote and chaos failures (2026-10-03..05).
+// One family never makes that burst; the capacity question stays in NEEDS-HUMAN, not in the checks.
+const API_CHECKS = ['api', 'search', 'deals', 'shopper', 'topup', 'chaos', 'compare'];
+const parallel = names.filter((n) => n !== 'sim' && !API_CHECKS.includes(n));
+const serial = names.filter((n) => API_CHECKS.includes(n));
+const runSerial = async () => { const out = []; for (const n of serial) out.push(await CHECKS[n]()); return out; };
+const [side, apiResults] = await Promise.all([Promise.all(parallel.map((n) => CHECKS[n]())), runSerial()]);
+// Keep the report in the order the checks were named.
+const byName = Object.fromEntries([...side, ...apiResults].map((r) => [r.name, r]));
+const results = names.filter((n) => n !== 'sim').map((n) => byName[n]);
 if (names.includes('sim')) results.push(await CHECKS.sim());
 
 const at = new Date().toISOString();
