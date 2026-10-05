@@ -9,7 +9,9 @@ day before the checks). Meanwhile the provider's own `get_promotions` returns 20
 Market (checked 03:58Z, with and without a city), so /deals shows one chain. Needs: the owner to sign
 in again on the ops Mac (`aws login --profile personal-cfo`) and run
 `AWS_PROFILE=personal-cfo node --experimental-strip-types services/branch-prices/refresh-deals.mjs`
-once; the deals check goes green as soon as it writes. A credential that does not expire every few
+once; the deals check goes green as soon as it writes. **Still true on 2026-10-05**: `aws sts
+get-caller-identity` answers "Your session has expired", and /deals still shows 33 deals across 2
+chains (וולט מרקט, טיב טעם) when called alone, so this is the session, not load. A credential that does not expire every few
 hours for this one DynamoDB write (a narrowly scoped role for the ops Mac) is an infrastructure
 decision for the owner, not something an agent should create.
 
@@ -23,6 +25,12 @@ throttled call is a 503 from API Gateway before any Kaniti code runs. Two famili
 plus the nightly jobs would reach the same ceiling. Needs: the owner to request a quota increase in
 Service Quotas (Lambda → Concurrent executions, eu-central-1) on the personal account. It is an
 account request, not a code or terraform change.
+**Reproduced again 2026-10-05 without CloudWatch** (session expired): 16 parallel `GET /me` calls
+from the ops Mac got four 503s in 0.3 s with API Gateway's own `{"message":"Service Unavailable"}` -
+the same body and time as the search check's three 503s at 03:46Z. Every red API row that morning
+(search, quote, shopper, chaotic compare) answered green when its check ran alone. The checks now run
+the API checks one after another (branch `ops/2026-10-03-api-500-503`), so they stop crying wolf;
+the cap itself still needs this quota request.
 
 ## A full week's basket still fails to quote (docs/BACKLOG.md, api-fixer)
 The urgent evidence (2026-09-13) had two parts. Search — `searchProducts('טופו')`/`('שוקולד')`

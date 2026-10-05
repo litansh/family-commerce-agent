@@ -231,7 +231,10 @@ node ops/check.mjs --only search,api,cart
 
 `ops/check.mjs` is the honest one: it asks production for a real family's basket, drives the store
 labs in a real browser, and prices real branches. It also reports each **ladder** (ADR 0010) and goes
-red when one is down to a single working rung.
+red when one is down to a single working rung. The browser labs run side by side; the checks that
+drive the production API (`api`, `search`, `deals`, `shopper`, `topup`, `chaos`) run one after
+another, because together they exceeded the account's 10-Lambda concurrency and the checks were
+reporting API Gateway's own throttle 503s (0.3 s, `{"message":"Service Unavailable"}`) as product failures.
 
 The labs it drives are worth knowing on their own:
 
