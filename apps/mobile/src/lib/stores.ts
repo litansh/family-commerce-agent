@@ -273,7 +273,7 @@ export const RAMI_LEVY: Platform = {
   // default branch. Say so and let the screen hand over to the store's own pages.
   for(const l of L)out.push({gtin:l.gtin,status:'missing',detail:'no branch'});
   window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{signedIn:true,store,branchFrom,found:Object.keys(byBarcode).length,noBranch:true}}));return;}
-  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',detail:hit.name,swapped:byName[l.name]&&byName[l.name].id===hit.id&&hit.name!==l.name?l.name+' \u2192 '+hit.name:undefined});}else if(l.gtin&&unavailable[l.gtin])out.push({gtin:l.gtin,status:'unavailable',detail:unavailable[l.gtin].name||l.name});else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
+  const qty={};for(const l of L){const hit=(l.gtin&&byBarcode[l.gtin])||byName[l.name];if(hit){qty[hit.id]=(qty[hit.id]||0)+(l.qty||1);out.push({gtin:l.gtin,status:'added',id:String(hit.id),detail:hit.name,swapped:byName[l.name]&&byName[l.name].id===hit.id&&hit.name!==l.name?l.name+' \u2192 '+hit.name:undefined});}else if(l.gtin&&unavailable[l.gtin])out.push({gtin:l.gtin,status:'unavailable',detail:unavailable[l.gtin].name||l.name});else out.push({gtin:l.gtin,status:'missing',detail:l.name});}
   // The site's own helper (collect.js pluck('Quantity','C')) builds items as a MAP {itemId: quantity}.
   // Captured from the site itself (e2e/rl-cart-capture.mjs): quantities are strings with two
   // decimals and supplyAt is the current time as an ISO timestamp - null makes the backend hang.
@@ -290,6 +290,9 @@ export const RAMI_LEVY: Platform = {
   // A server answer to the cart POST names the cart it holds; our ids must be in it.
   const inAnswer=(d)=>{try{const c=[d,d&&d.data,d&&d.data&&d.data.data,d&&d.cart,d&&d.data&&d.data.cart];for(const x of c){const arr=x&&(Array.isArray(x.items)?x.items:Array.isArray(x)?x:null);if(arr&&arr.some(it=>it&&items[String(it.C!=null?it.C:it.id)]!=null))return true;}}catch(e){}return false;};
   let serverOk=false;
+  // The ids a cart holds with a quantity above zero (state rows and server rows share C/id + Quantity/amount).
+  const heldIn=(arr)=>{const h={};try{for(const it of (Array.isArray(arr)?arr:[])){const c=it&&(it.C!=null?it.C:it.id);const q=Number(it&&(it.Quantity!=null?it.Quantity:it.quantity!=null?it.quantity:it.amount!=null?it.amount:1));if(c!=null&&q>0)h[String(c)]=true;}}catch(e){}return h;};
+  let answerHeld={};const noteAnswer=(d)=>{try{const c=[d,d&&d.data,d&&d.data&&d.data.data,d&&d.cart,d&&d.data&&d.data.cart];for(const x of c){const arr=x&&(Array.isArray(x.items)?x.items:Array.isArray(x)?x:null);if(arr){answerHeld=heldIn(arr);return;}}}catch(e){}};
   if(Object.keys(items).length){
   // First choice: the site's own add path ($ecomws.setItemsCart, what its plus button calls).
   // It merges into the page's cart state and posts to the server the way the site does, so
@@ -298,15 +301,18 @@ export const RAMI_LEVY: Platform = {
   const body={store:isNaN(+store)?store:+store,isClub,supplyAt,items,meta:null};
   // Prefer the site's own axios: its request interceptor carries the (anonymous or signed-in) bearer.
   // Guests: the site's interceptor sends NO EcomToken header (config flag EcomToken:0 tells it to skip); a literal 'EcomToken: 0' header makes the backend hang. Signed in: the user's token.
-  if(cartStatus!==200)try{if(n&&n.$axios&&n.$axios.post){const cfg=ecom?{headers:{EcomToken:String(ecom)}}:{EcomToken:0};const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,cfg),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';serverOk=inAnswer(rr&&rr.data);if(!serverOk)cartStatus=-4;}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
+  if(cartStatus!==200)try{if(n&&n.$axios&&n.$axios.post){const cfg=ecom?{headers:{EcomToken:String(ecom)}}:{EcomToken:0};const rr=await Promise.race([n.$axios.post('https://www.rami-levy.co.il/api/v2/cart',body,cfg),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))]);cartStatus=rr&&rr.status||200;via='axios';serverOk=inAnswer(rr&&rr.data);noteAnswer(rr&&rr.data);if(!serverOk)cartStatus=-4;}}catch(e){cartStatus=(e&&e.response&&e.response.status)||-1;via='axios';}
   if(cartStatus!==200){
     const h={'content-type':'application/json;charset=utf-8',accept:'application/json, text/plain, */*'};if(auth)h.Authorization=auth;if(ecom)h.EcomToken=String(ecom);
-    const r=await tfetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)},15000);cartStatus=r.status;via=via+'+fetch';const jj=await r.json().catch(()=>null);serverOk=inAnswer(jj);if(cartStatus===200&&!serverOk)cartStatus=-4;
+    const r=await tfetch('https://www.rami-levy.co.il/api/v2/cart',{method:'POST',credentials:'include',headers:h,body:JSON.stringify(body)},15000);cartStatus=r.status;via=via+'+fetch';const jj=await r.json().catch(()=>null);serverOk=inAnswer(jj);noteAnswer(jj);if(cartStatus===200&&!serverOk)cartStatus=-4;
   }
-  // Only a verified cart counts as added: the page's state holds the lines, or the server's answer does.
-  if(!(inCart()||serverOk)){for(const o of out)if(o.status==='added'){o.status='error';o.detail='cart '+cartStatus;}}
+  // Only a verified cart counts as added, LINE BY LINE (promise 9): a line is added only when its own
+  // item id is in the page's cart state or in the server's answer. One id landing used to vouch for
+  // every line (chaos 2026-10-06: claimed 37, the store's basket held 32).
+  const held=Object.assign(heldIn(st&&st.state&&st.state.cart&&st.state.cart.items),answerHeld);
+  for(const o of out)if(o.status==='added'&&o.id!=null&&!held[o.id]){o.status='error';o.detail='not in the store cart ('+cartStatus+'): '+(o.detail||'');}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk,removed}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk,removed,ids:Object.keys(items).length,held:Object.keys(Object.assign(heldIn(st&&st.state&&st.state.cart&&st.state.cart.items),answerHeld)).length}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
 };
 

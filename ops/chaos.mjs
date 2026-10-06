@@ -116,11 +116,17 @@ const ramiId = [...(cleanQuote.options ?? []).flatMap((o) => o.legs), ...(cleanQ
 const ramiLines = ramiId ? Object.entries(cleanQuote.storefrontLines?.[ramiId] ?? {}) : [];
 check('the compare has a Rami Levy read of this list to act on', ramiLines.length > 0, `${ramiLines.length} lines priced at ${ramiId ?? 'no rami-levy row'}`);
 
+// The store's basket holds one row per item: two list lines that resolve to the same item (the same
+// thing typed twice, a name and its barcode) are one row there, so compare distinct item ids.
+const distinctAdded = (results) => { const a = results.filter((r) => r.status === 'added'); return new Set(a.map((r, i) => r.id ?? `line${i}`)).size; };
+
 async function fillCart(label, cartLines, screenshotName) {
   const store = STORES['rami-levy'];
   const browser = await webkit.launch();
   const ctx = await browser.newContext({ ...devices['iPhone 14'], locale: 'he-IL' });
   const page = await ctx.newPage();
+  const pageErrors = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
   let resolveGot; const got = new Promise((r) => { resolveGot = r; });
   await page.exposeFunction('__cartResult', (payload) => resolveGot(payload));
   await page.addInitScript(() => {
@@ -140,18 +146,25 @@ async function fillCart(label, cartLines, screenshotName) {
   let basketPageCount = '?';
   try {
     await page.goto('https://www.rami-levy.co.il/he/basket', { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await page.waitForTimeout(5000);
-    basketPageCount = await page.evaluate(() => { const t = (document.body.innerText || '').replace(/\s+/g, ' '); const m = t.match(/(\d+)\s*הסל שלי/); return m ? m[1] : '?'; });
+    // Read the store's own count until it settles: under load (the daily run, other checks beside it)
+    // the basket page first paints "0 הסל שלי" before its cart syncs, and a single read at 5 s once
+    // reported 0 for a cart that held 30 lines (2026-10-06). Two equal non-zero readings, or 25 s.
+    const readCount = () => page.evaluate(() => { try { const items = window.$nuxt?.$store?.state?.cart?.items; if (Array.isArray(items) && items.length) return String(items.filter((i) => i && !i.is_delivery).length); } catch (e) {} const t = (document.body.innerText || '').replace(/\s+/g, ' '); const m = t.match(/(\d+)\s*הסל שלי/); return m ? m[1] : '?'; }).catch(() => '?');
+    let last = '?';
+    for (let i = 0; i < 25; i++) { await page.waitForTimeout(1000); const now = await readCount(); if (now !== '?' && now !== '0' && now === last) break; last = now; }
+    basketPageCount = last;
   } catch (e) { /* the basket page itself is the last page this script ever opens — never checkout, never payment */ }
   await page.screenshot({ path: `apps/mobile/e2e/shots/${screenshotName}.png` }).catch(() => {});
   await ctx.close(); await browser.close();
   console.log(`   [${label}] cart state ${cartState}, basket page ${basketPageCount}, results: ${JSON.stringify(results.reduce((m, x) => ((m[x.status] = (m[x.status] || 0) + 1), m), {}))}`);
+  console.log(`   [${label}] diag ${JSON.stringify(res.diag ?? res).slice(0, 400)}`);
+  for (const e of [...new Set(pageErrors)].slice(0, 3)) console.log(`   [${label}] pageerror ${e}`);
   return { results, cartState, basketPageCount, diag: res.diag };
 }
 
 const cleanCart = ramiLines.length ? await fillCart('clean', ramiLines.map(([id, l]) => ({ gtin: l.gtin, name: l.productName, qty: BASE.find((b) => b.id === id)?.packQty ?? 1 })), 'chaos-clean-basket') : null;
 if (cleanCart) {
-  const added = cleanCart.results.filter((r) => r.status === 'added').length;
+  const added = distinctAdded(cleanCart.results);
   check('the clean cart fills without a crash', !cleanCart.diag?.error, cleanCart.diag ? JSON.stringify(cleanCart.diag).slice(0, 160) : 'no diag');
   check('the store\'s own basket agrees with what Kaniti claims added (promise 9)', cleanCart.basketPageCount === '?' || Number(cleanCart.basketPageCount) === added, `claimed ${added}, store shows ${cleanCart.basketPageCount}`);
   check('the run stops at the basket page — never checkout, never payment', true, 'last navigation: /he/basket');
@@ -247,7 +260,7 @@ if (abuseCart) {
   check('the abused cart fills without a crash', !abuseCart.diag?.error, abuseCart.diag ? JSON.stringify(abuseCart.diag).slice(0, 160) : 'no diag');
   const fake = abuseCart.results.find((r) => r.gtin === CHAOS.fakeBarcode.gtin);
   check('the store never adds the barcode that exists nowhere', !fake || fake.status !== 'added', fake ? `${fake.status}: ${fake.detail ?? ''}` : 'not in results');
-  const added = abuseCart.results.filter((r) => r.status === 'added').length;
+  const added = distinctAdded(abuseCart.results);
   check('the store\'s own basket still agrees with what Kaniti claims added, even on the abused cart (promise 9)', abuseCart.basketPageCount === '?' || Number(abuseCart.basketPageCount) === added, `claimed ${added}, store shows ${abuseCart.basketPageCount}`);
   const unavailable = abuseCart.results.filter((r) => r.status === 'unavailable');
   console.log(`   branch-stock rung: ${unavailable.length ? `${unavailable.length} line(s) this branch does not carry, each named on screen (${unavailable.map((r) => r.detail).join('; ')})` : 'no line hit a branch limit this run — opportunistic, not asserted'}`);
