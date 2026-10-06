@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist-types"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/domain"
+    },
+    {
+      "path": "../../services/memory-store"
+    },
+    {
+      "path": "../../services/retailer-connectors"
+    },
+    {
+      "path": "../../services/shopping-agent"
+    },
+    {
+      "path": "../../services/product-images"
+    },
+    {
+      "path": "../../services/cloud-connectors"
+    },
+    {
+      "path": "../../services/branch-prices"
+    }
+  ]
+}

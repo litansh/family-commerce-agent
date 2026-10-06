@@ -1,0 +1,21 @@
+appId: com.litansh.kaniti
+# Connect a store: open a store's own login inside Kaniti, the family's e-mail
+# already filled, no password. The store here is whichever is first in the list.
+---
+- runFlow: household.yaml
+- tapOn: ".*אני"
+- assertVisible: "החנויות המחוברות"
+- tapOn:
+    text: "חברו"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      text: "חיבור "
+    timeout: 15000
+# The store's own page has loaded inside the WebView (its login/code UI is visible)
+# and Kaniti has filled the person's e-mail into it.
+- extendedWaitUntil:
+    visible:
+      text: "kaniti-sim-.*@uberip.com|שלח קוד|קוד אימות|סיסמה|כניסה"
+    timeout: 60000
+- assertVisible: "התחברתי"

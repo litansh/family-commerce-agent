@@ -1,0 +1,37 @@
+name: ci
+
+# Every pull request and every merge to main: typecheck, unit tests, the recipe guard, the app's
+# typecheck, and the API bundle as an artifact. The deploy lives in deploy.yml and runs only after
+# this workflow succeeds on main, so a pull request never shows a skipped deploy job.
+on:
+  push: { branches: [main] }
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci || npm install
+      - name: typecheck (packages, services, api)
+        run: npm run typecheck
+      - name: unit tests
+        run: npm test
+      - name: store recipes parse
+        run: npm run check:recipes -w apps/mobile
+      - name: app typecheck
+        run: npx tsc --noEmit -p apps/mobile/tsconfig.json
+      - name: build the API bundle
+        run: npm run build -w apps/api
+      - uses: actions/upload-artifact@v4
+        with: { name: api-dist, path: apps/api/dist, retention-days: 7 }

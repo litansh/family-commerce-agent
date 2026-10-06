@@ -1,0 +1,30 @@
+appId: com.litansh.kaniti
+---
+- runFlow: signin.yaml
+- runFlow:
+    when:
+      visible: "משפחה חדשה"
+    commands:
+      - tapOn:
+          id: "hh-name"
+      - inputText: "משפחת סימולטור"
+      - tapOn:
+          id: "hh-address"
+      - inputText: "הרצל 1 רמת גן"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "addr-sug-0"
+          timeout: 25000
+      - tapOn:
+          id: "addr-sug-0"
+      - extendedWaitUntil:
+          visible:
+            id: "hh-create"
+          timeout: 10000
+      - tapOn:
+          id: "hh-create"
+- extendedWaitUntil:
+    visible:
+      text: "המחלקות|בית|הרגילים|לכל המוצרים"
+    timeout: 60000

@@ -1,0 +1,7 @@
+appId: com.litansh.kaniti
+---
+- runFlow: launch.yaml
+- extendedWaitUntil:
+    visible:
+      text: "משפחה חדשה|המחלקות|בית|החנויות המחוברות|יש לכם כבר משפחה"
+    timeout: 45000

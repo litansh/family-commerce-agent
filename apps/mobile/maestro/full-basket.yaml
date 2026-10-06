@@ -1,0 +1,95 @@
+# A full basket at every store (docs/design/a-full-basket-everywhere.md), on the phone.
+#
+# Nobody orders a partial basket, so the compare must offer every store that delivers with a whole
+# one — its own nearest product where it lacks the exact one, every alternative named, and coverage
+# printed on the card instead of hiding it. This flow proves the states the design drew are really on
+# the screen, and takes the shots for the pull request.
+#
+#   ./maestro/run.sh full-basket
+appId: com.litansh.kaniti
+---
+- tapOn: { text: "Open", optional: true }
+- extendedWaitUntil:
+    visible: { text: "Continue|Close|המחלקות" }
+    timeout: 120000
+- tapOn: { text: "Continue", optional: true }
+- tapOn: { text: "Close", optional: true }
+- extendedWaitUntil:
+    visible: { text: "המחלקות" }
+    timeout: 45000
+- tapOn: { id: "tab-list" }
+# The list the design was drawn against: ordinary lines, plus one (salmon) the chains stock unevenly,
+# so at least one store cannot fill the basket and has to say so.
+- tapOn: { id: "list-input" }
+- inputText: "חלב 3%"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "list-input" }
+- inputText: "לחם אחיד"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "list-input" }
+- inputText: "פילה סלמון"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "list-input" }
+- inputText: "שמן זית"
+- tapOn: { text: ".*הוסף ״.*״ כמו שכתבתם" }
+- tapOn: { id: "Done", optional: true }
+- scroll
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: { id: "list-compare" }
+    timeout: 10000
+- tapOn: { id: "list-compare" }
+- extendedWaitUntil:
+    visible: { id: "answer-card" }
+    timeout: 120000
+
+# --- Coverage is a fact on a card, never a reason a store is missing. ---
+- scrollUntilVisible:
+    element: { text: "כל החנויות שמגיעות אליכם" }
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- takeScreenshot: maestro/shots/full-basket-stores
+- assertVisible: { text: "כל החנויות שמגיעות אליכם" }
+# Every card names the basket its number buys — never a bare price with nothing saying what it covers.
+- assertVisible: { text: "סל מלא|הסל שלך" }
+
+# --- A store the compare used to throw out for a minimum is here, with a complete basket and the
+#     shekels that would make it orderable. ---
+- scrollUntilVisible:
+    element: { text: "חסר .* למינימום של .*" }
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- takeScreenshot: maestro/shots/full-basket-minimum
+- assertVisible: { text: "הוסיפו .* ואפשר להזמין" }
+
+# --- Never a silent swap: the count is on the card and every alternative is one tap away. ---
+- scrollUntilVisible:
+    element: { text: ".*(החלפה אחת|[0-9]+ החלפות).*" }
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- tapOn: { text: ".*(החלפה אחת|[0-9]+ החלפות).*" }
+- waitForAnimationToEnd
+- takeScreenshot: maestro/shots/full-basket-swaps
+# A difference inside an offer is one quiet line carrying both prices — "במקום X — Y, ₪14.90 במקום
+# ₪49.90 בשופרסל" (the owner, 13 September evening). Matched by id: a long Hebrew regex through the
+# XCUITest driver is what made this flow go red for reasons that were not the product.
+- assertVisible: { id: "swap-why" }
+
+# --- "אין סל חלקי": an offer that does not cover the whole list is not an answer and does not sit
+#     among the answers. It waits, folded, in its own section below — and nobody is hidden.
+- scrollUntilVisible:
+    element: { id: "partial-offers-toggle" }
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- takeScreenshot: maestro/shots/full-basket-partial-folded
+- tapOn: { id: "partial-offers-toggle" }
+- waitForAnimationToEnd
+- takeScreenshot: maestro/shots/full-basket-gap
+# Opened, each one says exactly what it cannot fill, and keeps its way to be bought from —
+# moved and sized, never removed (promises 1 and 6).
+- assertVisible: { text: "אין כאן חלופה ל: .*" }
+- assertVisible: { text: "קנו כאן את [0-9]+ הפריטים שיש" }

@@ -1,0 +1,600 @@
+import { formatSize, memoryKey, normalizeBrand, sizeFromName } from '@fca/domain';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import type { HouseholdMemory, ProductPreference, Suggestion } from '@fca/domain';
+import type { Api, Deal, Household, SearchHit, SearchVariant } from '../lib/api';
+import { AISLES, aisleOf } from '../lib/categories';
+import {
+  brandGroups, carriedNearby, cheapestOf, choiceOf, lineFromHit, lineFromVariant, pinBrand,
+  soleProduct, spanOf, unpin, variantId, variantWords, type BrandGroup,
+} from '../lib/choice';
+import { currentRegion, isRTL, money, t as tr } from '../lib/i18n';
+import { newId, setLines, useList, type Line } from '../lib/store';
+import { carouselProps } from '../lib/gesture';
+import { MODES, setMode, useMode } from '../lib/prefs';
+import { ProductImage } from '../ProductImage';
+import { imageByName } from '../lib/storeImages';
+import { Scanner } from '../Scanner';
+import { Button, Chip, Empty, Header, Icon, Input, Loading, S, t, Toast } from '../ui';
+
+const tap = () => { if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
+
+/**
+ * The shared list.
+ *
+ *  - your usuals as one-tap tiles, from the household's own memory
+ *  - search-as-you-type with product photos; picking a card pins the exact
+ *    product (barcode, brand), which is what makes memory precise
+ *  - grouped by aisle, quantity inline
+ */
+export function ListScreen({ api, household, onQuote, onInvite }: {
+  api: Api; household: Household; onQuote: (lines: Line[]) => void; onInvite: () => void;
+}) {
+  const s = S();
+  const rtl = isRTL();
+  const lines = useList();
+  const mode = useMode();
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  // What a family chooses between is the variant — "חלב 3% · 1 ליטר · 12 מותגים" — not two
+  // hundred products (docs/design/item-identity.md). The flat list stays one tap away for the
+  // rare exact hunt, and is the whole answer when the API has not grouped (an older API).
+  const [variants, setVariants] = useState<SearchVariant[] | null>(null);
+  const [flat, setFlat] = useState(false);
+  // "We could not ask the stores" is not "the stores do not have it". A family told the second when
+  // the first is true stops trusting the list: they think Kaniti does not know what tofu is.
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [memory, setMemory] = useState<HouseholdMemory | null>(null);
+  const pricing = currentRegion().pricingAvailable;
+  const seq = useRef(0);
+  const [scanning, setScanning] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1400); };
+
+  useEffect(() => { api.memory(household.id).then(setMemory).catch(() => null); }, [api, household.id]);
+  // Deals across every store nearby — not only the connected ones. You can
+  // browse and compare everything; connecting is only needed to buy.
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const dealsRef = useRef<ScrollView | null>(null);
+  useEffect(() => { api.deals(household.id).then((r) => setDeals(r.deals)).catch(() => setDeals([])); }, [api, household.id]);
+  useEffect(() => {
+    api.suggest(household.id, lines.map(({ id: _i, imageUrl: _u, productName: _n, size: _s, ...l }) => l)).then((r) => setSuggestions(r.suggestions)).catch(() => setSuggestions([]));
+  }, [lines, api, household.id]);
+
+  // Debounced search while typing. Only where a catalogue exists.
+  useEffect(() => {
+    const q = query.trim();
+    if (!pricing || q.length < 2) { setHits(null); setVariants(null); setSearching(false); return; }
+    const mine = ++seq.current;
+    setSearching(true);
+    const h = setTimeout(() => {
+      api.search(household.id, q).then(async (r) => {
+        if (mine !== seq.current) return;
+        setHits(r.products); setVariants(r.variants ?? null); setSearchFailed(false); setSearching(false);
+        const missing = r.products.filter((h) => !h.imageUrl && h.gtin).map((h) => h.gtin!);
+        const unnamed = r.products.filter((h) => !h.imageUrl && !h.gtin).map((h) => h.name);
+        if (missing.length === 0 && unnamed.length === 0) return;
+        const im = await api.images(household.id, missing, unnamed).catch(() => null);
+        if (!im || mine !== seq.current) return;
+        const withImage = (h: SearchHit): SearchHit => { const u = (h.gtin && im.images[h.gtin]) || im.images[h.name]; return u ? { ...h, imageUrl: u } : h; };
+        setHits((xs) => (xs ?? []).map(withImage));
+        // The variant cards borrow their picture from the products behind them, so they have
+        // to be patched too — otherwise the grouped view is the only one with drawn glyphs.
+        setVariants((vs) => vs && vs.map((v) => ({ ...v, products: v.products.map(withImage) })));
+      }).catch(() => { if (mine === seq.current) { setHits([]); setVariants(null); setSearchFailed(true); setSearching(false); } });
+    }, 280);
+    return () => clearTimeout(h);
+  }, [query, api, household.id, pricing]);
+  // A new search starts from the choices again — but only a *new search* does. This used to sit
+  // inside the effect above, which also depends on `api`, so any re-render that handed the screen
+  // a fresh Api put the family back on the cards a moment after they asked for every product.
+  useEffect(() => { setFlat(false); }, [query]);
+
+  // A line the family typed has no barcode and so no picture. Ask for one by name, once per line,
+  // and keep it on the line: a list of drawn glyphs is what makes an app look unfinished.
+  const askedImages = useRef(new Set<string>());
+  useEffect(() => {
+    const want = lines.filter((l) => !l.imageUrl && !askedImages.current.has(l.id)).slice(0, 20);
+    if (!want.length) return;
+    for (const l of want) askedImages.current.add(l.id);
+    const gtins = want.filter((l) => l.gtin).map((l) => l.gtin!);
+    const names = want.filter((l) => !l.gtin).map((l) => l.productName ?? l.query);
+    void (async () => {
+      const found = await api.images(household.id, gtins, names).then((im) => im.images).catch(() => ({} as Record<string, string | null>));
+      // What the API could not answer, this phone asks the chain itself: a data centre gets a block
+      // page where a phone gets JSON (ADR 0011). What it learns goes back to the API for next time.
+      const learned: Record<string, string> = {};
+      for (const l of want) {
+        const key = l.gtin ?? l.productName ?? l.query;
+        if (found[key]) continue;
+        const hit = await imageByName(l.productName ?? l.query);
+        if (hit) { found[key] = hit.url; learned[key] = hit.url; }
+      }
+      setLines((xs) => xs.map((l) => {
+        if (l.imageUrl) return l;
+        const u = found[l.gtin ?? ''] ?? found[l.productName ?? l.query];
+        return u ? { ...l, imageUrl: u } : l;
+      }));
+      if (Object.keys(learned).length) void api.learnImages(household.id, learned).catch(() => null);
+    })();
+  }, [lines, api, household.id]);
+
+  const onList = useMemo(() => new Set(lines.map((l) => l.query.trim().toLowerCase())), [lines]);
+  const due = useMemo(() => new Set(suggestions.filter((x) => x.reason === 'overdue').map((x) => x.preference.key)), [suggestions]);
+  const usuals: ProductPreference[] = useMemo(() => !memory ? [] :
+    Object.values(memory.products)
+      .filter((p) => p.orderCount > 0 && !p.excludeFromSuggestions && !onList.has(p.phrase.trim().toLowerCase()))
+      .sort((a, b) => Number(due.has(b.key)) - Number(due.has(a.key)) || b.orderCount - a.orderCount)
+      .slice(0, 16), [memory, onList, due]);
+
+  const addLine = (l: Omit<Line, 'id'>) => { tap(); setLines((xs) => [...xs, { id: newId(), ...l }]); setQuery(''); setHits(null); setVariants(null); say(tr('added')); };
+  const lineFromPref = (p: ProductPreference): Omit<Line, 'id'> => ({
+    query: p.phrase, productName: p.productName, gtin: p.gtin, ...(p.brand ? { brand: p.brand } : {}),
+    ...(p.defaultAmount !== undefined && p.defaultUnit ? { amount: p.defaultAmount, unit: p.defaultUnit } : {}),
+    ...(p.defaultPackQty !== undefined ? { packQty: p.defaultPackQty } : {}),
+  });
+  // One tap for the whole usual shop: everything due plus everything bought
+  // at least twice. The family removes the two they don't want.
+  const usualShop = () => {
+    const picks = usuals.filter((p) => due.has(p.key) || p.orderCount >= 2);
+    if (picks.length === 0) return;
+    tap();
+    setLines((xs) => [...xs, ...picks.map((p) => ({ id: newId(), ...lineFromPref(p) }))]);
+    say(tr('addedN', { n: picks.length }));
+  };
+  const addTyped = () => { const q = query.trim(); if (q) addLine({ query: q }); };
+  // Two ways in, and they mean different things. A product is "this one" — a barcode pinned.
+  // A variant card is "כל מותג": the variant's own words, no barcode, and every store prices
+  // its own cheapest of that variant, named per store on the compare.
+  const addHit = (h: SearchHit) => addLine(lineFromHit(h));
+  const addVariant = (v: SearchVariant) => { const sole = soleProduct(v); sole ? addHit(sole) : addLine(lineFromVariant(v)); };
+  const addUsual = (p: ProductPreference) => addLine(lineFromPref(p));
+  // Nothing leaves the list without a way back: a delete keeps the line and its place for a few
+  // seconds and the bar at the foot puts it back. A list a family built cannot cost one careless tap.
+  const [undo, setUndo] = useState<{ line: Line; at: number } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remove = (id: string) => {
+    tap();
+    setLines((xs) => { const at = xs.findIndex((x) => x.id === id); const line = xs[at]; if (line) setUndo({ line, at }); return xs.filter((x) => x.id !== id); });
+    setDetail(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 6000);
+  };
+  const undoRemove = () => {
+    const u = undo; if (!u) return;
+    tap(); setUndo(null);
+    setLines((xs) => { const next = [...xs]; next.splice(Math.min(u.at, next.length), 0, u.line); return next; });
+  };
+  const [detail, setDetail] = useState<Line | null>(null);
+  const [choosing, setChoosing] = useState<Line | null>(null);
+  const bump = (id: string, d: number) => { tap(); setLines((xs) => xs.map((x) => x.id !== id ? x : (x.amount !== undefined && x.unit) ? { ...x, amount: Math.max(0.5, x.amount + d) } : { ...x, packQty: Math.max(1, (x.packQty ?? 1) + d) })); };
+
+  const qtyLabel = (l: Line) => (l.amount !== undefined && l.unit ? `${l.amount} ${l.unit}` : `×${l.packQty ?? 1}`);
+  const locale = currentRegion().locale === 'he' ? 'he' : 'en';
+  const groups = AISLES.map((a) => ({ a, items: lines.filter((l) => aisleOf(l.query) === a.key) })).filter((g) => g.items.length > 0);
+  const showSearch = query.trim().length >= 2 && pricing;
+  // Grouping is worth showing only when it actually collapses something: if every variant holds
+  // one product, the cards *are* the flat list and the toggle would be a choice about nothing.
+  const canGroup = !!variants && !!hits && variants.length > 0 && variants.length < hits.length;
+  const grouped = canGroup && !flat;
+
+  return (
+    <View style={s.screen}>
+      <Header title={household.name} subtitle={household.address} action={tr('invite')} onAction={onInvite} />
+      <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+        <View style={[s.rowStart, { backgroundColor: t.card, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5, borderColor: t.line }]}>
+          <Icon name="search" size={19} color={t.faint} weight={2.2} />
+          <Input testID="list-input" placeholder={tr('whatPh')} value={query} onChangeText={setQuery} onSubmitEditing={addTyped} style={{ flex: 1, backgroundColor: 'transparent', borderWidth: 0, fontSize: 17, paddingHorizontal: 8 }} returnKeyType="done" blurOnSubmit={false} autoCorrect={false} />
+          {query ? <Pressable onPress={() => setQuery('')} hitSlop={10} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: t.inkSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: t.muted, fontSize: 13, fontWeight: '700' }}>✕</Text></Pressable> : null}
+          {pricing ? <Pressable onPress={() => setScanning(true)} hitSlop={10} style={{ backgroundColor: t.accentSoft, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12, marginLeft: 4 }}><Text style={[s.link, { fontSize: 13 }]}>{tr('scan')}</Text></Pressable> : null}
+        </View>
+      </View>
+      {scanning ? (
+        <Scanner
+          onClose={() => setScanning(false)}
+          onScan={(gtin) => {
+            setScanning(false);
+            api.lookup(household.id, gtin).then((r) => { const h = r.products[0]; if (h) addHit(h); else addLine({ query: gtin, gtin }); }).catch(() => addLine({ query: gtin, gtin }));
+          }}
+        />
+      ) : null}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+
+        {showSearch ? (
+          <View style={[s.card, { paddingVertical: 6 }]}>
+            {searching && !hits ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('searching')}</Text> : null}
+            {/* Above the results, both ways. The design drew this link under the cards, which is
+                where it reads best on paper — and on a phone it lands under the keyboard, where
+                a person searching cannot reach it without dismissing the keyboard first. One tap
+                each way, always on screen, beats the tidier drawing. */}
+            {canGroup ? <FlatToggle flat={flat} onPress={() => { tap(); setFlat((f) => !f); }} n={hits!.length} /> : null}
+            {grouped ? variants!.map((v, i) => <VariantRow key={variantId(v)} i={i} v={v} onAdd={() => addVariant(v)} />) : null}
+            {grouped ? null : (hits ?? []).map((h) => (
+              <Pressable key={h.productId} onPress={() => addHit(h)} style={({ pressed }) => [s.row, { paddingVertical: 9, borderTopWidth: 1, borderColor: t.line }, pressed && { opacity: 0.6 }]}>
+                <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
+                  <ProductImage url={h.imageUrl} gtin={h.gtin} name={h.name} size={52} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.body, { fontSize: 15 }]} numberOfLines={2}>{h.name}</Text>
+                    <View style={[s.rowStart, { marginTop: 3 }]}>
+                      {h.brand ? <Chip text={h.brand} tone="good" /> : null}
+                      {(() => { const sz = formatSize(h.sizeQty, h.sizeUnit) ?? sizeFromName(h.name); return sz ? <Chip text={sz} tone="neutral" /> : null; })()}
+                    </View>
+                  </View>
+                </View>
+                <View style={{ alignItems: rtl ? 'flex-start' : 'flex-end' }}>
+                  {h.fromPrice !== undefined ? <Text style={s.price}>{money(h.fromPrice)}</Text> : null}
+                  {h.unitPrice !== undefined ? <Text style={s.faint}>{money(h.unitPrice)}/{(h.unitBasis ?? '').replace('per_', '')}</Text> : null}
+                </View>
+              </Pressable>
+            ))}
+            {hits && hits.length === 0 && searchFailed ? (
+              <View style={{ paddingVertical: 10, gap: 8 }}>
+                <Text style={[s.small, { color: t.amber }]}>{tr('searchFailed')}</Text>
+                <Pressable onPress={() => { setSearchFailed(false); setQuery((q) => q + ' '); setTimeout(() => setQuery((q) => q.trimEnd()), 50); }} hitSlop={8}><Text style={s.link}>{tr('tryAgain')}</Text></Pressable>
+              </View>
+            ) : hits && hits.length === 0 ? <Text style={[s.small, { paddingVertical: 10 }]}>{tr('noResults')}</Text> : null}
+            <Pressable onPress={addTyped} style={{ paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }}><Text style={s.link}>{tr('addAsTyped', { q: query.trim() })}</Text></Pressable>
+          </View>
+        ) : null}
+
+        {!showSearch && lines.length === 0 && usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length >= 5 && (
+          <Pressable onPress={usualShop} style={({ pressed }) => [s.card, { backgroundColor: t.accent, marginBottom: 14 }, pressed && { opacity: 0.85 }]}>
+            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', textAlign: rtl ? 'right' : 'left' }}>{tr('usualShopN', { n: usuals.filter((p) => due.has(p.key) || p.orderCount >= 2).length })}</Text>
+            <Text style={{ color: '#D9EBDF', marginTop: 4, textAlign: rtl ? 'right' : 'left' }}>{tr('usualsHint')}</Text>
+          </Pressable>
+        )}
+        {!showSearch && usuals.length > 0 && (
+          <View style={{ marginBottom: 14 }}>
+            <View style={s.row}><Text style={s.title}>{tr('usuals')}</Text><Text style={s.faint}>{tr('usualsHint')}</Text></View>
+            <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {usuals.map((p) => {
+                const isDue = due.has(p.key);
+                return (
+                  <Pressable key={p.key} onPress={() => addUsual(p)} style={({ pressed }) => [{ backgroundColor: isDue ? t.amberSoft : t.card, borderRadius: 14, padding: 8, paddingRight: 12, paddingLeft: 12, borderWidth: 1, borderColor: isDue ? '#EFDDB6' : t.line, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }, pressed && { opacity: 0.6 }]}>
+                    <ProductImage gtin={p.gtin} name={p.phrase} size={34} radius={8} />
+                    <View>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: isDue ? t.amber : t.ink }}>{p.phrase}</Text>
+                      {p.brand ? <Text style={s.faint}>{p.brand}</Text> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {!showSearch && deals.length > 0 && (
+          <View style={{ marginBottom: 14, marginHorizontal: -20 }}>
+            <View style={[s.row, { paddingHorizontal: 20 }]}>
+              <View style={s.rowStart}><Icon name="tag" size={18} color={t.ink} /><Text style={s.title}>{tr('dealsNear')}</Text></View>
+              <Text style={s.faint}>{tr('dealsNearSub')}</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 10, flexDirection: rtl ? 'row-reverse' : 'row' }}
+              {...carouselProps} ref={(r) => { dealsRef.current = r; }} onContentSizeChange={() => { if (rtl) dealsRef.current?.scrollToEnd({ animated: false }); }}>
+              {deals.slice(0, 20).map((d) => {
+                const on = onList.has(d.name.trim().toLowerCase());
+                return (
+                  <Pressable key={`${d.gtin}-${d.chainName}`} disabled={on} onPress={() => addLine({ query: d.name, productName: d.name, gtin: d.gtin, ...(d.brand ? { brand: d.brand } : {}), imageUrl: d.imageUrl ?? undefined })}
+                    style={({ pressed }) => [{ width: 150, backgroundColor: t.card, borderRadius: 18, padding: 10, borderWidth: 1, borderColor: d.usual ? t.accent2 : t.line }, (pressed || on) && { opacity: 0.55 }]}>
+                    <View style={{ alignItems: 'center' }}><ProductImage url={d.imageUrl} gtin={d.gtin} name={d.name} size={96} radius={12} /></View>
+                    <View style={{ position: 'absolute', top: 8, [rtl ? 'right' : 'left']: 8, backgroundColor: t.ink, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 }}>
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>-{Math.round(d.discountRate)}%</Text>
+                    </View>
+                    {d.usual ? <View style={{ position: 'absolute', top: 8, [rtl ? 'left' : 'right']: 8 }}><Icon name="star" size={14} color={t.accent} /></View> : null}
+                    <Text style={[s.body, { fontSize: 13, lineHeight: 17, marginTop: 8, minHeight: 34 }]} numberOfLines={2}>{d.name}</Text>
+                    <View style={[s.row, { marginTop: 6 }]}>
+                      <Text style={[s.price, { fontSize: 17 }]}>{money(d.price)}</Text>
+                      <Text style={[s.faint, { fontSize: 11 }]} numberOfLines={1}>{d.chainName}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {!showSearch && (lines.length === 0 ? <Empty title={tr('emptyTitle')} hint={tr('emptyHint')} /> : groups.map(({ a, items }) => (
+          <View key={a.key} style={[s.card, { paddingVertical: 8 }]}>
+            <Text style={[s.small, { fontWeight: '700', color: t.muted, paddingVertical: 6 }]}>{a.glyph}  {a[locale]}</Text>
+            {items.map((item) => (
+              <SwipeRow key={item.id} onDelete={() => remove(item.id)} label={tr('swipeDelete')}>
+                <Pressable style={[s.rowStart, { flex: 1, gap: 10 }]} onPress={() => { tap(); setDetail(item); }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="check" size={14} color={t.faint} />
+                  </View>
+                  <ProductImage url={item.imageUrl} gtin={item.gtin} name={item.query} size={40} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.body, { fontSize: 16 }]} numberOfLines={1}>{item.query}</Text>
+                    {/* The pack size, then the choice. The chip is the only place brand is ever
+                        asked, and it is on every line: "חלב 3%  1 ליטר  [ כל מותג ▾ ]". */}
+                    <View style={[s.rowStart, { marginTop: 3, gap: 7 }]}>
+                      {(() => { const sz = item.size ?? sizeFromName(item.productName ?? item.query); return sz ? <Text style={s.faint}>{sz}</Text> : null; })()}
+                      {/* Numbered by the line's place on the whole list, not within its aisle, so a
+                          flow can reach "the first line's chip" without knowing the aisles. */}
+                      <ChoiceChip id={`choice-${lines.indexOf(item)}`} line={item} onPress={() => { tap(); setChoosing(item); }} />
+                    </View>
+                  </View>
+                </Pressable>
+                <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
+                  <Pressable onPress={() => bump(item.id, -1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="minus" size={16} color={t.muted} /></Pressable>
+                  <Text style={[s.priceSmall, { color: t.ink, minWidth: 40, textAlign: 'center', fontWeight: '700' }]}>{qtyLabel(item)}</Text>
+                  <Pressable onPress={() => bump(item.id, 1)} hitSlop={10} style={{ paddingHorizontal: 12, paddingVertical: 9 }}><Icon name="plus" size={16} color={t.ink} /></Pressable>
+                </View>
+              </SwipeRow>
+            ))}
+          </View>
+        )))}
+      </ScrollView>
+
+      {undo ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: Platform.OS === 'web' ? 168 : 160, backgroundColor: t.ink, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: isRTL() ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: t.card, flexShrink: 1 }} numberOfLines={1}>{tr('deleted', { x: undo.line.query })}</Text>
+          <Pressable onPress={undoRemove} hitSlop={10}><Text style={{ color: t.card, fontWeight: '700' }}>{tr('undo')}</Text></Pressable>
+        </View>
+      ) : null}
+      {detail ? <ItemSheet item={detail} onClose={() => setDetail(null)} onBump={(d) => bump(detail.id, d)} onDelete={() => remove(detail.id)} onChoose={() => { setDetail(null); setChoosing(detail); }} lines={lines} /> : null}
+      {choosing ? (
+        <BrandSheet
+          api={api} household={household} line={choosing} memory={memory}
+          onClose={() => setChoosing(null)}
+          onPick={(next, saved) => { setLines((xs) => xs.map((x) => (x.id === next.id ? next : x))); setChoosing(null); say(saved ? tr('brandSaved') : tr('added')); if (saved) api.memory(household.id).then(setMemory).catch(() => null); }}
+        />
+      ) : null}
+
+      <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: Platform.OS === 'web' ? 96 : 88, backgroundColor: t.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, borderTopWidth: 1, borderColor: t.line, shadowColor: '#0E2E1F', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: -6 } }}>
+        {query.trim() ? (
+          <Button title={tr('addAsTyped', { q: query.trim() })} kind="secondary" icon="plus" onPress={addTyped} />
+        ) : (
+          <View style={[s.rowStart, { gap: 10 }]}>
+            {/* Buying mode: set here, remembered, and the compare screen opens in it. */}
+            <Pressable onPress={() => { tap(); setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]!); }} hitSlop={8}
+              style={{ backgroundColor: t.inkSoft, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 14, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="sliders" size={16} color={t.ink} />
+              <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14 }}>{tr(`mode_${mode}`)}</Text>
+            </Pressable>
+            <Button testID="list-compare" title={lines.length === 0 ? tr('compare') : tr('compareN', { n: lines.length })} icon={lines.length ? 'basket' : undefined} onPress={() => onQuote(lines)} disabled={lines.length === 0 || !pricing} style={{ flex: 1 }} />
+          </View>
+        )}
+      </View>
+      <Toast text={toast} />
+    </View>
+  );
+}
+
+/** The one tap between the few choices and every product behind them, and the one tap back. */
+function FlatToggle({ flat, n, onPress }: { flat: boolean; n: number; onPress: () => void }) {
+  const s = S();
+  return (
+    <Pressable testID="search-flat-toggle" onPress={onPress} style={{ paddingVertical: 9, alignItems: 'center' }}>
+      <Text style={s.link}>{flat ? tr('showVariants') : tr('showAllProducts', { n })}</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * A variant card: what it is, its size, and how many brands stand behind it —
+ * "חלב 3% · 1 ליטר / 12 מותגים · ₪5.90–8.40". One tap puts it on the list as כל מותג.
+ *
+ * The card's job is *which thing*, not how much: the span is a secondary line on purpose,
+ * because a single headline price here would be a promise the compare has not made yet.
+ */
+function VariantRow({ i, v, onAdd }: { i: number; v: SearchVariant; onAdd: () => void }) {
+  const s = S();
+  const sole = soleProduct(v);
+  const pic = cheapestOf(v.products);
+  const span = spanOf(v.products);
+  const here = carriedNearby(v);
+  const title = sole ? sole.name : variantWords(v);
+  return (
+    <Pressable testID={`variant-${i}`} onPress={onAdd} style={({ pressed }) => [s.row, { paddingVertical: 10, borderTopWidth: 1, borderColor: t.line }, (pressed || !here) && { opacity: here ? 0.6 : 0.55 }]}>
+      <View style={[s.rowStart, { flex: 1, gap: 12 }]}>
+        <ProductImage url={pic?.imageUrl ?? null} gtin={pic?.gtin} name={pic?.name ?? title} size={52} />
+        <View style={{ flex: 1 }}>
+          <Text style={[s.body, { fontSize: 15, fontWeight: '600' }]} numberOfLines={2}>{title}</Text>
+          {/* A variant no store that reaches the family carries is named and greyed, never dropped. */}
+          {!here ? <Text style={[s.faint, { color: t.amber, marginTop: 2 }]}>{tr('notNearby')}</Text> : (
+            <View style={[s.rowStart, { marginTop: 3, gap: 6 }]}>
+              {/* A card the catalogue names no brand for says nothing about brands — "מותג אחד"
+                  over zero brands is a count the family cannot then find in the sheet. */}
+              {(() => { const who = sole ? sole.brand : v.brandCount > 1 ? tr('nBrands', { n: v.brandCount }) : v.brandCount === 1 ? tr('oneBrand') : undefined; return who ? <Text style={s.faint}>{who}</Text> : null; })()}
+              {span ? <Text style={[s.priceSmall, { color: t.ink }]}>{span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`}</Text> : null}
+            </View>
+          )}
+        </View>
+      </View>
+      <Icon name="plus" size={18} color={t.accent} />
+    </Pressable>
+  );
+}
+
+/** The choice, on every line, as a control: "[ כל מותג ▾ ]" or "[ תנובה ▾ ]". */
+function ChoiceChip({ id, line, onPress }: { id: string; line: Line; onPress: () => void }) {
+  const pinned = choiceOf(line) === 'pinned';
+  const label = pinned ? line.brand ?? line.productName ?? line.query : tr('anyBrand');
+  return (
+    <Pressable testID={id} onPress={onPress} hitSlop={8}
+      style={({ pressed }) => [{
+        flexDirection: isRTL() ? 'row-reverse' : 'row', alignItems: 'center', gap: 4,
+        backgroundColor: pinned ? t.accentSoft : t.inkSoft, borderRadius: 999,
+        paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: pinned ? '#CCE9D8' : t.line, maxWidth: 190,
+      }, pressed && { opacity: 0.6 }]}>
+      <Text numberOfLines={1} style={{ color: pinned ? t.accent : t.muted, fontSize: 12, fontWeight: '700', flexShrink: 1 }}>{label}</Text>
+      <Text style={{ color: pinned ? t.accent : t.faint, fontSize: 9 }}>▾</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * The brand sheet — the only place brand is ever asked (docs/design/item-identity.md).
+ *
+ * כל מותג is first and is the default, because for most lines brand does not matter and
+ * letting each store bring its own cheapest is what makes a split cart pay. Each row carries
+ * its own span so the cost of having a side is visible before the family takes one. "תמיד"
+ * is what turns a choice for this shop into a choice the family never makes again.
+ */
+function BrandSheet({ api, household, line, memory, onClose, onPick }: {
+  api: Api; household: Household; line: Line; memory: HouseholdMemory | null;
+  onClose: () => void; onPick: (next: Line, saved: boolean) => void;
+}) {
+  const s = S();
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [sel, setSel] = useState<string | null>(normalizeBrand(line.brand) ?? line.brand ?? null);
+  const [always, setAlways] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api.search(household.id, line.query).then((r) => setHits(r.products)).catch(() => setHits([])); }, [api, household.id, line.query]);
+
+  const groups = useMemo(() => brandGroups(hits ?? []), [hits]);
+  const span = spanOf(hits ?? []);
+  const remembered = memory?.products[memoryKey(line.query)];
+  const chosen = groups.find((g) => g.brand === sel);
+  // There is only something to remember when a barcode can carry it: a brand to pin, or a
+  // pin already in memory that כל מותג now loosens.
+  const canRemember = chosen ? !!chosen.cheapest.gtin : !!remembered?.gtin;
+  const rangeOf = (g: BrandGroup) => (g.priceMin === undefined ? null : g.priceMin === g.priceMax ? money(g.priceMin) : `${money(g.priceMin)}–${money(g.priceMax!)}`);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const next = chosen ? pinBrand(line, chosen) : unpin(line);
+      let saved = false;
+      if (always && canRemember) {
+        // The chip's meaning, kept: a pinned brand is "never substitute", כל מותג is "cheapest".
+        const c = chosen
+          ? { phrase: line.query, gtin: chosen.cheapest.gtin!, productName: chosen.cheapest.name, brand: chosen.brand, substitution: 'never' as const }
+          : { phrase: line.query, gtin: remembered!.gtin, productName: remembered!.productName, ...(remembered!.brand ? { brand: remembered!.brand } : {}), substitution: 'cheapest' as const };
+        await api.confirm(household.id, c).then(() => { saved = true; }).catch(() => null);
+      }
+      onPick(next, saved);
+    } finally { setBusy(false); }
+  };
+
+  const Row = ({ id, label, sub, price, on, onPress }: { id: string; label: string; sub?: string; price?: string | null; on: boolean; onPress: () => void }) => (
+    <Pressable testID={id} onPress={() => { tap(); onPress(); }} style={[s.row, { paddingVertical: 13, borderTopWidth: 1, borderColor: t.line }]}>
+      <View style={[s.rowStart, { flex: 1, gap: 10 }]}>
+        <View style={{ width: 21, height: 21, borderRadius: 11, borderWidth: 2, borderColor: on ? t.accent : t.line, alignItems: 'center', justifyContent: 'center' }}>
+          {on ? <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: t.accent }} /> : null}
+        </View>
+        <View style={{ flexShrink: 1 }}>
+          <Text style={[s.body, { fontWeight: on ? '800' : '500' }]} numberOfLines={1}>{label}</Text>
+          {sub ? <Text style={s.faint}>{sub}</Text> : null}
+        </View>
+      </View>
+      {price ? <Text style={s.priceSmall}>{price}</Text> : null}
+    </Pressable>
+  );
+
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: '#0006' }} onPress={onClose} />
+      <View style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 30, maxHeight: '80%' }}>
+        <Text style={[s.title, { marginBottom: 2 }]}>{tr('whichBrand')}</Text>
+        <Text style={[s.small, { marginBottom: 8 }]} numberOfLines={1}>{line.query}</Text>
+        {!hits ? <Loading label={tr('searching')} /> : (
+          <ScrollView style={{ flexGrow: 0 }}>
+            <Row id="brand-any" label={tr('anyBrand')} sub={tr('anyBrandSub')} on={!sel}
+              price={span ? (span.min === span.max ? money(span.min) : `${money(span.min)}–${money(span.max)}`) : null}
+              onPress={() => setSel(null)} />
+            {groups.map((g, i) => <Row key={g.brand} id={`brand-${i}`} label={g.brand} price={rangeOf(g)} on={sel === g.brand} onPress={() => setSel(g.brand)} />)}
+            {/* A sheet with one row and no explanation looks broken. The catalogue simply has
+                no brand to offer for these words, and that is an answer: every store's own
+                cheapest is what the family gets, and nothing was hidden from them. */}
+            {groups.length === 0 ? <Text style={[s.faint, { paddingTop: 12 }]}>{tr('noBrands')}</Text> : null}
+          </ScrollView>
+        )}
+        {canRemember ? (
+          <Pressable testID="brand-always" onPress={() => { tap(); setAlways((a) => !a); }} style={[s.rowStart, { gap: 10, paddingVertical: 14, borderTopWidth: 1, borderColor: t.line }]}>
+            <View style={{ width: 21, height: 21, borderRadius: 6, borderWidth: 2, borderColor: always ? t.accent : t.line, backgroundColor: always ? t.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              {always ? <Icon name="check" size={13} color="#fff" /> : null}
+            </View>
+            <Text style={[s.body, { flexShrink: 1 }]} numberOfLines={1}>{chosen ? tr('alwaysThisBrand', { b: chosen.brand }) : tr('alwaysCheapest')}</Text>
+          </Pressable>
+        ) : null}
+        <Text style={[s.faint, { marginTop: 6, marginBottom: 12 }]}>{tr('pricesAtCompare')}</Text>
+        <Button testID="brand-save" title={tr('saveChoice')} onPress={save} disabled={busy || !hits} />
+      </View>
+    </Modal>
+  );
+}
+
+/**
+ * A list row that can be swiped away. The swipe has to be deliberate - past a third of the row -
+ * and even then the delete is undoable; a tap anywhere on the row opens the item instead.
+ * PanResponder, not a gesture library: one row, one axis, nothing to install.
+ */
+function SwipeRow({ children, onDelete, label }: { children: React.ReactNode; onDelete: () => void; label: string }) {
+  const s = S();
+  const x = useRef(new Animated.Value(0)).current;
+  const open = useRef(false);
+  const pan = useRef(
+    PanResponder.create({
+      // Only a clearly horizontal drag; the list must still scroll and the row must still be tappable.
+      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_e, g) => { const d = isRTL() ? Math.max(0, g.dx) : Math.min(0, g.dx); x.setValue(d); },
+      onPanResponderRelease: (_e, g) => {
+        const far = Math.abs(g.dx) > 96;
+        open.current = far;
+        Animated.spring(x, { toValue: far ? (isRTL() ? 104 : -104) : 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+    }),
+  ).current;
+  return (
+    <View style={{ borderTopWidth: 1, borderColor: t.line }}>
+      <View style={{ position: 'absolute', top: 0, bottom: 0, [isRTL() ? 'left' : 'right']: 0, width: 104, backgroundColor: t.redSoft, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable onPress={onDelete} hitSlop={8} style={{ padding: 8 }}><Text style={{ color: t.red, fontWeight: '700' }}>{label}</Text></Pressable>
+      </View>
+      <Animated.View style={[s.row, { paddingVertical: 8, backgroundColor: t.card, transform: [{ translateX: x }] }]} {...pan.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
+/**
+ * The item, in full: its picture, what it is, how much of it, and the two things a person wants to
+ * do with it - change the amount, or take it off the list. Deleting from here is deliberate, and
+ * still undoable from the bar.
+ */
+function ItemSheet({ item, onClose, onBump, onDelete, onChoose, lines }: { item: Line; onClose: () => void; onBump: (d: number) => void; onDelete: () => void; onChoose: () => void; lines: readonly Line[] }) {
+  const s = S();
+  const live = lines.find((l) => l.id === item.id) ?? item;
+  const size = live.size ?? sizeFromName(live.productName ?? live.query);
+  const qty = live.amount !== undefined && live.unit ? `${live.amount} ${live.unit}` : `×${live.packQty ?? 1}`;
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: '#0006' }} onPress={onClose} />
+      <View style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }}>
+        <View style={[s.rowStart, { gap: 14 }]}>
+          <ProductImage url={live.imageUrl} gtin={live.gtin} name={live.query} size={84} radius={16} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.title, { fontSize: 18 }]} numberOfLines={3}>{live.productName ?? live.query}</Text>
+            {[live.brand, size].filter(Boolean).length ? <Text style={[s.faint, { marginTop: 2 }]}>{[live.brand, size].filter(Boolean).join(' · ')}</Text> : null}
+            {live.gtin ? <Text style={[s.faint, { marginTop: 2, fontSize: 11 }]}>{live.gtin}</Text> : null}
+          </View>
+        </View>
+        {/* The same chip as the row, and the same sheet behind it: one place brand is asked. */}
+        <View style={[s.row, { marginTop: 18 }]}>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={s.body}>{tr('whichBrand')}</Text>
+            <Text style={s.faint}>{choiceOf(live) === 'pinned' ? tr('pinnedNote') : tr('anyNote')}</Text>
+          </View>
+          <ChoiceChip id="choice-detail" line={live} onPress={onChoose} />
+        </View>
+        <View style={[s.row, { marginTop: 18 }]}>
+          <Text style={s.body}>{tr('amount')}</Text>
+          <View style={[s.rowStart, { gap: 0, backgroundColor: t.inkSoft, borderRadius: 999 }]}>
+            <Pressable onPress={() => onBump(-1)} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 11 }}><Icon name="minus" size={18} color={t.muted} /></Pressable>
+            <Text style={[s.priceSmall, { color: t.ink, minWidth: 56, textAlign: 'center', fontWeight: '700' }]}>{qty}</Text>
+            <Pressable onPress={() => onBump(1)} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 11 }}><Icon name="plus" size={18} color={t.ink} /></Pressable>
+          </View>
+        </View>
+        <View style={{ marginTop: 18, gap: 10 }}>
+          <Button title={tr('closeSheet')} onPress={onClose} />
+          <Pressable onPress={onDelete} style={{ alignItems: 'center', paddingVertical: 12 }}><Text style={{ color: t.red, fontWeight: '600' }}>{tr('removeFromList')}</Text></Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}

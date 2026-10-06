@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1284 2778"><rect width="1284" height="2778" fill="#FAF8F3"/><g transform="translate(462 1209) scale(3.6)"><defs>
+    <mask id="tick">
+      <rect width="100" height="100" fill="#fff"/>
+      <path d="M37 64 L46.5 73.5 L64 54" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <!-- handle -->
+  <path d="M34 38 C34 18 66 18 66 38" fill="none" stroke="#1F6B45" stroke-width="9" stroke-linecap="round"/>
+  <!-- rim -->
+  <rect x="12" y="36" width="76" height="12" rx="6" fill="#1F6B45"/>
+  <!-- body -->
+  <path d="M19 48 H81 C81 48 77.5 74 75.5 84 C74.8 88 71.5 91 67.5 91 H32.5 C28.5 91 25.2 88 24.5 84 C22.5 74 19 48 19 48 Z" fill="#1F6B45" mask="url(#tick)"/>
+</g></svg>

@@ -1,0 +1,207 @@
+import type { HouseholdMemory, ListLine, ProductCandidate, ProductChoice, PurchaseOption, PurchasedLine, SubstitutionPolicy, Suggestion } from '@fca/domain';
+
+export type SearchHit = ProductCandidate & { imageUrl: string | null; priceMin?: number; priceMax?: number; bought?: boolean };
+
+/** A group of SearchHits a family would compare as one thing — same size, same defining attribute, brand aside (docs/design/item-identity.md). */
+export interface SearchVariant { base: string; attrs: string; size?: { qty: number; unit: string }; brandCount: number; priceMin?: number; priceMax?: number; products: SearchHit[] }
+import { config } from './config';
+
+export interface Household { id: string; name: string; address: string; country?: string; retailers?: string[]; fulfillment?: 'delivery' | 'pickup' | 'either' }
+
+export interface OrderLeg { retailer: string; lines: ListLine[]; status: string; total?: number; slot?: { id: string; label: string }; paymentMethod?: string; retailerOrderId?: string; error?: string }
+export interface Order {
+  id: string; householdId: string; retailer: string; legs?: OrderLeg[]; status: string; lines: ListLine[];
+  createdAt: string; updatedAt: string; total?: number; slot?: { id: string; label: string };
+  paymentMethod?: string; retailerOrderId?: string; error?: string;
+}
+
+export interface StoreOrder { id?: string; at?: string; total?: number; lines: { name: string; code?: string; qty?: number }[] }
+
+export interface DriveBranch {
+  storefrontId: string; chain: string; brand: string; branchName: string; address: string;
+  distanceKm: number; minutes: number; itemsSubtotal: number; driveCost: number;
+  coveredLines: number; totalLines: number; missingLineIds: string[]; pricedAt: string;
+  /** The same covered lines at the winning delivered store, for an honest comparison. */
+  sameLines?: { brand: string; items: number; delivered: number };
+}
+
+export type StorefrontEta =
+  | { kind: 'live'; minutes?: number; range?: string; name?: string }
+  | { kind: 'closed'; nextOpen?: string; text?: string }
+  | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
+
+// docs/design/a-full-basket-everywhere.md — "the engine line", the exact shape `lib/fullBasket.ts` reads.
+/** Where the family's own pinned product, unsubstituted, is actually sold, and what it costs there. */
+export interface ExactElsewhere { lineId: string; storefrontId: string; brand: string; lineTotal: number }
+export interface FullBasketFacts { total: number; items: number; unfillableLineIds: string[] }
+export interface ExactBasketFacts { total: number; elsewhere: ExactElsewhere[] }
+export interface StorefrontFacts {
+  brand: string;
+  /** Absent when this storefront's own delivery terms are not verified — never a delivered total that was guessed. */
+  deliveryFee?: number;
+  minimumOrder?: number;
+  fullBasket: FullBasketFacts;
+  /** Absent when nothing pinned was swapped here: one number, no second price. */
+  exactBasket?: ExactBasketFacts;
+}
+
+/** "עשה את זה זול יותר" (docs/design/a-full-basket-everywhere.md, rule 4): one store, made cheaper.
+ * The original name is not repeated here — the screen already has it from `storefrontLines`. */
+export interface CheaperSwap { lineId: string; gtin: string; productName: string; lineTotal: number; wasLineTotal: number }
+
+export interface QuoteResult {
+  currency?: string;
+  /** Lines a store's own branch for this family does not stock: the compare says so, before anyone shops. */
+  branchStock?: Record<string, { branch: number; lineIds: string[] }>;
+  /**
+   * How soon each storefront delivers: live minutes (a Wolt venue open now); a Wolt venue closed now and,
+   * when Wolt says, the wall-clock time it reopens; or window delivery (the chains), with the chain's earliest
+   * orderable window (`earliest` local `YYYY-MM-DDTHH:mm`, `until` `HH:mm`) when the chain published it.
+   */
+  etas?: Record<string, StorefrontEta>;
+  /** The list priced in-store at the branches near home, for the "if we drive" comparison. */
+  drive?: { status: 'ready' | 'pending' | 'none'; branches: DriveBranch[] };
+  /** Each shown storefront's own product, its price for that line (agorot), and the deep link.
+   * `lineTotal` is what the line costs inside this basket (promotions applied) — `price` (`unitPrice`)
+   * and `lineTotal` disagree once a promotion applies, so a card must never sum `price` fields itself. */
+  storefrontLines?: Record<string, Record<string, { gtin?: string; productName: string; price?: number; lineTotal?: number; link?: string; substituted?: boolean; reason?: string; swapBy?: 'kaniti' | 'store' }>>;
+  /**
+   * Every delivering storefront's full-basket facts (this store's own nearest product wherever it
+   * lacks the exact one) and, only when a line the family pinned was swapped here, the exact-basket
+   * facts beside them. Coverage is a fact here, never a gate — a storefront can appear here even when
+   * it is not (or not yet) one of `options` (docs/design/a-full-basket-everywhere.md).
+   */
+  storefronts?: Record<string, StorefrontFacts>;
+  lines: ListLine[];
+  fromMemory: string[];
+  options: PurchaseOption[];
+  couponSavings?: Record<string, number>;
+  rejected: { storefrontId: string; brand: string; reason: string; code: 'coverage' | 'minimum'; itemsSubtotal: number; pricedLines: number; requestedLines: number; minimumOrder?: number; amountToMinimum?: number }[];
+  warnings: string[];
+  assumptions: { lineId: string; query: string; selectedName: string; kind: string }[];
+  quotedLines: Record<string, { gtin?: string; productName: string; link?: string; imageUrl?: string | null }>;
+  suggestions: Suggestion[];
+}
+
+export interface Deal {
+  gtin: string;
+  name: string;
+  brand?: string;
+  chainName: string;
+  /** Promotional price, agorot. */
+  price: number;
+  discountRate: number;
+  clubOnly: boolean;
+  endTs: string;
+  imageUrl: string | null;
+  /** True when the household buys this product. */
+  usual: boolean;
+}
+
+export class Api {
+  readonly #token: () => Promise<string | null>;
+  readonly #onExpired?: () => void;
+  /**
+   * `token` is asked for before every call and may refresh (the app passes
+   * `loadTokens`, which renews a token within a minute of expiry). A 401 is
+   * retried once with a fresh token; a second 401 means the session is gone
+   * and `onExpired` (sign out) runs, instead of every screen failing quietly.
+   */
+  constructor(token: string | (() => Promise<string | null>), onExpired?: () => void) {
+    this.#token = typeof token === 'string' ? async () => token : token;
+    this.#onExpired = onExpired;
+  }
+
+  async #call<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
+    const tok = await this.#token();
+    if (!tok) { this.#onExpired?.(); throw new Error('signed out'); }
+    const res = await fetch(`${config.apiUrl}${path}`, {
+      method,
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+    if (res.status === 401 && retry) return this.#call<T>(method, path, body, false);
+    if (res.status === 401) { this.#onExpired?.(); throw new Error('signed out'); }
+    const data = (await res.json()) as T & { error?: string; message?: string };
+    if (!res.ok) throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
+    return data;
+  }
+
+  me = () => this.#call<{ userId: string; email?: string; households: Household[] }>('GET', '/me');
+  createHousehold = (h: { name: string; address: string; country: string; retailers: string[]; fulfillment: 'delivery' | 'pickup' | 'either'; language: string; addressDetails: Record<string, unknown> }) => this.#call<Household>('POST', '/households', h);
+  suggestAddress = (q: string) => this.#call<{ suggestions: { street: string; number: string; city: string; label: string; verified: boolean; lat: number; lng: number }[] }>('GET', `/geo/suggest?q=${encodeURIComponent(q)}`);
+  /** Erase this household and everything Kaniti learned about it. Owner only; there is no undo. */
+  deleteHousehold = (hid: string) => this.#call<{ deleted: boolean; rowsDeleted: number }>('DELETE', `/households/${hid}`);
+  household = (hid: string) => this.#call<Household>('GET', `/households/${hid}`);
+  importHistory = (hid: string, retailer: string, orders: { at: string; lines: { name: string; code?: string; qty: number }[] }[], diag?: Record<string, unknown>) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/import-history`, { retailer, orders, ...(diag ? { diag } : {}) });
+  search = (hid: string, q: string) => this.#call<{ products: SearchHit[]; variants?: SearchVariant[] }>('GET', `/households/${hid}/search?q=${encodeURIComponent(q)}`);
+  lookup = (hid: string, gtin: string) => this.#call<{ products: SearchHit[] }>('GET', `/households/${hid}/search?gtin=${encodeURIComponent(gtin)}`);
+  createOrder = (hid: string, legs: { retailer: string; lines: Omit<ListLine, 'id'>[] }[]) => this.#call<Order>('POST', `/households/${hid}/orders`, { legs });
+  orders = (hid: string) => this.#call<{ orders: Order[] }>('GET', `/households/${hid}/orders`);
+  browse = (hid: string, aisle: string, sub?: string, page = 0) => this.#call<{ aisle: string; sub: string; subs: string[]; page: number; total: number; hasMore: boolean; products: SearchHit[] }>('GET', `/households/${hid}/browse?aisle=${encodeURIComponent(aisle)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}&page=${page}`);
+  /** Storefronts that deliver to the household's address (cached a day). */
+  stores = (hid: string) => this.#call<{ storefronts: { serviceSlug: string; brand: string; chainName: string; serviceType: string }[] }>('GET', `/households/${hid}/stores`);
+  /** Live promotions across every store in the area, the household's own products first. */
+  deals = (hid: string) => this.#call<{ deals: Deal[] }>('GET', `/households/${hid}/deals`);
+  /** Pictures this phone found at a chain (ADR 0011), kept by the API for the household and the next phone. */
+  learnImages = (hid: string, images: Record<string, string>) => this.#call<{ kept: number }>('POST', `/households/${hid}/images/learned`, { images });
+  images = (hid: string, gtins: string[], names: string[] = []) => this.#call<{ images: Record<string, string | null> }>('POST', `/households/${hid}/images`, { gtins, names });
+  product = (hid: string, gtin: string) => this.#call<{ gtin: string; name: string; brand?: string; listings: { chainId: string; chainName: string; name: string }[]; imageUrl: string | null; prices: { storefrontId: string; brand: string; price: number; minimumOrder?: number; deliveryFee?: number }[]; priceMin?: number; priceMax?: number }>('GET', `/households/${hid}/product?gtin=${encodeURIComponent(gtin)}`);
+  order = (hid: string, oid: string) => this.#call<Order>('GET', `/households/${hid}/orders/${oid}`);
+  approveOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/approve`);
+  cancelOrder = (hid: string, oid: string) => this.#call<Order>('POST', `/households/${hid}/orders/${oid}/cancel`);
+  // --- connecting stores (ADR 0008) ---------------------------------------
+  /** Which stores the cloud holds a session for (every device of the family sees the same answer). */
+  connections = (hid: string) => this.#call<{ connections: Record<string, { connected: boolean; method?: 'device' | 'otp' | 'password'; since?: string }> }>('GET', `/households/${hid}/stores/connections`);
+  /** Cloud rung: a one-time code (phone/e-mail) or a password used once. The password is sent over TLS and never stored. */
+  connectStore = (hid: string, store: string, body: { method: 'otp'; phone?: string; email?: string } | { method: 'password'; email: string; password: string }) =>
+    this.#call<{ challengeId?: string; sentTo?: string; connected?: boolean; method?: string }>('POST', `/households/${hid}/stores/${store}/connect`, body);
+  verifyStore = (hid: string, store: string, challengeId: string, code: string) => this.#call<{ connected: boolean }>('POST', `/households/${hid}/stores/${store}/connect/verify`, { challengeId, code });
+  /** Device rung: the phone captured the store's session after a sign-in in its WebView. */
+  postStoreSession = (hid: string, store: string, session: { cookies: { name: string; value: string; domain?: string; path?: string }[]; tokens?: Record<string, string>; userAgent?: string }) =>
+    this.#call<{ connected: boolean }>('POST', `/households/${hid}/stores/${store}/session`, session);
+  disconnectStore = (hid: string, store: string) => this.#call<{ connected: boolean }>('DELETE', `/households/${hid}/stores/${store}/connection`);
+  /** Past orders read through the cloud-held session, into the family's memory. */
+  cloudImport = (hid: string, store: string) => this.#call<{ orders: number; products: number }>('POST', `/households/${hid}/stores/${store}/import`);
+  worker = (hid: string) => this.#call<{ online: boolean; lastSeen: string | null; linked: Record<string, boolean> }>('GET', `/households/${hid}/worker`);
+  memory = (hid: string) => this.#call<HouseholdMemory>('GET', `/households/${hid}/memory`);
+  invite = (hid: string) => this.#call<{ code: string }>('POST', `/households/${hid}/invites`);
+  acceptInvite = (code: string) => this.#call<Household>('POST', `/invites/${code.trim().toUpperCase()}/accept`);
+  /**
+   * The compare runs as a job in the API: start it, then collect it when it is done. The family
+   * never waits on a gateway clock and never sees a timeout; a slow store is the job's problem
+   * (it retries). A poll that fails on the network is tried again; only the job's own failure ends it.
+   */
+  quote = async (hid: string, lines: Omit<ListLine, 'id'>[]): Promise<QuoteResult> => {
+    type Job = { id: string; status: 'pending' | 'done' | 'failed'; result?: QuoteResult; error?: string };
+    const started = await this.#call<Job>('POST', `/households/${hid}/compares`, { lines });
+    if (started.status === 'done' && started.result) return started.result;
+    let misses = 0;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 2000));
+      let job: Job;
+      try { job = await this.#call<Job>('GET', `/households/${hid}/compares/${started.id}`); misses = 0; } catch (e) { if (++misses >= 15 || (e instanceof Error && e.message === 'signed out')) throw e; continue; }
+      if (job.status === 'done' && job.result) return job.result;
+      if (job.status === 'failed') throw new Error(job.error ?? 'compare failed');
+    }
+  };
+  resolve = (hid: string, lines: Omit<ListLine, 'id'>[]) =>
+    this.#call<{ choices: Record<string, ProductChoice | null>; fromMemory: string[] }>('POST', `/households/${hid}/resolve`, { lines });
+  /** "עשה את זה זול יותר": one store, made cheaper - the family's own chosen products, swapped
+   * wherever the same kind and size is really priced lower there. Reversible: derive the cheaper
+   * total from `storefronts[sid].fullBasket.total` minus each swap's own delta, never a separate
+   * number that could drift from it. */
+  cheaper = (hid: string, storefrontId: string, lines: Omit<ListLine, 'id'>[]) =>
+    this.#call<CheaperSwap[]>('POST', `/households/${hid}/cheaper`, { storefrontId, lines });
+  suggest = (hid: string, lines: Omit<ListLine, 'id'>[]) => this.#call<{ suggestions: Suggestion[] }>('POST', `/households/${hid}/suggest`, { lines });
+  /**
+   * "Yes, that one." `substitution` is what the brand chip means next time: a pinned brand is
+   * `'never'`, "כל מותג" is `'cheapest'` (docs/design/item-identity.md).
+   */
+  confirm = (hid: string, c: { phrase: string; gtin: string; productName: string; brand?: string; substitution?: SubstitutionPolicy }) =>
+    this.#call<unknown>('POST', `/households/${hid}/memory/confirm`, c);
+  /** The stores' own orders, imported from the phone. */
+  history = (hid: string) => this.#call<{ stores: Record<string, { at: string; orders: StoreOrder[] }> }>('GET', `/households/${hid}/history`);
+  recordShop = (hid: string, bought: PurchasedLine[]) => this.#call<unknown>('POST', `/households/${hid}/memory/shop`, { bought });
+}
+

@@ -1,0 +1,11 @@
+appId: com.litansh.kaniti
+---
+- runFlow: household.yaml
+- tapOn: ".*רשימה"
+- assertVisible: "מה צריך?|הרשימה ריקה|השוואת מחירים"
+- tapOn: ".*הזמנות"
+- assertVisible: "ההזמנות שלכם|עדיין אין הזמנות"
+- tapOn: ".*אני"
+- assertVisible: "החנויות המחוברות"
+- tapOn: ".*בית"
+- assertVisible: "המחלקות"

@@ -1,0 +1,25 @@
+# Debug: where is the store row when we tap it? Screenshots after the scroll and after the tap.
+appId: com.litansh.kaniti
+---
+- tapOn: { text: "Open", optional: true }
+- extendedWaitUntil:
+    visible: { text: "Continue|Close|המחלקות" }
+    timeout: 120000
+- tapOn: { text: "Continue", optional: true }
+- tapOn: { text: "Close", optional: true }
+- extendedWaitUntil:
+    visible: { text: "המחלקות" }
+    timeout: 45000
+- tapOn: ".*אני"
+- assertVisible: "החנויות המחוברות"
+- takeScreenshot: maestro/shots/debug-0-me
+- swipe: { direction: DOWN, duration: 300 }
+- scrollUntilVisible:
+    element: { id: "connect-${STORE}" }
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+    visibilityPercentage: 50
+- takeScreenshot: maestro/shots/debug-1-scrolled
+- tapOn: { id: "connect-${STORE}" }
+- takeScreenshot: maestro/shots/debug-2-tapped

@@ -1,0 +1,10 @@
+import { webkit, devices } from 'playwright';
+const b = await webkit.launch(); const ctx = await b.newContext({ ...devices['iPhone 14'], locale: 'he-IL' }); const p = await ctx.newPage();
+const scripts = new Set();
+p.on('response', (r) => { if (r.request().resourceType() === 'script') scripts.add(r.url()); });
+await p.goto('https://www.rami-levy.co.il/he', { waitUntil: 'domcontentloaded', timeout: 45000 }); await p.waitForTimeout(3000);
+await p.evaluate(() => { const x = [...document.querySelectorAll('button,a')].find((e) => /^\s*(כניסה|התחברות)\s*$/.test(e.textContent || '')); x?.click(); });
+await p.waitForTimeout(3000);
+await p.evaluate(() => { const x = [...document.querySelectorAll('button,a')].find((e) => /הרשמה|משתמש חדש|הצטרפ/.test(e.textContent || '')); x?.click(); });
+await p.waitForTimeout(2500);
+console.log([...scripts].join('\n')); await b.close();

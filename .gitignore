@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.tfstate
+*.tfstate.*
+.terraform/
+__pycache__/
+.venv/
+.DS_Store
+*.log
+.expo/
+runs/
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+memory/
+.build/
+apps/mobile/e2e/results/
+apps/mobile/e2e/shots/
+!*.auto.tfvars
+
+# build artefacts
+**/tsconfig.tsbuildinfo
+apps/api/dist-types/
+node_modules
+
+# lab captures: raw store responses, may carry session tokens
+apps/mobile/e2e/lab/login-api*.json
+apps/mobile/e2e/lab/wolt-magic.json
+apps/mobile/maestro/shots/

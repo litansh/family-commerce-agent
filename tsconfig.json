@@ -1,0 +1,34 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "services/retailer-connectors"
+    },
+    {
+      "path": "services/memory-store"
+    },
+    {
+      "path": "services/shopping-agent"
+    },
+    {
+      "path": "services/product-images"
+    },
+    {
+      "path": "apps/cli"
+    },
+    {
+      "path": "apps/api"
+    },
+    {
+      "path": "services/order-worker"
+    },
+    {
+      "path": "services/cloud-connectors"
+    }
+  ],
+  "compilerOptions": {},
+  "extends": "expo/tsconfig.base"
+}

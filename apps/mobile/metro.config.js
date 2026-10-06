@@ -1,0 +1,16 @@
+// Monorepo-aware Metro. Watch only what the app imports: its own tree, the
+// domain package, and the hoisted node_modules. Watching the whole repo
+// (terraform, runs, api bundles) overwhelmed the file watcher and edits under
+// src/ went unnoticed until a cold restart.
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+const root = path.resolve(__dirname, '../..');
+const config = getDefaultConfig(__dirname);
+// Only what the app resolves outside its own tree: the hoisted node_modules and
+// the workspace packages. Watching the whole root (terraform state, api bundles,
+// price-file labs) overwhelms the watcher and edits under src/ go unnoticed.
+config.watchFolders = [path.resolve(root, 'node_modules'), path.resolve(root, 'packages'), path.resolve(root, 'services')];
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules'), path.resolve(root, 'node_modules')];
+config.resolver.disableHierarchicalLookup = true;
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];
+module.exports = config;

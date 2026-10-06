@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Kaniti",
+    "slug": "kaniti",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.litansh.kaniti",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "קניתי משתמשת במצלמה רק כדי לסרוק ברקוד של מוצר לרשימה.",
+        "CFBundleDevelopmentRegion": "he",
+        "CFBundleLocalizations": [
+          "he",
+          "en"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.litansh.kaniti",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1F6B45"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "kaniti",
+    "extra": {
+      "apiUrl": "https://buc8pe49g0.execute-api.eu-central-1.amazonaws.com",
+      "userPoolId": "eu-central-1_8yomKtNCE",
+      "userPoolClientId": "1t7e0himh3heckpassvg0q0e0o",
+      "cognitoDomain": "https://fca-4b19ec.auth.eu-central-1.amazoncognito.com",
+      "region": "eu-central-1",
+      "googleEnabled": false,
+      "eas": {
+        "projectId": "a5121da7-fde3-4eef-a352-2cb21426421e"
+      }
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "קניתי משתמשת במצלמה רק כדי לסרוק ברקוד של מוצר לרשימה."
+        }
+      ],
+      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF8F3",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "owner": "litansh",
+    "description": "כל הסופרים. חנות אחת. רשימה אחת, סל אחד, כל הרשתות — ושום דבר לא נשכח."
+  }
+}

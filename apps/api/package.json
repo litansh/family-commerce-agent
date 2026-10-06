@@ -1,0 +1,27 @@
+{
+  "name": "@fca/api",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf dist && esbuild src/index.ts src/refresh.ts src/alerts.ts --bundle --platform=node --target=node22 --format=esm --outdir=dist --out-extension:.js=.mjs --sourcemap --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && echo '{\"type\":\"module\"}' > dist/package.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/client-lambda": "^3.1130.0",
+    "@aws-sdk/client-s3": "^3.1130.0",
+    "@aws-sdk/client-sqs": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@fca/cloud-connectors": "*",
+    "@fca/domain": "*",
+    "@fca/memory-store": "*",
+    "@fca/product-images": "*",
+    "@fca/retailer-connectors": "*",
+    "@fca/branch-prices": "*",
+    "@fca/shopping-agent": "*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "esbuild": "^0.24.0"
+  }
+}
