@@ -19,14 +19,21 @@ const args = process.argv.slice(2);
 const only = args.includes('--only') ? args[args.indexOf('--only') + 1].split(',') : null;
 const withSim = args.includes('--sim');
 
+// Detached labs no longer share our terminal's Ctrl-C: take them down with us.
+const children = new Set();
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { for (const pid of children) { try { process.kill(-pid, 'SIGKILL'); } catch { /* gone */ } } process.exit(130); });
 const run = (name, cmd, cwd, timeoutMs, judge) => new Promise((done) => {
   const t0 = Date.now();
-  const p = spawn('bash', ['-lc', cmd], { cwd, env: { ...process.env, CI: '' } });
+  // Its own process group, so the timeout kills the lab itself and not only the `bash -lc` around it:
+  // killing bash alone left node and its browser holding the pipe, so a 600 s budget ended at 997 s
+  // and the lab's late rows never reached the report (stores and chaos, 2026-10-06).
+  const p = spawn('bash', ['-lc', cmd], { cwd, env: { ...process.env, CI: '' }, detached: true });
   let out = '';
+  children.add(p.pid);
   p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
-  const timer = setTimeout(() => { p.kill('SIGKILL'); out += '\n[timeout]'; }, timeoutMs);
+  const timer = setTimeout(() => { try { process.kill(-p.pid, 'SIGKILL'); } catch { p.kill('SIGKILL'); } out += '\n[timeout]'; }, timeoutMs);
   // A check that could not run to a verdict (timeout, no network) is 'unknown', not a failure: the two are opposite instructions.
-  p.on('close', (code) => { clearTimeout(timer); const j = judge(out, code); const unknown = /\[timeout\]/.test(out) || /ENOTFOUND|ECONNREFUSED|fetch failed/.test(out) && !j.ok; done({ name, ok: j.ok, unknown, summary: unknown ? `unknown — ${j.summary}` : j.summary, code, seconds: Math.round((Date.now() - t0) / 1000), tail: out.split('\n').filter(Boolean).slice(-25).join('\n') }); });
+  p.on('close', (code) => { clearTimeout(timer); children.delete(p.pid); const j = judge(out, code); const unknown = /\[timeout\]/.test(out) || /ENOTFOUND|ECONNREFUSED|fetch failed/.test(out) && !j.ok; done({ name, ok: j.ok, unknown, summary: unknown ? `unknown — ${j.summary}` : j.summary, code, seconds: Math.round((Date.now() - t0) / 1000), tail: out.split('\n').filter(Boolean).slice(-25).join('\n') }); });
 });
 const strip = (s) => s.replace(/\(node:\d+\) .*\n|\(Use `node --trace-warnings.*\n|Reparsing as ES module.*\n|To eliminate this warning.*\n/g, '');
 

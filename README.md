@@ -235,6 +235,11 @@ red when one is down to a single working rung. The browser labs run side by side
 drive the production API (`api`, `search`, `deals`, `shopper`, `topup`, `chaos`) run one after
 another, because together they exceeded the account's 10-Lambda concurrency and the checks were
 reporting API Gateway's own throttle 503s (0.3 s, `{"message":"Service Unavailable"}`) as product failures.
+A check that runs past its budget is killed with its whole process group (the lab and its browser,
+not only the shell around it) and reported `unknown`; `store-health.mjs` also gives each store its
+own 120 s budget, so one page that stops answering costs that store's row, never the rows after it.
+A cart lab reads the store's basket every second until it settles; a store's basket page shows 0
+for a moment before it syncs, and one early read is not proof (promise 9).
 
 The labs it drives are worth knowing on their own:
 

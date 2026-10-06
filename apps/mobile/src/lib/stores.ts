@@ -309,10 +309,17 @@ export const RAMI_LEVY: Platform = {
   // Only a verified cart counts as added, LINE BY LINE (promise 9): a line is added only when its own
   // item id is in the page's cart state or in the server's answer. One id landing used to vouch for
   // every line (chaos 2026-10-06: claimed 37, the store's basket held 32).
-  const held=Object.assign(heldIn(st&&st.state&&st.state.cart&&st.state.cart.items),answerHeld);
+  // A guest's cart is the page's own state (persisted to localStorage 'ramilevy'); the server's answer
+  // only prices what was posted and holds nothing for a guest, so for a guest only the state counts,
+  // and the site commits it a beat after its own fetch: wait for it (up to 8 s) rather than read early.
+  // Signed in, the server holds the cart, so its answer counts too.
+  const stateHeld=()=>heldIn(st&&st.state&&st.state.cart&&st.state.cart.items);
+  const want=out.filter(o=>o.status==='added'&&o.id!=null).map(o=>o.id);
+  for(let i=0;i<16&&!want.every(id=>stateHeld()[id]);i++)await new Promise(r=>setTimeout(r,500));
+  const held=ecom?Object.assign(stateHeld(),answerHeld):stateHeld();
   for(const o of out)if(o.status==='added'&&o.id!=null&&!held[o.id]){o.status='error';o.detail='not in the store cart ('+cartStatus+'): '+(o.detail||'');}
   }
-  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk,removed,ids:Object.keys(items).length,held:Object.keys(Object.assign(heldIn(st&&st.state&&st.state.cart&&st.state.cart.items),answerHeld)).length}}));
+  window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,cartUrl:'https://www.rami-levy.co.il/he/basket',diag:{auth:!!auth,signedIn:!!ecom,store,branchFrom,found:Object.keys(byBarcode).length,byName:Object.keys(byName).length,shape,cartStatus,via,inCart:inCart(),serverOk,removed,ids:Object.keys(items).length,held:Object.keys(heldIn(st&&st.state&&st.state.cart&&st.state.cart.items)).length,answerHeld:Object.keys(answerHeld).length}}));
 }catch(e){window.ReactNativeWebView.postMessage('cart:'+JSON.stringify({results:out,diag:{error:String(e)}}));}})();true;`,
 };
 

@@ -22,7 +22,7 @@ import { STORES } from '../src/lib/stores.ts';
 
 const FAKE_GTIN = '9999999999999'; // deliberately absent — must never resolve to a real product
 const BASKET = [
-  { gtin: '7290001794852', name: 'חלב טרי 3%', qty: 2 },     // milk - the guest default branch's own private label, not a chain brand that branch may not carry
+  { gtin: '7290000072753', name: 'קפה נמס', qty: 2 },        // instant coffee - shelf-stable; branch 331's own milk (7290001794852) was 'unavailable' again on 2026-10-06
   { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas
   { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },               // deliberately absent
 ];
@@ -35,6 +35,9 @@ for (const id of ids) {
   const ctx = await browser.newContext({ ...devices['iPhone 14'], locale: 'he-IL' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('   [pageerror]', String(e).slice(0, 200)));
+  // The store's own cart answers, so an empty basket page can be told apart from a cart the store never held.
+  const answers = [];
+  page.on('response', async (r) => { if (/\/api\/v2\/cart(\?|$)/.test(r.url())) { try { const j = await r.json(); const arr = j.items || (j.data && j.data.items) || []; answers.push(`${r.status()}:${Array.isArray(arr) ? arr.length : '?'}`); } catch (e) { answers.push(`${r.status()}:?`); } } });
   page.on('console', (m) => { const t = m.text(); if (/cart|error|token|catalog/i.test(t)) console.log('   [console]', t.slice(0, 200)); });
   // Capture what the recipe posts back (the app's WebView bridge).
   let resolveGot; const got = new Promise((r) => { resolveGot = r; });
@@ -60,13 +63,17 @@ for (const id of ids) {
     // Read the store's own cart back (its own basketCountJs, the same recipe the phone runs on
     // the cart page), to confirm the lines really landed - not just that the recipe said so.
     if (store.basketCountJs && store.cartUrl) {
-      let resolveBadge; const gotBadge = new Promise((r) => { resolveBadge = r; });
-      await page.exposeFunction('__basketResult', (m) => resolveBadge(m));
-      await page.goto(store.cartUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }); await page.waitForTimeout(5000);
+      await page.goto(store.cartUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      // The store's basket page paints an empty cart before it syncs (a single read at 5 s once said 0
+      // for a cart that held the lines, 2026-10-06). Read its own count every second until two equal
+      // non-zero readings, or 25 s; every reading is printed so an early 0 is never mistaken for proof.
+      let latest = '?'; await page.exposeFunction('__basketResult', (m) => { latest = m; });
       await page.evaluate(() => { window.__origPost = window.ReactNativeWebView.postMessage; window.ReactNativeWebView.postMessage = (m) => { if (String(m).startsWith('basket:')) window.__basketResult(String(m).slice(7)); else window.__origPost(m); }; });
-      await page.evaluate(store.basketCountJs.replace(/;\s*true;\s*$/, ''));
-      const badge = await Promise.race([gotBadge, new Promise((r) => setTimeout(() => r('?'), 15_000))]);
-      console.log(`   basket page count: ${badge}`);
+      const readings = []; let badge = '?';
+      for (let i = 0; i < 25; i++) { await page.waitForTimeout(1000); latest = '?'; await page.evaluate(store.basketCountJs.replace(/;\s*true;\s*$/, '')).catch(() => null); await page.waitForTimeout(150); readings.push(latest); if (latest !== '?' && latest !== '0' && latest === badge) break; badge = latest; }
+      badge = readings[readings.length - 1] ?? '?';
+      console.log(`   basket page count: ${badge}  (readings ${readings.join(',')})`);
+      if (badge === '0' || badge === '?') console.log(`   store cart answers ${answers.join(' ') || 'none'}; persisted cart ${await page.evaluate(() => { try { const v = JSON.parse(localStorage.getItem('ramilevy') || 'null'); return v && v.cart && Array.isArray(v.cart.items) ? v.cart.items.length + ' items' : 'none'; } catch (e) { return 'unreadable'; } }).catch(() => '?')}; url ${page.url()}`);
       if (badge !== '?' && Number(badge) !== (counts.added || 0)) console.log(`   PROMISE9-VIOLATION: ${counts.added || 0} claimed added but the store's own basket shows ${badge}`);
     }
     await page.screenshot({ path: `e2e/shots/cart-${id}.png` });
