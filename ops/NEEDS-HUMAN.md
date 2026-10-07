@@ -1,5 +1,13 @@
 # Needs the owner
 
+## This Mac cannot push the repo: GitHub answers 403 to `litanshamir` (2026-10-07)
+`git push -u origin ops/2026-10-07-health` fails with `Permission to litansh/family-commerce-agent.git
+denied to litanshamir` (HTTP 403). `gh auth status` shows the keyring login is the account
+`litanshamir`, not `litansh`, and the branch has never reached origin, so every WIP commit on it
+(the Rami Levy cart work, and today's price-portal fixes `73cd806`, `feb193d`) exists only on this
+Mac, and `ops/pr.sh` cannot open a PR. Needs: the owner to sign this Mac in as `litansh`
+(`gh auth login`, or add `litanshamir` as a collaborator) and then `git push -u origin ops/2026-10-07-health`.
+
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
 files this morning and then failed to write them: `CredentialsProviderError: Your session has
