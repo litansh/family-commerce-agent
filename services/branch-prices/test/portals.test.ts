@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LAIB_CHAINS, getBytes, laibPortal, parseLaibFiles } from '../src/portals.ts';
+import { LAIB_CHAINS, cerberusPortal, getBytes, laibPortal, parseLaibFiles, storeIdOf } from '../src/portals.ts';
 import { parseStores } from '../src/xml.ts';
 import { gzipSync } from 'node:zlib';
 
@@ -69,4 +69,25 @@ test('a portal that hangs every time fails naming the request and the deadline, 
   const gone = (async () => { m++; return new Response('', { status: 404 }); }) as unknown as typeof fetch;
   await assert.rejects(getBytes('https://x.example/a.gz', gone), /HTTP 404/);
   assert.equal(m, 1);
+});
+
+test('file names: chain-subchain-store-date-time and Keshet Teamim\'s chain-store-datetime both give the branch', () => {
+  assert.equal(storeIdOf('PriceFull7290027600007-001-756-20260911-030000.gz'), '756');
+  assert.equal(storeIdOf('PriceFull7290785400000-103-202610070630.gz'), '103');
+  assert.equal(storeIdOf('PromoFull7290785400000-002-202610070010.gz'), '002');
+  assert.equal(storeIdOf('Stores7290696200003-000-20260912060100-060100.gz'), undefined);
+});
+
+test('the Keshet portal: a branch whose files use the short name shape gets its newest PriceFull', async () => {
+  const names = ['PriceFull7290785400000-001-014-20261007-001008.gz', 'PriceFull7290785400000-103-202610070010.gz', 'PriceFull7290785400000-103-202610070630.gz', 'PriceFull7290785400000-104-202610070630.gz'];
+  const fetchImpl = (async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.includes('/login/user')) return new Response('', { status: 302, headers: { location: '/file', 'set-cookie': 'cftpSID=x; path=/' } });
+    if (url.endsWith('/file/json/dir')) return new Response(JSON.stringify({ aaData: names.map((fname) => ({ fname, size: 1 })) }));
+    return new Response('<meta name="csrftoken" content="tok">', { status: 200 });
+  }) as unknown as typeof fetch;
+  const p = cerberusPortal('keshet-teamim', fetchImpl);
+  assert.equal((await p.priceFile('103'))?.name, 'PriceFull7290785400000-103-202610070630.gz');
+  assert.equal((await p.priceFile('14'))?.name, 'PriceFull7290785400000-001-014-20261007-001008.gz');
+  assert.equal(await p.priceFile('91'), undefined);
 });

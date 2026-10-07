@@ -69,9 +69,15 @@ export async function getBytes(url: string, fetchImpl: typeof fetch, headers: Re
 
 /** Newest by the date-time stamp in the file name (…-YYYYMMDD-HHMMSS). */
 const newest = <T extends { name: string }>(refs: T[]): T | undefined => [...refs].sort((a, b) => stamp(b.name).localeCompare(stamp(a.name)))[0];
-const stamp = (name: string) => /(\d{8}-\d{4,6})/.exec(name)?.[1] ?? '';
-/** "PriceFull7290027600007-001-756-20260911-030000.gz" → "756". */
-export const storeIdOf = (name: string): string | undefined => /^(?:PriceFull|Price|PromoFull|Promo)\d+-\d+-(\d+)-/.exec(name)?.[1];
+/** "…-20260911-030000.gz" → "20260911-030000"; Keshet's "…-202610070630.gz" → "20261007-063000", so both shapes sort together. */
+const stamp = (name: string) => { const k = /-(\d{8})(\d{4})\.\w+$/.exec(name); return k ? `${k[1]}-${k[2]}00` : /(\d{8}-\d{4,6})/.exec(name)?.[1] ?? ''; };
+/**
+ * "PriceFull7290027600007-001-756-20260911-030000.gz" → "756" (chain-subchain-store-date-time), and
+ * "PriceFull7290785400000-103-202610070630.gz" → "103" (chain-store-datetime: 25 of Keshet Teamim's
+ * 27 branches name their files this way, seen 2026-10-07).
+ */
+export const storeIdOf = (name: string): string | undefined =>
+  /^(?:PriceFull|Price|PromoFull|Promo)\d+-\d+-(\d+)-/.exec(name)?.[1] ??/^(?:PriceFull|Price|PromoFull|Promo)\d+-(\d+)-\d{12}\.\w+$/.exec(name)?.[1];
 
 // --- Shufersal ---------------------------------------------------------------
 

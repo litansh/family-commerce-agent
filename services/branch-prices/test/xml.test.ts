@@ -100,3 +100,15 @@ test('the cheapest way to buy a quantity mixes one bundle deal with the regular 
   assert.deepEqual(bestDealTotal([{ minQty: 2, dealPrice: 1390, clubOnly: false }], 1, 735), { total: 735, clubOnly: false });
   assert.deepEqual(bestDealTotal([{ minQty: 1, dealPrice: 890, clubOnly: true }], 2, 1090), { total: 1780, clubOnly: true });
 });
+
+// Keshet Teamim's short-named branches (2026-10-07): XmlDocVersion 19, terms on the promotion, items as <Item>.
+const promoLevel = `<Root><XmlDocVersion>19</XmlDocVersion><StoreId>103</StoreId><Promotions Count="3">
+<Promotion><PromotionId>177016</PromotionId><PromotionDescription>יינות 2 ב 74.90</PromotionDescription><PromotionEndDate>2026-10-28</PromotionEndDate><PromotionEndHour>23:59:00</PromotionEndHour><RewardType>1</RewardType><IsWeightedPromo>0</IsWeightedPromo><AdditionalRestrictions><AdditionalIsCoupon>0</AdditionalIsCoupon></AdditionalRestrictions><MinQty>2.00</MinQty><DiscountedPrice>74.90</DiscountedPrice><PromotionItems><Item><ItemCode>4860008662251</ItemCode><ItemType>1</ItemType><IsGiftItem>0</IsGiftItem></Item><Item><ItemCode>123</ItemCode><IsGiftItem>0</IsGiftItem></Item><Item><ItemCode>4860008662268</ItemCode><IsGiftItem>1</IsGiftItem></Item></PromotionItems><Clubs><ClubId>0</ClubId></Clubs></Promotion>
+<Promotion><PromotionId>2</PromotionId><PromotionDescription>עגבניות ב 5</PromotionDescription><PromotionEndDate>2026-10-28</PromotionEndDate><RewardType>1</RewardType><IsWeightedPromo>1</IsWeightedPromo><MinQty>1</MinQty><DiscountedPrice>5</DiscountedPrice><PromotionItems><Item><ItemCode>7290000000001</ItemCode></Item></PromotionItems></Promotion>
+<Promotion><PromotionId>3</PromotionId><PromotionDescription>קופון</PromotionDescription><PromotionEndDate>2026-10-28</PromotionEndDate><RewardType>1</RewardType><AdditionalRestrictions><AdditionalIsCoupon>1</AdditionalIsCoupon></AdditionalRestrictions><MinQty>1</MinQty><DiscountedPrice>1</DiscountedPrice><PromotionItems><Item><ItemCode>7290004131074</ItemCode></Item></PromotionItems></Promotion>
+</Promotions></Root>`;
+
+test('a promo-level PromoFull (terms on the promotion, <Item> children) prices its barcodes; weighed, gift, coupon and non-barcode items skipped', () => {
+  assert.deepEqual(parsePromoFull(promoLevel), { '4860008662251': [{ minQty: 2, dealPrice: 7490, clubOnly: false }] });
+  assert.deepEqual(parsePromoFeed(promoLevel), [{ itemCodes: ['4860008662251'], description: 'יינות 2 ב 74.90', discountRate: 0, discountedPrice: 74.9, clubOnly: false, endTs: '2026-10-28T23:59:00' }]);
+});

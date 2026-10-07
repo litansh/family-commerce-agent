@@ -106,6 +106,37 @@ export type PromoIndex = Record<string, PromoDeal[]>;
  * automatically ("קופון חלב תנובה קרטון 1לי ב1שח" is not the shelf price). `ClubID` is "0" for
  * everyone; anything else needs a club card or credit card the family may not hold.
  */
+/**
+ * The items of one <Promotion>, each with the fields the price math needs, in either of the two
+ * shapes the chains publish:
+ *   item-level   `<PromotionItem>` blocks, each carrying its own RewardType / MinQty / DiscountedPrice
+ *                (Shufersal, Rami Levy, Carrefour, ...);
+ *   promo-level  `<PromotionItems><Item>` (XmlDocVersion 19: Keshet Teamim's short-named branches,
+ *                seen 2026-10-07) with RewardType / MinQty / DiscountedPrice on the promotion, the
+ *                weighed flag as `IsWeightedPromo`, gift items as `IsGiftItem`, and the end as
+ *                `PromotionEndDate` + `PromotionEndHour`.
+ * Weighed goods, gifts and non-barcodes are dropped here, so both parsers skip them the same way.
+ */
+function promoItems(promo: string): { code: string; rewardType: string; minQty: string; discountedPrice: string; discountRate: string }[] {
+  const head = promo.replace(/<PromotionItems\b[^>]*>[\s\S]*?<\/PromotionItems>/gi, '').replace(/<PromotionItem>[\s\S]*?<\/PromotionItem>/gi, '');
+  const blocks = [...promo.matchAll(/<PromotionItem>([\s\S]*?)<\/PromotionItem>/gi)].map((m) => m[1]!);
+  const items = blocks.length ? blocks : [...promo.matchAll(/<Item>([\s\S]*?)<\/Item>/gi)].map((m) => m[1]!);
+  if (tag(head, 'IsWeightedPromo') === '1') return [];
+  // Item-level files are read exactly as before; only the promo-level shape takes its terms from the promotion.
+  const field = (item: string, name: string) => (blocks.length ? tag(item, name) : tag(item, name) || tag(head, name));
+  return items
+    .filter((item) => /^\d{8,14}$/.test(tag(item, 'ItemCode')) && tag(item, 'bIsWeighted') !== '1' && tag(item, 'IsGiftItem') !== '1')
+    .map((item) => ({ code: tag(item, 'ItemCode'), rewardType: field(item, 'RewardType'), minQty: field(item, 'MinQty'), discountedPrice: field(item, 'DiscountedPrice'), discountRate: field(item, 'DiscountRate') }));
+}
+
+/** `PromotionEndDateTime`, or `PromotionEndDate` + `PromotionEndHour` in the promo-level shape. */
+const promoEnd = (promo: string): string => {
+  const dt = tag(promo, 'PromotionEndDateTime');
+  if (dt) return dt;
+  const d = tag(promo, 'PromotionEndDate');
+  return d ? `${d}T${tag(promo, 'PromotionEndHour') || '23:59:00'}` : '';
+};
+
 export function parsePromoFull(xml: string): PromoIndex {
   const out: PromoIndex = {};
   for (const p of xml.matchAll(/<Promotion>([\s\S]*?)<\/Promotion>/gi)) {
@@ -113,17 +144,12 @@ export function parsePromoFull(xml: string): PromoIndex {
     if (tag(promo, 'AdditionalIsCoupon') === '1') continue;
     const clubId = tag(promo, 'ClubID');
     const clubOnly = clubId !== '' && clubId !== '0';
-    for (const it of promo.matchAll(/<PromotionItem>([\s\S]*?)<\/PromotionItem>/gi)) {
-      const item = it[1]!;
-      const code = tag(item, 'ItemCode');
-      if (!/^\d{8,14}$/.test(code)) continue;
-      if (tag(item, 'bIsWeighted') === '1') continue;
-      const rewardType = tag(item, 'RewardType');
-      if (rewardType !== '1' && rewardType !== '3') continue;
-      const minQty = Number(tag(item, 'MinQty')) || 1;
-      const dealPrice = Number(tag(item, 'DiscountedPrice'));
+    for (const it of promoItems(promo)) {
+      if (it.rewardType !== '1' && it.rewardType !== '3') continue;
+      const minQty = Number(it.minQty) || 1;
+      const dealPrice = Number(it.discountedPrice);
       if (!(dealPrice > 0)) continue;
-      (out[code] ??= []).push({ minQty, dealPrice: Math.round(dealPrice * 100), clubOnly });
+      (out[it.code] ??= []).push({ minQty, dealPrice: Math.round(dealPrice * 100), clubOnly });
     }
   }
   return out;
@@ -152,20 +178,16 @@ export function parsePromoFeed(xml: string): PromoFeedItem[] {
     const promo = p[1]!;
     if (tag(promo, 'AdditionalIsCoupon') === '1') continue;
     const description = tag(promo, 'PromotionDescription');
-    const endTs = tag(promo, 'PromotionEndDateTime');
+    const endTs = promoEnd(promo);
     if (!description || !endTs) continue;
     const clubId = tag(promo, 'ClubID');
     const clubOnly = clubId !== '' && clubId !== '0';
-    for (const it of promo.matchAll(/<PromotionItem>([\s\S]*?)<\/PromotionItem>/gi)) {
-      const item = it[1]!;
-      const code = tag(item, 'ItemCode');
-      if (!/^\d{8,14}$/.test(code)) continue;
-      if (tag(item, 'bIsWeighted') === '1') continue;
-      const rewardType = tag(item, 'RewardType');
-      if (rewardType !== '1' && rewardType !== '3') continue;
-      const discountedPrice = Number(tag(item, 'DiscountedPrice'));
+    for (const it of promoItems(promo)) {
+      if (it.rewardType !== '1' && it.rewardType !== '3') continue;
+      const code = it.code;
+      const discountedPrice = Number(it.discountedPrice);
       if (!(discountedPrice > 0)) continue;
-      const discountRate = Number(tag(item, 'DiscountRate')) || 0;
+      const discountRate = Number(it.discountRate) || 0;
       out.push({ itemCodes: [code], description, discountRate, discountedPrice, clubOnly, endTs });
     }
   }
