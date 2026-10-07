@@ -9,10 +9,11 @@
  *   laib        laibcatalog.co.il (Victory, Mahsanei HaShuk, H. Cohen): the page's newer UI
  *               (/mshuk/index.html) calls a JSON API (`/webapi/api/getfiles?edi=<chainId>`)
  *               that is built to carry every file of every chain, and the classic ASP.NET
- *               postback form on the front page is the same data by another route - but as of
- *               2026-09-13 both answer zero files, for all three chains, every date, every file
- *               type (ops/NEEDS-HUMAN.md): a vendor-side gap, not a request we have wrong.
+ *               postback form on the front page is the same data by another route (both
+ *               answered zero files on 2026-09-13 during a vendor migration; back since).
  *
+ * Every GET has a deadline and one retry on a hang (getBytes): portals occasionally stall a
+ * single request for minutes while the next one answers normally.
  * Everything here is a plain fetch: no browser, no account of ours.
  */
 import { decodeXml, parseStores, sameStoreId, type Branch } from './xml.ts';
@@ -41,13 +42,29 @@ const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/6
 
 const withTimeout = (ms: number) => { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return { signal: c.signal, done: () => clearTimeout(t) }; };
 
-async function getBytes(url: string, fetchImpl: typeof fetch, headers: Record<string, string> = {}, ms = 90_000): Promise<Buffer> {
-  const t = withTimeout(ms);
-  try {
-    const res = await fetchImpl(url, { headers: { 'user-agent': UA, ...headers }, signal: t.signal });
-    if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
-  } finally { t.done(); }
+/**
+ * One GET with a per-attempt deadline. A request that hangs (no answer before the deadline) or
+ * drops at the network level is tried once more on a fresh connection: on 2026-10-07 at 04:05Z
+ * laibcatalog's listing (normally 0.1-4 s) and one Shufersal branch listing (normally ~25 s) each
+ * hung past 90/120 s while the next request to the same portal answered at its usual speed.
+ * An HTTP error is the portal's answer and is not retried. The error names the URL, so a health
+ * row says which request hung instead of a bare "This operation was aborted".
+ */
+export async function getBytes(url: string, fetchImpl: typeof fetch, headers: Record<string, string> = {}, ms = 90_000, attempts = 2): Promise<Buffer> {
+  let last: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    const t = withTimeout(ms);
+    try {
+      const res = await fetchImpl(url, { headers: { 'user-agent': UA, ...headers }, signal: t.signal });
+      if (!res.ok) throw Object.assign(new Error(`${url}: HTTP ${res.status}`), { http: true });
+      return Buffer.from(await res.arrayBuffer());
+    } catch (e) {
+      if ((e as { http?: boolean }).http) throw e;
+      last = t.signal.aborted ? new Error(`no answer in ${ms / 1000}s`) : e;
+    } finally { t.done(); }
+  }
+  // Reason first (the lab prints 120 characters); the query string is dropped (blob links carry a SAS token).
+  throw new Error(`${String(last instanceof Error ? last.message : last)} (${attempts} attempt${attempts > 1 ? 's' : ''}): ${url.split('?')[0]}`);
 }
 
 /** Newest by the date-time stamp in the file name (…-YYYYMMDD-HHMMSS). */

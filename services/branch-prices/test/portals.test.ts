@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LAIB_CHAINS, laibPortal, parseLaibFiles } from '../src/portals.ts';
+import { LAIB_CHAINS, getBytes, laibPortal, parseLaibFiles } from '../src/portals.ts';
 import { parseStores } from '../src/xml.ts';
 import { gzipSync } from 'node:zlib';
 
@@ -47,4 +47,26 @@ test('the Victory portal: Stores from the listing, the newest PriceFull of a bra
 test('a Stores file that wraps branches in <Branch> (H. Cohen) parses like one with <Store>', () => {
   const b = parseStores('<Store Date="12/09/26"><Branches><Branch><ChainID>7290455000004</ChainID><SubChainID>001</SubChainID><StoreID>001</StoreID><StoreName>המלאכה</StoreName><Address> </Address><City /><ZIPCode /></Branch></Branches></Store>');
   assert.deepEqual(b, [{ chainId: '7290455000004', subChainId: '001', storeId: '001', name: 'המלאכה', address: '', city: '' }]);
+});
+
+// 2026-10-07 04:05Z: laibcatalog's listing and a Shufersal branch listing each hung past the
+// deadline once, while the next request answered at the usual speed.
+const hangsUntilAborted = (init?: RequestInit) => new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError'))));
+
+test('a portal request that hangs once is tried again on a fresh request', async () => {
+  let n = 0;
+  const fetchImpl = (async (_u: string, init?: RequestInit) => (++n === 1 ? hangsUntilAborted(init) : new Response('ok'))) as unknown as typeof fetch;
+  assert.equal((await getBytes('https://laibcatalog.co.il/webapi/api/getfiles?edi=1', fetchImpl, {}, 30)).toString(), 'ok');
+  assert.equal(n, 2);
+});
+
+test('a portal that hangs every time fails naming the request and the deadline, not a bare abort; an HTTP error is not retried', async () => {
+  let n = 0;
+  const hang = (async (_u: string, init?: RequestInit) => { n++; return hangsUntilAborted(init); }) as unknown as typeof fetch;
+  await assert.rejects(getBytes('https://prices.shufersal.co.il/FileObject/UpdateCategory?catID=2&storeId=117', hang, {}, 30), (e: Error) => e.message === 'no answer in 0.03s (2 attempts): https://prices.shufersal.co.il/FileObject/UpdateCategory');
+  assert.equal(n, 2);
+  let m = 0;
+  const gone = (async () => { m++; return new Response('', { status: 404 }); }) as unknown as typeof fetch;
+  await assert.rejects(getBytes('https://x.example/a.gz', gone), /HTTP 404/);
+  assert.equal(m, 1);
 });
