@@ -148,7 +148,9 @@ export function optimize(input: OptimizeInput): OptimizeResult {
     // the anchor (full coverage) keeps what the partial store cannot supply. The salmon Rami Levy
     // does not stock stays at the anchor; everything Rami Levy sells cheaper moves there.
     const partial = quotes.filter((q) => q.serviceType === 'delivery' && !eligible.includes(q) && coverageRatio(q) >= PARTIAL_LEG_MIN_COVERAGE);
-    const split = bestSplit([...delivery, ...partial], requestedLineIds, constants, best);
+    // The split is measured against the anchor as the family would really pay for it: completed with
+    // the cheapest top-up among ALL quotes (the same figure the anchor was chosen by and the card shows).
+    const split = bestSplit([...delivery, ...partial], requestedLineIds, constants, best, quotes);
     if (split !== undefined) options.push(split);
   }
 
@@ -226,6 +228,7 @@ function bestSplit(
   requestedLineIds: readonly string[],
   constants: HouseholdConstants,
   anchor: StorefrontQuote,
+  quotes: readonly StorefrontQuote[],
 ): PurchaseOption | undefined {
   let bestOption: PurchaseOption | undefined;
   let bestSaving = constants.minSavingForSecondStore;
@@ -256,9 +259,17 @@ function bestSplit(
     if (anchor.minimumOrder !== undefined && keptSubtotal < anchor.minimumOrder) continue;
 
     const total = addAgorot(keptSubtotal, anchor.deliveryFee, movedSubtotal, other.deliveryFee);
-    // Against the anchor as the family would really pay for it: with its missing lines topped up.
-    const anchorCompleted = (anchor.deliveredTotal + (missingEstimate(requestedLineIds.filter((id) => !anchorHas.has(id)), [anchor, other]) ?? 0)) as Agorot;
-    const saving = subAgorot(anchorCompleted, total);
+    // Against the anchor as the family would really pay for it: with its missing lines topped up at
+    // the cheapest store among ALL quotes - not only this pair. Topping up only at `other` (2026-10-07:
+    // Wolt's dearer copy of the one missing line) inflated the anchor past ₪948 and let a ₪953 split
+    // through as a "saving" (promise 2). The split is completed the same way when it still misses lines.
+    // A line no store prices (unsubstituted) is missing from both sides alike and has no estimate: leave it out of both.
+    const completable = requestedLineIds.filter((id) => quotes.some((q) => q.lines.some((l) => l.lineId === id && !l.substituted)));
+    const anchorMissing = missingEstimate(completable.filter((id) => !anchorHas.has(id)), quotes) ?? agorot(0);
+    const anchorCompleted = (anchor.deliveredTotal + anchorMissing) as Agorot;
+    const splitHas = new Set([...kept, ...moved].map((l) => l.lineId));
+    const splitMissing = missingEstimate(completable.filter((id) => !splitHas.has(id)), quotes) ?? agorot(0);
+    const saving = subAgorot(anchorCompleted, addAgorot(total, splitMissing));
     // A split that completes the basket is worth offering at any saving; one that only shaves must beat the threshold.
     if (completing.length ? saving < 0 : saving <= bestSaving) continue;
 

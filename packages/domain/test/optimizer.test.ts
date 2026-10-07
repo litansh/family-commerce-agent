@@ -290,3 +290,40 @@ test('a store that meets the coverage floor exactly is offered, not rejected', (
   const r2 = optimize({ quotes: [store('c', 'below the floor', 17), store('b', 'everything', 20)], constants: DEFAULT_CONSTANTS, requestedLineIds: ids });
   assert.ok(r2.rejected.some((x) => x.brand === 'below the floor'), '17 of 20 is below the floor and stays rejected');
 });
+
+test('a split is offered only when it beats every single store once each is completed (health 2026-10-07: ₪953 split vs ₪894 + ₪54)', () => {
+  // A misses l9; the cheap top-up of l9 is at C (₪5 + ₪10 fee), so A completed is ₪110 + ₪15 = ₪125.
+  // B carries l9 dear (₪30, fee ₪20). Measured against A topped up at B only, A+B looked like a saving;
+  // against A topped up where the family would really buy l9 it costs ₪34 more, and must not be offered.
+  const a = quote('a', 'A', ids(9).map((id) => line(id, 10)), 20, 10);
+  const b = quote('b', 'B', [line('l0', 9), ...ids(9).slice(1).map((id) => line(id, 12)), line('l9', 30)], 20, 10);
+  const c = quote('c', 'C', [line('l9', 5)], 10, 10); // too thin to be an option or a leg; still a top-up source
+  const r = optimize({ quotes: [a, b, c], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(10) });
+  const completed = (o: (typeof r.options)[number]) => o.cashCost + (o.missingEstimate ?? 0);
+  const singles = r.options.filter((o) => o.legs.length === 1 && o.kind !== 'pickup' && o.kind !== 'drive');
+  assert.equal(completed(singles[0]!), shekels(125), 'A completed with the cheapest top-up');
+  const split = r.options.find((o) => o.kind === 'split_delivered');
+  assert.ok(!split || completed(split) <= Math.min(...singles.map(completed)), `split ${split && completed(split)} must not cost more than ${Math.min(...singles.map(completed))}`);
+});
+
+test('a split that completes the basket and beats the completed single is still offered', () => {
+  // A misses l2 (only B has it): ₪110 + ₪40 to complete = ₪150, below B's ₪160, so A anchors.
+  // A+B keeps l0 at A and moves l1 (cheaper at B) with l2 (the top-up as B's real cart): ₪140.
+  const a = quote('a', 'A', [line('l0', 50), line('l1', 50)], 10, 3);
+  const b = quote('b', 'B', [line('l0', 80), line('l1', 40), line('l2', 30)], 10, 3);
+  const r = optimize({ quotes: [a, b], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(3) });
+  const split = r.options.find((o) => o.kind === 'split_delivered');
+  assert.ok(split, 'split offered');
+  assert.equal(split!.cashCost, shekels(50 + 10 + 40 + 30 + 10));
+  assert.deepEqual(split!.unpricedLineIds, []);
+});
+
+test('a line no store prices does not stop a split that saves on the rest', () => {
+  // l2 is priced nowhere. B (₪120) anchors; moving l0 to A: ₪30 + ₪60 = ₪90, ₪30 saved after the second fee.
+  const a = quote('a', 'A', [line('l0', 50), line('l1', 80)], 10, 3);
+  const b = quote('b', 'B', [line('l0', 90), line('l1', 20)], 10, 3);
+  const r = optimize({ quotes: [a, b], constants: DEFAULT_CONSTANTS, requestedLineIds: ids(3) });
+  const split = r.options.find((o) => o.kind === 'split_delivered');
+  assert.ok(split, 'a split that saves ₪30 on what is priced is offered');
+  assert.equal(split!.cashCost, shekels(90));
+});
