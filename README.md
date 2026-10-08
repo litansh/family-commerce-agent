@@ -264,7 +264,8 @@ worklist in `docs/backlog/<agent>.md`.
 ops/lanes.sh                   # the fleet, two lanes side by side, each lane serial
 FLEET_TASK="…" ops/fleet.sh api-fixer     # one agent on one job
 ops/check.mjs && ops/repair.sh            # the daily run: refresh the ops-Mac data rungs (deals files, RL branches,
-                                          # HH stock), then check, repair, brief, then the fleet
+                                          # HH stock, deals pictures from Shufersal's own product pages
+                                          # via POST /images/learned), then check, repair, brief, then the fleet
 ops/unblock.sh                            # merge main into any pull request that has drifted
 ```
 

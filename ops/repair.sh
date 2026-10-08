@@ -33,6 +33,10 @@ node --experimental-strip-types services/retailer-connectors/refresh-branches.mj
 # Hatzi Hinam's own stock, from this Mac (docs/BACKLOG.md, ADR 0011): a barcode the guest session
 # says is out of stock drops from its compare card; CATALOG#HH_STOCK is what the API reads.
 node --experimental-strip-types services/retailer-connectors/refresh-hazi-hinam-stock.mjs 2>&1 | tail -5 | tee -a "$LOG"
+# מבצעים pictures, second rung (ADR 0010/0011): Shufersal's own product pages, read with GETs from
+# this Mac, kept through POST /images/learned under IMG#G#<gtin>, which /deals reads from cache.
+# Runs as the test family, so it needs no AWS session (health 2026-10-08: deals 5/23 → 18/23).
+node --experimental-strip-types services/product-images/refresh-chain-images.mjs 2>&1 | tail -3 | tee -a "$LOG"
 echo "== check $(date)" | tee -a "$LOG"
 if node ops/check.mjs "$@" 2>&1 | tee -a "$LOG"; then
   notify "healthy" "every check passed"
