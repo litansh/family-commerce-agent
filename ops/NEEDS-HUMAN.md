@@ -144,3 +144,18 @@ there is no way from here to publish a real SNS message or check the live Telegr
 
 Needs: the owner, or the ops Mac's own AWS session, to trip a real alarm (or publish a test message
 to the `alerts` SNS topic directly) and confirm it lands in the Kaniti Telegram channel.
+
+## 2026-10-09 — the ops Mac sleeps during the nightly checks (store-recipe-fixer)
+
+The 2026-10-09 `stores` failure (wolt, mahsanei-hashuk "no verdict in 120 s (stuck at load)", lab
+~20 min against a 600 s budget) was the Mac sleeping, not the stores. The lid is closed
+(`AppleClamshellState = Yes`) and it runs on battery, so macOS DarkWakes for ~45 s every 10-20 min
+(`pmset -g log`) and sleeps again, even with `caffeinate -i` and Owly's idle-sleep assertion. Both
+stores load in ~1 s when the Mac is awake (3/3 rounds each). Today's runs took 1048 s, 1647 s and
+1641 s of wall time, which is mostly sleep; the last one never got WebKit launched (180 s launch
+timeout). `store-health.mjs` now measures the sleep and gives a store that failed while the Mac
+slept one second look, but no lab can finish inside 600 s while the machine is asleep.
+
+Needs: the owner to keep the ops Mac awake for the nightly run. Either keep it on the charger with
+the lid open, or run `sudo pmset -c sleep 0` (plus `sudo pmset -b sleep 0` if it must work on
+battery), or let `ops/repair.sh` run under `caffeinate -s` (only holds while on AC power).
