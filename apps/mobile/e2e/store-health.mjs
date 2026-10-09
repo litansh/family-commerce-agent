@@ -32,10 +32,22 @@ const LOGIN_UI = `(()=>{const vis=(e)=>{const r=e.getBoundingClientRect();return
 const STORE_BUDGET_MS = 120_000;
 const within = (ms, p, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(what)), ms))]);
 
+// Sleep, not the store (2026-10-09): with the lid closed on battery the ops Mac sleeps, wakes for ~45 s
+// (DarkWake) and sleeps again, even under `caffeinate -i`. A store whose page was open across a sleep
+// reported "no verdict in 120 s (stuck at load)" after ~1000 s of wall time, and the run took 20-27 min
+// against check.mjs's 600 s. Node's clocks (Date, performance, hrtime) all count the time asleep, so
+// sleep is measured as the gaps in a 1 s heartbeat that never ran. Each row and the run say how long
+// the machine was asleep, so a sleeping Mac is not read as a changed store. What counts as ok is unchanged.
+let asleepMs = 0, lastBeat = Date.now();
+setInterval(() => { const now = Date.now(); if (now - lastBeat > 5_000) asleepMs += now - lastBeat - 1_000; lastBeat = now; }, 1_000).unref();
+const clocks = () => ({ wall: Date.now(), asleep: asleepMs });
+const asleepS = (c0) => Math.round((asleepMs + (Date.now() - lastBeat > 5_000 ? Date.now() - lastBeat - 1_000 : 0) - c0.asleep) / 1000);
+const run0 = clocks();
 const browser = await webkit.launch();
 const rows = [];
-for (const id of stores) {
+async function checkStore(id) {
   const s = STORES[id];
+  const c0 = clocks();
   const ctx = await browser.newContext({ ...devices['iPhone 14'], locale: 'he-IL' });
   const page = await ctx.newPage();
   const row = { id, name: s.name, url: s.loginUrl, load: 0, guard: '', login: false, detector: null, signup: null, ok: false, note: '' };
@@ -78,12 +90,23 @@ for (const id of stores) {
     row.ok = row.load > 0 && row.load < 400 && !row.guard && row.login && row.detector === 'logged-out';
     if (!row.ok) row.note = row.guard ? `cloudflare ${row.guard}` : row.load >= 400 || row.load === 0 ? `http ${row.load}` : !row.login ? 'no sign-in on screen' : row.detector !== 'logged-out' ? `detector ${row.detector}` : '';
   })(), 'store budget'); } catch (e) { row.ok = false; row.note = /store budget/.test(String(e)) ? `no verdict in ${STORE_BUDGET_MS / 1000} s (stuck at ${stage})` : String(e).slice(0, 120); }
+  row.asleepS = asleepS(c0);
+  if (row.asleepS >= 30) row.note = `${row.note ? row.note + '; ' : ''}machine asleep ${row.asleepS} s during this store (not the store)`.trim();
+  await within(10_000, ctx.close(), 'close').catch(() => null);
+  return row;
+}
+// A store that failed while the machine slept gets one fresh look under the same rule; a failure
+// with the Mac awake stands as it is. Both attempts are in the JSON.
+for (const id of stores) {
+  let row = await checkStore(id);
+  if (!row.ok && row.asleepS >= 30) { const first = row; row = await checkStore(id); row.firstTry = first; if (row.ok) row.note = `ok on a second look (first: ${first.note})`; }
   rows.push(row);
   console.log(`${(row.ok ? 'ok ' : 'BAD').padEnd(4)} ${id.padEnd(16)} load=${row.load} guard=${row.guard || '-'} login=${row.login} detector=${row.detector} signup=${row.signup ?? '-'} ${row.note}`);
-  await within(10_000, ctx.close(), 'close').catch(() => null);
 }
 await within(15_000, browser.close(), 'close').catch(() => null);
 const bad = rows.filter((r) => !r.ok);
-if (jsonAt) writeFileSync(jsonAt, JSON.stringify({ at: new Date().toISOString(), rows }, null, 1));
+const wallS = Math.round((Date.now() - run0.wall) / 1000), sleptS = asleepS(run0);
+console.log(`\nwall ${wallS} s${sleptS >= 30 ? `, machine asleep ${sleptS} s of it (lid closed / idle sleep: rerun awake, the stores are not the cause)` : ''}`);
+if (jsonAt) writeFileSync(jsonAt, JSON.stringify({ at: new Date().toISOString(), wallS, asleepS: sleptS, rows }, null, 1));
 console.log(bad.length ? `\n${bad.length} unhealthy: ${bad.map((r) => r.id).join(', ')}` : '\nall stores healthy');
 process.exit(bad.length ? 1 : 0);
