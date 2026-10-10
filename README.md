@@ -245,7 +245,8 @@ The labs it drives are worth knowing on their own:
 
 | Lab | What it proves |
 |---|---|
-| `apps/mobile/e2e/cart-recipe-lab.mjs` | a store's cart recipe really fills that store's basket |
+| `apps/mobile/e2e/cart-recipe-lab.mjs` | a store's cart recipe really fills that store's basket (three real staples and a spare-tolerant floor of 2, so one branch stock-out is reported, not red) |
+| `apps/mobile/e2e/rl-stock-probe.mjs --store 331 <barcode>...` | what Rami Levy's own catalogue says about a barcode at a branch (`available_in`) — ask it before blaming the recipe for an `unavailable`, or swapping a lab item |
 | `apps/mobile/e2e/store-health.mjs` | every store's sign-in page is reachable and the detector is honest |
 | `apps/mobile/e2e/history-lab.mjs` | each store's order-history reader still maps its fields |
 | `services/branch-prices/lab.mjs` | the chains' price files still parse, branch by branch |

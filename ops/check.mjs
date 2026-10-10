@@ -46,12 +46,14 @@ const CHECKS = {
   // still tell the truth on its search/product pages, not only on the cart page cart-recipe-lab.mjs drives.
   cart: () => run('cart', "node --experimental-strip-types e2e/cart-recipe-lab.mjs rami-levy; echo ---PER-ITEM---; node --experimental-strip-types e2e/per-item-count.mjs", `${ROOT}/apps/mobile`, 300_000, (o) => {
     const added = Number(/"added":(\d+)/.exec(o)?.[1] ?? 0);
+    // A lab item out at the branch is said, not hidden: the basket carries a spare line, so one stock-out stays green but is visible.
+    const out = Number(/"unavailable":(\d+)/.exec(o)?.[1] ?? 0);
     const badge = /basket page count: (\d+)/.exec(o)?.[1];
     const violations = [...o.matchAll(/PROMISE9-VIOLATION: (.+)/g)].map((m) => m[1]);
     const perItem = /^(ok|BAD)\s+the store's own count reads on its item pages — (\d+\/\d+)/m.exec(o);
     const perItemOk = perItem ? perItem[1] === 'ok' : false;
     const perItemSummary = perItem ? `per-item count ${perItem[2]}` : 'per-item count: no verdict';
-    return { ok: added >= 2 && Number(badge) >= 2 && violations.length === 0 && perItemOk, summary: `${violations.length ? `rami-levy guest cart: ${violations.join('; ')}` : `rami-levy guest cart: ${added} added, basket shows ${badge ?? '?'}`}; ${perItemSummary}` };
+    return { ok: added >= 2 && Number(badge) >= 2 && violations.length === 0 && perItemOk, summary: `${violations.length ? `rami-levy guest cart: ${violations.join('; ')}` : `rami-levy guest cart: ${added} added, basket shows ${badge ?? '?'}${out ? `, ${out} lab item out at the branch (e2e/rl-stock-probe.mjs)` : ''}`}; ${perItemSummary}` };
   }),
   // ADR 0011's "read on the device": every store's historyJs, against the live login page,
   // logged out — it must still post without dying (mechanical), and turn a mocked-network order

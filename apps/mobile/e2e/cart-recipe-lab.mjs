@@ -16,14 +16,23 @@
  * `e2e/rl-stock-probe.mjs`). The recipe already reports a branch shortfall correctly
  * (promise 9); it is this lab's fixed pair that needs to survive one item's stock, not
  * the recipe.
+ *
+ * 2026-10-10: the instant coffee (7290000072753) dropped out of branch 331's own `available_in`
+ * (25 branches, 412 among them, 331 not) — the third stock-out of a lab item since 2026-09-13.
+ * So the basket now has three real lines for a check that needs two: staples the store lists at
+ * (nearly) every branch, the store's own brand first, and a spare so one branch stock-out still
+ * leaves the 2 verified adds the check demands. A stock-out is printed (and the check's summary
+ * says it), never hidden; two at once still turn the check red. Before swapping an item, ask the
+ * store: `node e2e/rl-stock-probe.mjs --store 331 <barcode>...`.
  */
 import { webkit, devices } from 'playwright';
 import { STORES } from '../src/lib/stores.ts';
 
 const FAKE_GTIN = '9999999999999'; // deliberately absent — must never resolve to a real product
 const BASKET = [
-  { gtin: '7290000072753', name: 'קפה נמס', qty: 2 },        // instant coffee - shelf-stable; branch 331's own milk (7290001794852) was 'unavailable' again on 2026-10-06
-  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas
+  { gtin: '7290113460607', name: 'סוכר לבן רמי לוי', qty: 2 }, // the store's own white sugar 1 kg - listed at 26 branches, 331 among them (2026-10-10); replaces the coffee 7290000072753, out at 331
+  { gtin: '7290000208114', name: 'אפונת גינה יכין', qty: 1 }, // canned peas - 24 branches, 331 among them
+  { gtin: '7290000211442', name: 'אורז פרסי סוגת', qty: 1 },  // spare: Sugat rice 1 kg - 26 branches, 331 among them; one stock-out above still leaves 2 verified adds
   { gtin: FAKE_GTIN, name: 'לא קיים', qty: 1 },               // deliberately absent
 ];
 
