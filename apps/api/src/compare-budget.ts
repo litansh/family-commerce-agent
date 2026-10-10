@@ -3,9 +3,8 @@
  * (importing apps/api/src/index.ts from a test does not parse; see docs/backlog/api-fixer.md).
  *
  * The sync route (the ops checks, and the phone when the job cannot start) has one clock inside API
- * Gateway's 30 s. Each step gets its own share of it: the barcode pass must answer, the words pass
- * may run until its share ends, the substitutes get theirs, and the steps after them (barcodes,
- * pictures, delivery windows, in-store) run side by side on what is left. The background job keeps
+ * Gateway's 30 s: the quote has its try, the substitutes their share, and the steps after them
+ * (barcodes, pictures, delivery windows, in-store) run side by side. The background job keeps
  * minutes for every step.
  */
 
@@ -29,25 +28,17 @@ export function jobBudget(lines: number): CompareBudget {
 /** The substitutes' share: seconds on the sync route, minutes in the job. */
 export const substituteShareMs = (budget: CompareBudget): number => (budget.totalMs > 60_000 ? 45_000 : 9_000);
 
-/** The steps after the substitutes: barcodes, pictures, delivery windows, in-store, side by side. */
+/** How long the substitutes may run, `elapsedMs` after the quote started: their share, and on the sync route never past 27 s. */
+export const substitutesMs = (budget: CompareBudget, elapsedMs: number): number =>
+  Math.max(0, Math.min(substituteShareMs(budget), budget.totalMs + 1_000 - elapsedMs));
+
+/** The steps after the substitutes (barcodes, pictures, delivery windows, in-store) run side by side; the capped ones end 2 s after the substitutes' last moment. */
 const TAIL_MS = 2_000;
 
 /**
- * How long the words pass (pinned lines asked for again by their words, beside the barcode pass) may
- * run. It is a rung, not the answer: past its time the barcode pass stands and the substitutes fill
- * the gaps. It ends five seconds before the try's own deadline, because a try past that deadline
- * loses the priced barcode answer too: on 2026-10-10 the chaotic list's barcode pass answered in
- * 10 s, its words pass was still running at 22 s, and the compare was a 503 'stores_slow'. Not
- * shorter: the week for five's words pass took 18.6 s that morning, and a words pass that makes it
- * fills gaps the substitutes' twelve sync searches cannot. Sync: 21 s. A 39-line job: 40 s.
- */
-export const wordsPassMs = (budget: CompareBudget): number => Math.max(0, budget.tryMs - 5_000);
-
-/**
- * What is left for the tail, on the same clock: the sync route ends by 28 s, inside API Gateway's
- * 30 s, however late the steps before ran (it used to run up to 13 s more after the substitutes'
- * deadline). At least a second, so a late compare still gets what is cached. The job gives each
- * step its own cap and does not need this one.
+ * What is left for the tail's pictures and delivery windows, on the same clock: they stop by 28 s on
+ * the sync route, inside API Gateway's 30 s, however late the steps before ran. At least a second,
+ * so a late compare still gets what is cached. The job gives each step its own cap.
  */
 export const tailMs = (budget: CompareBudget, elapsedMs: number): number =>
   budget.totalMs > 60_000 ? 45_000 : Math.max(1_000, budget.totalMs + TAIL_MS - elapsedMs);

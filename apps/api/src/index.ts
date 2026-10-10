@@ -60,7 +60,7 @@ import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
 import { CachedCatalog } from './cached-catalog.ts';
 import { isSlowError, withDeadline } from './deadline.ts';
-import { jobBudget, substituteShareMs, SYNC_BUDGET, tailMs, wordsPassMs, type CompareBudget } from './compare-budget.ts';
+import { jobBudget, SYNC_BUDGET, substitutesMs, tailMs, type CompareBudget } from './compare-budget.ts';
 import { shouldRepullPromos } from './deals-cache.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
@@ -760,10 +760,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       let res!: Awaited<ReturnType<typeof quoteWithFallback>>;
       for (let attempt = 1; ; attempt++) {
         try {
-          res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory, {
-            wordsPassMs: wordsPassMs(budget),
-            onWordsPassSkipped: (why) => console.warn(JSON.stringify({ event: 'words-pass-skipped', hid, attempt, ms: Date.now() - quoteStarted, why })),
-          }), budget.tryMs);
+          res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory), budget.tryMs);
           mark('quote', quoteStarted);
           break;
         } catch (e: unknown) {
@@ -813,7 +810,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Alternatives are not a nicety: a store that cannot fill the basket is no use to a family, who
       // will not order a partial one. So the background job - which has minutes, not seconds - looks
       // up every gap it can, and only the sync route (the ops checks) keeps the tight old ceiling.
-      const budgetMs = Math.max(0, Math.min(substituteShareMs(budget), budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
+      const budgetMs = substitutesMs(budget, Date.now() - quoteStarted);
       const maxSubstituteSearches = budget.totalMs > 60_000 ? 60 : 12;
       const subsStarted = Date.now();
       let subsTimer: ReturnType<typeof setTimeout> | undefined;
@@ -847,10 +844,13 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
        * ever adds. Bounded to the winning cart, which is the one being bought.
        */
       // The steps after the ranking - barcodes for the winning cart, its pictures, delivery windows,
-      // the in-store branches - need nothing from one another, so they run side by side on what is
-      // left of the one clock (compare-budget.ts `tailMs`). They used to run one after another, each
-      // on a clock of its own, and could add up to 13 s after the substitutes' deadline on the sync
-      // route: the week for five answered in 28.3 s on 2026-10-10, past the shopper check's 26 s.
+      // the in-store branches - need nothing from one another, so they run side by side. They used to
+      // run one after another (Wolt's feed, 1.7-2.2 s, was not even asked for until the pictures were
+      // done), all after the substitutes' deadline at 27 s on the sync route: up to 11 s more, past
+      // API Gateway's 30 s (the week for five answered in 28.3 s on 2026-10-10). Pictures and the
+      // delivery-window enrichment also stop at the tail's clock (compare-budget.ts `tailMs`), so the
+      // sync route ends by 28 s; the winning cart's barcodes (promise 6) and the in-store view keep
+      // the time they take, as before.
       const tailStarted = Date.now();
       const tailBudgetMs = tailMs(budget, tailStarted - quoteStarted);
       const within = <T>(work: Promise<T>, ms: number, missed: () => T): Promise<T> => {
@@ -859,22 +859,20 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       };
       const needBarcode = bestLines.filter((l) => !l.gtin && !l.link && l.productName).slice(0, 24);
       const foundBarcodes = new Map<string, string>();
-      const barcodesP = needBarcode.length === 0 ? Promise.resolve() : within(
-        mapLimit(needBarcode, 4, async (l) => {
-          const hits = await catalog.searchProducts({ query: l.productName, limit: 4, location: typeof body['address'] === 'string' ? body['address'] : household.address }).catch(() => []);
-          const hit = hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name));
-          if (hit?.gtin) foundBarcodes.set(l.lineId, hit.gtin);
-        }).then(() => { console.log(JSON.stringify({ event: 'barcodes-filled', hid, asked: needBarcode.length, found: foundBarcodes.size })); }),
-        tailBudgetMs,
-        () => { console.warn(JSON.stringify({ event: 'barcodes-skipped', hid, asked: needBarcode.length, found: foundBarcodes.size, budgetMs: tailBudgetMs })); },
-      );
+      // Not capped by the tail's clock: promise 6 needs a barcode or a link on every line of the
+      // winning cart, and these lookups are cached and shared. It only runs beside the others now.
+      const barcodesP = needBarcode.length === 0 ? Promise.resolve() : mapLimit(needBarcode, 4, async (l) => {
+        const hits = await catalog.searchProducts({ query: l.productName, limit: 4, location: typeof body['address'] === 'string' ? body['address'] : household.address }).catch(() => []);
+        const hit = hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name));
+        if (hit?.gtin) foundBarcodes.set(l.lineId, hit.gtin);
+      }).then(() => { console.log(JSON.stringify({ event: 'barcodes-filled', hid, asked: needBarcode.length, found: foundBarcodes.size })); });
       // A picture is worth having, not worth the compare itself; a miss here is cached for a day and
-      // self-heals on the next look, same as any other resolveMany caller. At most 5 s, and never
-      // past the tail's clock.
+      // self-heals on the next look, same as any other resolveMany caller. At most 5 s, and never past
+      // the tail's clock: resolveMany only stops starting new lookups at its deadline, so a hard cut too.
       const imgsP = within(
         images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, Math.min(5_000, tailBudgetMs)),
         tailBudgetMs,
-        (): Record<string, { url?: string } | null> => { console.warn(JSON.stringify({ event: 'images-skipped', hid, budgetMs: tailBudgetMs })); return {}; },
+        (): Awaited<ReturnType<typeof images.resolveMany>> => { console.warn(JSON.stringify({ event: 'images-skipped', hid, budgetMs: tailBudgetMs })); return {}; },
       );
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
       // (minutes, from Wolt's own feed for the family's address, asked for beside the quote); the

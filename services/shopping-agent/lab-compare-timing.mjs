@@ -8,7 +8,7 @@ import { woltEtasNear } from '../retailer-connectors/src/wolt-eta.ts';
 import { buildChoice, repairQuery, emptyMemory, optimize, DEFAULT_CONSTANTS, isRealAlternative } from '../../packages/domain/src/index.ts';
 import { quoteWithFallback } from './src/quote-with-fallback.ts';
 import { substituteMissing } from './src/substitutes.ts';
-import { wordsPassMs } from '../../apps/api/src/compare-budget.ts';
+import { substitutesMs } from '../../apps/api/src/compare-budget.ts';
 import { withDeadline } from '../../apps/api/src/deadline.ts';
 
 const which = process.argv[2] ?? 'shopper';
@@ -63,13 +63,12 @@ const woltP = woltEtasNear(at.lat, at.lng).catch(() => ({}));
 // Wolt's feed depends only on the address; production asks for it after everything else.
 let pass = 0;
 const counted = { quoteBasket: (r) => timed(`quote pass ${++pass} (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) };
-// As the sync route runs it (apps/api/src/compare-budget.ts): the words pass after the barcode pass,
-// given up 21 s from the start; the whole try still ends at 26 s.
+// As the sync route runs it (apps/api/src/index.ts buildCompare): one 26 s try for both passes.
 const SYNC = { tryMs: 26_000, totalMs: 26_000 };
-const res = await timed('quote (quoteWithFallback)', () => withDeadline(quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab'), { wordsPassMs: wordsPassMs(SYNC), onWordsPassSkipped: (why) => console.log(`  words pass skipped: ${why}`) }), SYNC.tryMs));
+const res = await timed('quote (quoteWithFallback)', () => withDeadline(quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab')), SYNC.tryMs));
 const subCat = { searchProducts: (r) => cat.searchProducts(r) };
-// Capped as production caps it: 9 s, or what is left of the 26 s clock plus one.
-const subsMs = Math.max(0, Math.min(9_000, SYNC.totalMs + 1_000 - (Date.now() - t0)));
+// Capped as production caps it (compare-budget.ts substitutesMs): 9 s, and never past 27 s.
+const subsMs = substitutesMs(SYNC, Date.now() - t0);
 const subs = await timed(`substitutes (cap ${(subsMs / 1000).toFixed(1)}s)`, () => Promise.race([
   substituteMissing({ quoteBasket: (r) => timed(`substitutes requote (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) }, subCat, res, lines, address, 12),
   new Promise((r) => setTimeout(() => { console.log('  substitutes skipped at their cap'); r(res); }, subsMs).unref()),
@@ -81,5 +80,7 @@ const need = bestLines.filter((l) => !l.gtin && !l.link && l.productName).slice(
 await timed(`barcodes (${need.length} searches)`, () => mapLimit(need, 4, async (l) => { const hits = await cat.searchProducts({ query: l.productName, limit: 4, location: address }).catch(() => []); hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name)); }));
 await timed('wolt etas (started beside the quote)', () => woltP);
 const total = Date.now() - t0;
-console.log(`compare stages, as the fixed sync route runs them: ${(total / 1000).toFixed(1)}s (images ≤5s, eta enrichment ≤4s and drive not measured here); options ${result.options.length}, best ${bestId}`);
+console.log(`compare stages, as the sync route runs them: ${(total / 1000).toFixed(1)}s (images ≤5s, eta enrichment ≤4s and drive not measured here); options ${result.options.length}, best ${bestId}`);
 console.log(JSON.stringify({ which, lines: lines.length, totalMs: total, stages: Object.fromEntries(log) }));
+console.log('rejected:', result.rejected.map((r) => `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}`).join(' '));
+console.log('options:', result.options.map((o) => `${o.kind} ${o.cashCost} cov ${Math.round(o.coverageRatio * 100)}% ${o.legs.map((l) => l.storefrontId + ':' + l.lineIds.length).join('+')}`).join(' | '));
