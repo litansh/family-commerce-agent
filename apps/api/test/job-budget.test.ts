@@ -1,12 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-
-// The rule, kept honest here because the route itself needs a household to run: a basket the
-// provider must be asked for in two calls gets more time than one it answers in a single call.
-const jobBudget = (lines: number) => {
-  const chunks = Math.max(1, Math.ceil(lines / 50));
-  return { tryMs: Math.min(120_000, 45_000 * chunks), totalMs: Math.min(280_000, 90_000 + 45_000 * chunks) };
-};
+// The rule as it ships (it used to be a copy here, because index.ts cannot be imported from a test):
+// a basket the provider must be asked for in two calls gets more time than one it answers in one.
+import { jobBudget } from '../src/compare-budget.ts';
 
 test('a short list keeps a short budget, a long one gets room for its extra calls', () => {
   assert.deepEqual(jobBudget(8), { tryMs: 45_000, totalMs: 135_000 });

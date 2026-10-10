@@ -60,6 +60,7 @@ import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
 import { CachedCatalog } from './cached-catalog.ts';
 import { isSlowError, withDeadline } from './deadline.ts';
+import { jobBudget, substituteShareMs, SYNC_BUDGET, tailMs, wordsPassMs, type CompareBudget } from './compare-budget.ts';
 import { shouldRepullPromos } from './deals-cache.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { StoreSessionStore } from './store-sessions.ts';
@@ -724,20 +725,6 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
   }
 }
 
-/** How long a compare may take: one try inside API Gateway's 30 s (the sync route), or several tries in the background job. */
-type CompareBudget = { tryMs: number; totalMs: number };
-const SYNC_BUDGET: CompareBudget = { tryMs: 26_000, totalMs: 26_000 };
-/**
- * The background job's budget grows with the basket, because the work does: the provider takes at
- * most fifty items in a call, so a sixty-line list is two calls a pass and two passes, plus the
- * substitutes. A flat 110 s failed a real family's list at 113 s and gave them nothing (reproduced
- * on production, 13 September). The phone waits on a row, not on a clock, so a longer wait is only
- * a longer wait - and the copy on screen says so past 35 seconds.
- */
-function jobBudget(lines: number): CompareBudget {
-  const chunks = Math.max(1, Math.ceil(lines / 50));
-  return { tryMs: Math.min(120_000, 45_000 * chunks), totalMs: Math.min(280_000, 90_000 + 45_000 * chunks) };
-}
 
 /**
  * The compare: the family's list priced at every store that delivers, substitutes for what a store
@@ -761,10 +748,23 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         address: typeof body['address'] === 'string' ? body['address'] : household.address,
         serviceType: (body['pickup'] === true || (body['pickup'] === undefined && household.fulfillment === 'pickup') ? 'pickup' : 'delivery') as 'pickup' | 'delivery',
       };
+      // Wolt's live ETAs depend on the address alone, so they are asked for beside the quote, not
+      // after everything else as before (it answers itself with {} on any failure).
+      const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number; city?: string; street?: string; number?: string };
+      type WoltEtas = Awaited<ReturnType<typeof woltEtasNear>>;
+      const woltP: Promise<WoltEtas> = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? woltEtasNear(ad.lat, ad.lng).catch((): WoltEtas => ({})) : Promise.resolve({});
+      // Where the time went, one line per compare (the ops Mac cannot read CloudWatch every day; the
+      // response carries it so a health check can say which stage was slow).
+      const stageMs: Record<string, number> = {};
+      const mark = (stage: string, since: number) => { stageMs[stage] = Date.now() - since; };
       let res!: Awaited<ReturnType<typeof quoteWithFallback>>;
       for (let attempt = 1; ; attempt++) {
         try {
-          res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory), budget.tryMs);
+          res = await withDeadline(quoteWithFallback(quoteProvider, quoteReq, memory, {
+            wordsPassMs: wordsPassMs(budget),
+            onWordsPassSkipped: (why) => console.warn(JSON.stringify({ event: 'words-pass-skipped', hid, attempt, ms: Date.now() - quoteStarted, why })),
+          }), budget.tryMs);
+          mark('quote', quoteStarted);
           break;
         } catch (e: unknown) {
           const slow = isSlowError(e);
@@ -813,12 +813,15 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Alternatives are not a nicety: a store that cannot fill the basket is no use to a family, who
       // will not order a partial one. So the background job - which has minutes, not seconds - looks
       // up every gap it can, and only the sync route (the ops checks) keeps the tight old ceiling.
-      const budgetMs = Math.max(0, Math.min(budget.totalMs > 60_000 ? 45_000 : 9_000, budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
+      const budgetMs = Math.max(0, Math.min(substituteShareMs(budget), budget.totalMs + 1_000 - (Date.now() - quoteStarted)));
       const maxSubstituteSearches = budget.totalMs > 60_000 ? 60 : 12;
+      const subsStarted = Date.now();
+      let subsTimer: ReturnType<typeof setTimeout> | undefined;
       const substituted = await Promise.race([
         substituteMissing(quoteProvider, catalog, res, lines, typeof body['address'] === 'string' ? body['address'] : household.address, maxSubstituteSearches).catch((e: unknown) => { console.warn('substitutes failed', e); return res; }),
-        new Promise<typeof res>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs)),
-      ]);
+        new Promise<typeof res>((resolve) => { subsTimer = setTimeout(() => { console.warn(JSON.stringify({ event: 'substitutes-skipped', hid, budgetMs })); resolve(res); }, budgetMs); }),
+      ]).finally(() => clearTimeout(subsTimer));
+      mark('substitutes', subsStarted);
       // Personal coupons the worker read from the family's accounts change
       // which chain wins; apply them before ranking.
       const couponRows = await Promise.all((household.retailers ?? []).map(async (r) => (await readRow(TABLE, hid, `COUPONS#${r}`)) as { coupons?: Coupon[] } | undefined));
@@ -843,30 +846,42 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
        * for a name, and those lookups are cached and shared, so this costs almost nothing and only
        * ever adds. Bounded to the winning cart, which is the one being bought.
        */
+      // The steps after the ranking - barcodes for the winning cart, its pictures, delivery windows,
+      // the in-store branches - need nothing from one another, so they run side by side on what is
+      // left of the one clock (compare-budget.ts `tailMs`). They used to run one after another, each
+      // on a clock of its own, and could add up to 13 s after the substitutes' deadline on the sync
+      // route: the week for five answered in 28.3 s on 2026-10-10, past the shopper check's 26 s.
+      const tailStarted = Date.now();
+      const tailBudgetMs = tailMs(budget, tailStarted - quoteStarted);
+      const within = <T>(work: Promise<T>, ms: number, missed: () => T): Promise<T> => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        return Promise.race([work, new Promise<T>((resolve) => { timer = setTimeout(() => resolve(missed()), ms); })]).finally(() => clearTimeout(timer));
+      };
       const needBarcode = bestLines.filter((l) => !l.gtin && !l.link && l.productName).slice(0, 24);
       const foundBarcodes = new Map<string, string>();
-      if (needBarcode.length) {
-        await mapLimit(needBarcode, 4, async (l) => {
+      const barcodesP = needBarcode.length === 0 ? Promise.resolve() : within(
+        mapLimit(needBarcode, 4, async (l) => {
           const hits = await catalog.searchProducts({ query: l.productName, limit: 4, location: typeof body['address'] === 'string' ? body['address'] : household.address }).catch(() => []);
           const hit = hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name));
           if (hit?.gtin) foundBarcodes.set(l.lineId, hit.gtin);
-        });
-        console.log(JSON.stringify({ event: 'barcodes-filled', hid, asked: needBarcode.length, found: foundBarcodes.size }));
-      }
-      // Not on the shared clock like substitutes and etas above, this defaulted to 20s of its own -
-      // on a five-person week (30+ lines, several cache misses) that alone could carry the whole
-      // request past API Gateway's 30s cutoff into the 503 a family saw with no picture to show for it
-      // either. A picture is worth having, not worth the compare itself; a miss here is cached for a
-      // day and self-heals on the next look, same as any other resolveMany caller.
-      const imgs = await images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, 5_000);
-      const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin ?? foundBarcodes.get(l.lineId), productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
+        }).then(() => { console.log(JSON.stringify({ event: 'barcodes-filled', hid, asked: needBarcode.length, found: foundBarcodes.size })); }),
+        tailBudgetMs,
+        () => { console.warn(JSON.stringify({ event: 'barcodes-skipped', hid, asked: needBarcode.length, found: foundBarcodes.size, budgetMs: tailBudgetMs })); },
+      );
+      // A picture is worth having, not worth the compare itself; a miss here is cached for a day and
+      // self-heals on the next look, same as any other resolveMany caller. At most 5 s, and never
+      // past the tail's clock.
+      const imgsP = within(
+        images.resolveMany(bestLines.map((l) => ({ key: l.lineId, name: l.productName, ...(l.gtin ? { gtin: l.gtin } : {}) })), 6, Math.min(5_000, tailBudgetMs)),
+        tailBudgetMs,
+        (): Record<string, { url?: string } | null> => { console.warn(JSON.stringify({ event: 'images-skipped', hid, budgetMs: tailBudgetMs })); return {}; },
+      );
       // How soon each storefront can deliver, next to its price: Wolt venues answer live
-      // (minutes, from Wolt's own feed for the family's address); the chains deliver in
-      // windows, which the phone reads from each store once it is connected.
-      const ad = (household.addressDetails ?? {}) as { lat?: number; lng?: number; city?: string; street?: string; number?: string };
+      // (minutes, from Wolt's own feed for the family's address, asked for beside the quote); the
+      // chains deliver in windows, which the phone reads from each store once it is connected.
       type Eta = { kind: 'live'; minutes?: number; range?: string; name?: string } | { kind: 'closed'; nextOpen?: string; text?: string } | { kind: 'slots'; earliest?: string; until?: string; windowHours?: number };
       const etas: Record<string, Eta> = {};
-      const wolt = typeof ad.lat === 'number' && typeof ad.lng === 'number' ? await woltEtasNear(ad.lat, ad.lng) : {};
+      const wolt = await within(woltP, tailBudgetMs, (): WoltEtas => ({}));
       // Every delivering storefront is shown now, not only the optimizer's picks and rejects
       // (docs/design/a-full-basket-everywhere.md): coverage is a fact on its own card, never a
       // reason the family never saw it at all.
@@ -879,8 +894,8 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       // Enrichment: a closed Wolt venue's reopen time, a chain's own published window — both public, no
       // session, but each a live call to the store's own site, so bounded: a slow store cannot cost the
       // quote its budget, and the base pass above already stands if this misses it.
-      const etaBudgetMs = 4000;
-      await Promise.race([
+      const etaBudgetMs = Math.min(4_000, Math.max(0, tailBudgetMs - (Date.now() - tailStarted)));
+      const etasP = Promise.race([
         Promise.all(Array.from(shownStorefronts).map(async (sid) => {
           if (sid.startsWith('wolt-')) {
             const w = etaForStorefront(sid, wolt);
@@ -895,6 +910,18 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         })).then(() => {}),
         new Promise<void>((resolve) => setTimeout(() => { console.warn(JSON.stringify({ event: 'etas-enrich-skipped', hid, budgetMs: etaBudgetMs })); resolve(); }, etaBudgetMs)),
       ]);
+      // In-store, if the family drives: the same list priced at the branches near home,
+      // from the chains' published price files. Never blocks the quote.
+      // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
+      // branch index is keyed by barcode - so borrow the first barcode any storefront resolved the line to.
+      // Started beside the steps above, not after them; it is awaited whole, as before (a 'pending'
+      // stand-in on a timeout would tell the family the prices are coming when nothing was asked).
+      const gtinOf = (id: string, own?: string) => own ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
+      const driveP = branchPrices.driveQuotes(hid, household, lines.map((l) => { const g = gtinOf(l.id, l.gtin); return { id: l.id, query: l.query, ...(g ? { gtin: g } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }; })).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
+      const [, imgs] = await Promise.all([barcodesP, imgsP, etasP]);
+      const drive = await driveP;
+      mark('tail', tailStarted);
+      const quotedLines = Object.fromEntries(bestLines.map((l) => [l.lineId, { gtin: l.gtin ?? foundBarcodes.get(l.lineId), productName: l.productName, link: l.link, imageUrl: imgs[l.lineId]?.url ?? null }]));
       // Each storefront's own resolution of every line (its product, its deep link), for the
       // stores the compare shows - so an order at any store opens that store's pages, not the winner's.
       const shownIds = new Set<string>([...couponed.map((q) => q.storefrontId), ...result.options.flatMap((o) => o.legs.map((l) => l.storefrontId)), ...result.rejected.map((r) => r.storefrontId)]);
@@ -921,12 +948,6 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const storefronts = Object.fromEntries(
         couponed.filter((q) => q.serviceType === 'delivery').map((q) => [q.storefrontId, storefrontFacts(q, lines.map((l) => l.id), pinnedLineIds, elsewhereByLine, new Map(lines.map((l) => [l.id, l.query])))]),
       );
-      // In-store, if the family drives: the same list priced at the branches near home,
-      // from the chains' published price files. Never blocks the quote.
-      // A free-text line has no barcode of its own; the storefronts' resolution of it does, and the
-      // branch index is keyed by barcode - so borrow the first barcode any storefront resolved the line to.
-      const gtinOf = (id: string, own?: string) => own ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin && !ql.substituted)?.gtin ?? substituted.quotes.flatMap((q) => q.lines).find((ql) => ql.lineId === id && ql.gtin)?.gtin;
-      const drive = await branchPrices.driveQuotes(hid, household, lines.map((l) => { const g = gtinOf(l.id, l.gtin); return { id: l.id, query: l.query, ...(g ? { gtin: g } : {}), qty: Math.max(1, Math.round(l.packQty ?? 1)) }; })).catch((e: unknown) => { console.warn('drive quotes failed', e); return { status: 'none' as const, branches: [] }; });
       // The in-store card must compare like with like: the branch's basket covers only the lines it
       // prices, so put next to it what the SAME lines cost at the winning delivered store.
       const bestQuote = substituted.quotes.find((q) => q.storefrontId === bestId);
@@ -936,7 +957,7 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         return bestQuote && same > 0 ? { ...b, sameLines: { brand: bestQuote.brand, items: same, delivered: same + bestQuote.deliveryFee } } : b;
       }) };
       // One line per compare, so "why only one option?" is answerable from the log.
-      console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => { const have = new Set(substituted.quotes.find((q) => q.storefrontId === r.storefrontId)?.lines.map((l) => l.lineId) ?? []); const miss = lines.filter((l) => !have.has(l.id)).map((l) => l.query).slice(0, 4); return `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}${miss.length ? ' missing ' + miss.join('|') : ''}`; }), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0) }));
+      console.log(JSON.stringify({ event: 'quote', hid, lines: lines.length, options: result.options.map((o) => ({ kind: o.kind, cash: o.cashCost, coverage: Math.round(o.coverageRatio * 100), legs: o.legs.map((l) => `${l.storefrontId}:${l.lineIds.length}`) })), rejected: result.rejected.map((r) => { const have = new Set(substituted.quotes.find((q) => q.storefrontId === r.storefrontId)?.lines.map((l) => l.lineId) ?? []); const miss = lines.filter((l) => !have.has(l.id)).map((l) => l.query).slice(0, 4); return `${r.storefrontId}:${r.code}:${r.pricedLines}/${r.requestedLines}${miss.length ? ' missing ' + miss.join('|') : ''}`; }), drive: `${driveOut.status}:${driveOut.branches.length}`, subs: substituted.quotes.reduce((n, q) => n + q.lines.filter((l) => l.substituted).length, 0), ms: Date.now() - quoteStarted, stageMs }));
       return {
         currency: region.currency,
         branchStock,
@@ -953,6 +974,8 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         assumptions: substituted.assumptions,
         quotedLines,
         suggestions: suggestMissing(memory, lines),
+        // Where the time went (quote, substitutes, tail), so a slow compare names its slow stage.
+        timing: { totalMs: Date.now() - quoteStarted, ...stageMs },
       };
 }
 
