@@ -32,11 +32,12 @@ export const CONFIRMED_UNAVAILABLE = 'confirmed_product_unavailable';
 
 export interface FallbackOptions {
   /**
-   * How long the words pass may take, counted from the start. Past it, the barcode pass's answer
-   * stands on its own and the compare's substitutes fill the gaps. Unset: as long as the provider takes.
+   * How long the whole call may take before the words pass is given up, counted from the start (the
+   * barcode pass included). Past it, the barcode pass's answer stands on its own and the compare's
+   * substitutes fill the gaps. Unset: as long as the provider takes.
    */
   readonly wordsPassMs?: number;
-  /** Called when the words pass failed or missed its time, so the log says why a gap stayed open. */
+  /** Called when the words pass failed, missed its time or had none left, so the log says why a gap stayed open. */
   readonly onWordsPassSkipped?: (why: string) => void;
 }
 
@@ -56,27 +57,18 @@ export async function quoteWithFallback(
   memory: HouseholdMemory,
   opts: FallbackOptions = {},
 ): Promise<QuoteResponse> {
-  // Which pinned lines may be asked for by words if a storefront lacks the barcode?
+  const started = Date.now();
+  const first = await provider.quoteBasket(req);
+
+  // Which pinned lines could a storefront not price, and may we substitute?
   const pinned = req.lines.filter((l) => l.gtin !== undefined);
+  if (pinned.length === 0) return first;
+
   const substitutable = new Set(
     pinned
       .filter((l) => (memory.products[memoryKey(l.query)]?.substitution ?? 'equivalent') !== 'never')
       .map((l) => l.id),
   );
-
-  // Pass two starts beside pass one rather than after it: the same lines, by words instead of
-  // barcode. Waiting for pass one first put it in front of the slow pass every time (2026-10-10,
-  // the week for five: barcodes 2.4 s, then words 18.6 s; with eighteen stores, some thin, nearly
-  // every pinned line is missing somewhere, so pass two ran for 35 of 39 lines anyway). It asks for
-  // every substitutable pinned line; only the ones a storefront really lacks are merged below.
-  const fallbackLines: ListLine[] = req.lines
-    .filter((l) => substitutable.has(l.id))
-    .map(({ gtin: _gtin, ...rest }) => rest);
-  const firstP = provider.quoteBasket(req);
-  const secondP = fallbackLines.length > 0 ? settleWithin(provider.quoteBasket({ ...req, lines: fallbackLines }), opts.wordsPassMs) : undefined;
-
-  const first = await firstP;
-  if (secondP === undefined) return first;
 
   const missingAnywhere = new Set<string>();
   for (const q of first.quotes) {
@@ -85,11 +77,19 @@ export async function quoteWithFallback(
   }
   if (missingAnywhere.size === 0) return first;
 
-  // The words pass is a rung, not the answer (ADR 0010). If it fails or misses its time, the barcode
-  // pass already priced the list, and the compare's substitutes look for each store's gaps next. A
-  // slow words pass used to throw that answer away: the chaotic list's 503 'stores_slow' (2026-10-10,
-  // the barcode pass answered in 10 s, the words pass for 40 lines was still running at 22 s).
-  const settled = await secondP;
+  // Pass two: the same lines, by query instead of barcode. It is a rung, not the answer (ADR 0010):
+  // if it fails or misses its time, the barcode pass already priced the list and the compare's
+  // substitutes look for each store's gaps next. With no time of its own it used to run on until
+  // the caller's deadline took the barcode pass's priced answer down with it: the chaotic list's
+  // 503 'stores_slow' on 2026-10-10 (the words pass for 40 lines was still running at 22 s).
+  // It stays after pass one, not beside it: run together, the provider slowed the barcode pass from
+  // 2.4 s to 9 s and the pair took as long as the two in a row (measured from the ops Mac, 2026-10-10).
+  const left = opts.wordsPassMs === undefined ? undefined : opts.wordsPassMs - (Date.now() - started);
+  if (left !== undefined && left <= 0) { opts.onWordsPassSkipped?.(`no time left after the barcode pass (${Date.now() - started} ms)`); return first; }
+  const fallbackLines: ListLine[] = req.lines
+    .filter((l) => missingAnywhere.has(l.id))
+    .map(({ gtin: _gtin, ...rest }) => rest);
+  const settled = await settleWithin(provider.quoteBasket({ ...req, lines: fallbackLines }), left);
   if (!settled.ok) { opts.onWordsPassSkipped?.(settled.why); return first; }
   const second = settled.value;
   const byStorefront = new Map(second.quotes.map((q) => [q.storefrontId, q]));
@@ -124,10 +124,8 @@ export async function quoteWithFallback(
   return {
     ...first,
     quotes,
-    // Only the lines pass two was used for, as before it asked for every pinned line.
-    assumptions: [...first.assumptions, ...second.assumptions.filter((a) => missingAnywhere.has(a.lineId))],
-    // The two passes overlap, so the wait is the longer of them.
-    latencyMs: Math.max(first.latencyMs, second.latencyMs),
+    assumptions: [...first.assumptions, ...second.assumptions],
+    latencyMs: first.latencyMs + second.latencyMs,
     raw: { first: first.raw, second: second.raw },
   };
 }

@@ -54,7 +54,7 @@ test('a storefront lacking the exact barcode gets the line by query, marked as a
   assert.equal(rl.lines.find((l) => l.lineId === 'milk')?.substituted, false, 'rami levy had the barcode; untouched');
 });
 
-test('second pass asks by words only, for the pinned lines only', async () => {
+test('second pass asks by words only, for only the missing lines', async () => {
   const p = new FakeProvider();
   const memory = confirm(emptyMemory('h'), { phrase: 'חלב 3%', gtin: 'milk-gtin', productName: 'milk' });
   await quoteWithFallback(p, { lines, address: 'x' }, memory);
@@ -62,7 +62,7 @@ test('second pass asks by words only, for the pinned lines only', async () => {
   assert.deepEqual(p.calls[1]!.lines.map((l) => [l.id, l.gtin]), [['milk', undefined]]);
 });
 
-// --- 2026-10-10 health run: the words pass ran after the barcode pass and had no time of its own ---
+// --- 2026-10-10 health run: the words pass had no time of its own, so a slow one cost the whole compare ---
 
 const deferred = <T>() => { let resolve!: (v: T) => void; const promise = new Promise<T>((r) => { resolve = r; }); return { promise, resolve }; };
 const answerFor = (req: QuoteRequest): QuoteResponse => {
@@ -85,19 +85,6 @@ class ControlledProvider implements QuoteProvider {
   }
 }
 const milkMemory = () => confirm(emptyMemory('h'), { phrase: 'חלב 3%', gtin: 'milk-gtin', productName: 'milk' });
-
-test('the words pass starts beside the barcode pass, not after it', { timeout: 2_000 }, async () => {
-  const p = new ControlledProvider(async (req) => answerFor(req));
-  const run = quoteWithFallback(p, { lines, address: 'x' }, milkMemory());
-  await new Promise((r) => setImmediate(r));
-  // Before the barcode pass has answered, both passes are already with the provider. Waiting for
-  // the first put its 2.4 s in front of the words pass's 18.6 s (the week for five, 2026-10-10).
-  assert.equal(p.calls.length, 2, 'the words pass was asked for before the barcode pass answered');
-  p.barcodes.resolve();
-  const res = await run;
-  const milk = res.quotes.find((q) => q.storefrontId === 'shufersal')!.lines.find((l) => l.lineId === 'milk')!;
-  assert.equal(milk.substituted, true, 'and its answer is still merged where the barcode was missing');
-});
 
 test('a words pass past its time leaves the barcode pass standing, instead of costing the whole compare', { timeout: 2_000 }, async () => {
   const skipped: string[] = [];
@@ -128,16 +115,27 @@ test('a barcode pass that fails still fails the try, so the caller can retry or 
   await assert.rejects(quoteWithFallback(p, { lines, address: 'x' }, milkMemory(), { wordsPassMs: 40 }), /aborted/);
 });
 
-test('only lines a storefront really lacks are merged from the words pass, though it asks for every pinned line', async () => {
-  const both: ListLine[] = [{ id: 'milk', query: 'חלב 3%', gtin: 'milk-gtin' }, { id: 'oil', query: 'שמן זית', gtin: 'oil-gtin' }];
+test('a barcode pass that used up the time leaves none for the words pass, and is not thrown away', { timeout: 2_000 }, async () => {
+  const skipped: string[] = [];
   const p = new ControlledProvider(async (req) => answerFor(req));
-  p.barcodes.resolve();
-  const res = await quoteWithFallback(p, { lines: both, address: 'x' }, milkMemory());
-  assert.deepEqual(p.calls[1]!.lines.map((l) => l.id).sort(), ['milk', 'oil']);
-  const sh = res.quotes.find((q) => q.storefrontId === 'shufersal')!;
-  assert.equal(sh.lines.find((l) => l.lineId === 'oil')?.substituted, false, 'oil was priced by its barcode; the words answer is not used for it');
-  assert.equal(sh.lines.filter((l) => l.lineId === 'oil').length, 1, 'and never twice');
-  assert.equal(sh.lines.find((l) => l.lineId === 'milk')?.substituted, true);
+  setTimeout(() => p.barcodes.resolve(), 60);
+  const res = await quoteWithFallback(p, { lines, address: 'x' }, milkMemory(), { wordsPassMs: 30, onWordsPassSkipped: (why) => skipped.push(why) });
+  assert.equal(p.calls.length, 1, 'the words pass is not even asked for');
+  assert.equal(res.quotes.find((q) => q.storefrontId === 'shufersal')!.pricedLines, 1, 'the barcode pass\'s answer stands');
+  assert.equal(skipped.length, 1);
+  assert.match(skipped[0]!, /no time left/);
+});
+
+test('the words pass gets only what is left of its time after the barcode pass', { timeout: 2_000 }, async () => {
+  const skipped: string[] = [];
+  const p = new ControlledProvider((req) => new Promise((r) => setTimeout(() => r(answerFor(req)), 80)));
+  setTimeout(() => p.barcodes.resolve(), 60);
+  const t0 = Date.now();
+  // 100 ms in all: 60 for the barcode pass leaves 40, and the words pass takes 80, so it is given up.
+  const res = await quoteWithFallback(p, { lines, address: 'x' }, milkMemory(), { wordsPassMs: 100, onWordsPassSkipped: (why) => skipped.push(why) });
+  assert.ok(Date.now() - t0 < 135, `answered at ${Date.now() - t0} ms, not at the words pass's own 140`);
+  assert.equal(res.quotes.find((q) => q.storefrontId === 'shufersal')!.pricedLines, 1);
+  assert.equal(skipped.length, 1);
 });
 
 test('respects a household that said never substitute', async () => {

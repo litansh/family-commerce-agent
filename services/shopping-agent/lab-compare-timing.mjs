@@ -8,6 +8,8 @@ import { woltEtasNear } from '../retailer-connectors/src/wolt-eta.ts';
 import { buildChoice, repairQuery, emptyMemory, optimize, DEFAULT_CONSTANTS, isRealAlternative } from '../../packages/domain/src/index.ts';
 import { quoteWithFallback } from './src/quote-with-fallback.ts';
 import { substituteMissing } from './src/substitutes.ts';
+import { wordsPassMs } from '../../apps/api/src/compare-budget.ts';
+import { withDeadline } from '../../apps/api/src/deadline.ts';
 
 const which = process.argv[2] ?? 'shopper';
 const address = 'ביאליק 20, רמת גן';
@@ -40,8 +42,11 @@ const timed = async (stage, work) => { const t = Date.now(); try { return await 
 async function mapLimit(xs, n, f) { let i = 0; await Promise.all(Array.from({ length: Math.min(n, xs.length) }, async () => { while (i < xs.length) { const x = xs[i++]; await f(x); } })); }
 
 // Resolve, as /resolve does (four at a time, a second search with the repaired words).
-const gtins = new Map();
-await timed('resolve (not part of the compare)', () => mapLimit(list, 4, async (l) => {
+// Resolved once and kept in /tmp, so a rerun asks the provider only for the compare's own calls.
+const { existsSync, readFileSync, writeFileSync } = await import('node:fs');
+const keep = `/tmp/kaniti-lab-resolved-${which}.json`;
+const gtins = new Map(existsSync(keep) ? Object.entries(JSON.parse(readFileSync(keep, 'utf8'))) : []);
+if (gtins.size === 0) await timed('resolve (not part of the compare)', () => mapLimit(list, 4, async (l) => {
   if (!l.query.trim()) return;
   const found = await cat.searchProducts({ query: l.query, limit: 16, location: address }).catch(() => []);
   let c = buildChoice(found, { lineId: l.id, query: l.query, ...(l.gtin ? { requestedGtin: l.gtin } : {}) });
@@ -49,22 +54,32 @@ await timed('resolve (not part of the compare)', () => mapLimit(list, 4, async (
   if (rep) c = buildChoice(await cat.searchProducts({ query: rep, limit: 16, location: address }).catch(() => []), { lineId: l.id, query: rep });
   const g = c?.chosen?.gtin ?? c?.gtin; if (g) gtins.set(l.id, g);
 }));
+if (!existsSync(keep)) writeFileSync(keep, JSON.stringify(Object.fromEntries(gtins)));
 const lines = list.map((l) => (gtins.get(l.id) && !l.gtin ? { ...l, gtin: gtins.get(l.id) } : l)).filter((l) => l.query.trim() !== '' || l.gtin);
 console.log(`${which}: ${lines.length} lines to quote, ${lines.filter((l) => l.gtin).length} with a barcode`);
 
 const t0 = Date.now();
+const woltP = woltEtasNear(at.lat, at.lng).catch(() => ({}));
 // Wolt's feed depends only on the address; production asks for it after everything else.
 let pass = 0;
 const counted = { quoteBasket: (r) => timed(`quote pass ${++pass} (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) };
-const res = await timed('quote (quoteWithFallback)', () => quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab')));
+// As the sync route runs it (apps/api/src/compare-budget.ts): the words pass after the barcode pass,
+// given up 21 s from the start; the whole try still ends at 26 s.
+const SYNC = { tryMs: 26_000, totalMs: 26_000 };
+const res = await timed('quote (quoteWithFallback)', () => withDeadline(quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab'), { wordsPassMs: wordsPassMs(SYNC), onWordsPassSkipped: (why) => console.log(`  words pass skipped: ${why}`) }), SYNC.tryMs));
 const subCat = { searchProducts: (r) => cat.searchProducts(r) };
-const subs = await timed('substitutes (searches + one requote)', () => substituteMissing({ quoteBasket: (r) => timed(`substitutes requote (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) }, subCat, res, lines, address, 12));
+// Capped as production caps it: 9 s, or what is left of the 26 s clock plus one.
+const subsMs = Math.max(0, Math.min(9_000, SYNC.totalMs + 1_000 - (Date.now() - t0)));
+const subs = await timed(`substitutes (cap ${(subsMs / 1000).toFixed(1)}s)`, () => Promise.race([
+  substituteMissing({ quoteBasket: (r) => timed(`substitutes requote (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) }, subCat, res, lines, address, 12),
+  new Promise((r) => setTimeout(() => { console.log('  substitutes skipped at their cap'); r(res); }, subsMs).unref()),
+]));
 const result = optimize({ quotes: subs.quotes, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
 const bestId = result.options[0]?.legs[0]?.storefrontId;
 const bestLines = subs.quotes.find((q) => q.storefrontId === bestId)?.lines ?? [];
 const need = bestLines.filter((l) => !l.gtin && !l.link && l.productName).slice(0, 24);
 await timed(`barcodes (${need.length} searches)`, () => mapLimit(need, 4, async (l) => { const hits = await cat.searchProducts({ query: l.productName, limit: 4, location: address }).catch(() => []); hits.find((c) => c.gtin && isRealAlternative(l.productName, c.name)); }));
-await timed('wolt etas', () => woltEtasNear(at.lat, at.lng));
+await timed('wolt etas (started beside the quote)', () => woltP);
 const total = Date.now() - t0;
-console.log(`compare stages, serial as in production: ${(total / 1000).toFixed(1)}s (images ≤5s, eta enrichment ≤4s and drive not measured here); options ${result.options.length}, best ${bestId}`);
+console.log(`compare stages, as the fixed sync route runs them: ${(total / 1000).toFixed(1)}s (images ≤5s, eta enrichment ≤4s and drive not measured here); options ${result.options.length}, best ${bestId}`);
 console.log(JSON.stringify({ which, lines: lines.length, totalMs: total, stages: Object.fromEntries(log) }));
