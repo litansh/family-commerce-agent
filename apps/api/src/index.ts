@@ -23,6 +23,7 @@ import {
   applyMemory,
   buildChoice,
   repairQuery,
+  hasWordToQuote,
   confirm,
   DEFAULT_CONSTANTS,
   optimize,
@@ -735,10 +736,16 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
       const { quoteProvider, catalog, repo, region } = deps;
       const memory = await repo.load();
       const applied = applyMemory(toLines(body['lines']), memory);
-      // A blank query with no confirmed barcode has nothing to quote — sending it to the vendor
-      // risks the same whole-batch failure a blank line already caused at /resolve; it is simply
-      // left out here, same as /resolve leaves it unresolved (docs/BACKLOG.md).
-      const lines = applied.map((a) => a.line).filter((l) => l.query.trim() !== '' || l.gtin);
+      // A line with no confirmed barcode and no word a store could price - blank, emoji, a bare number,
+      // one letter two hundred times - has nothing to quote. Sending it to the vendor risks the
+      // whole-batch failure a blank line already caused at /resolve, and it is slow for nothing: the
+      // provider prices it at no store, yet the chaotic list's three such lines took its barcode pass
+      // from 3-4 s to 10-11 s (measured 2026-10-10; the emoji line and the bare number ~5 s of it, and
+      // 51 lines is two provider calls one after the other, 48 is one), on a 26 s clock. They also
+      // used up three of every store's five allowed missing lines at the coverage gate.
+      // It is left out here, as /resolve leaves it unresolved, and named in `unresolved` below.
+      const lines = applied.map((a) => a.line).filter((l) => l.gtin || hasWordToQuote(l.query));
+      const notQuoted = applied.map((a) => a.line).filter((l) => !l.gtin && !hasWordToQuote(l.query)).map((l) => l.id);
       // The provider has 22 s per call. The sync route (the ops checks) gives the whole quote one
       // try inside API Gateway's 30 s; the background job (what the phone uses) tries again on a
       // slow answer until its budget is spent - a slow minute at the stores is never the family's.
@@ -972,6 +979,8 @@ async function buildCompare(hid: string, household: Household, body: Record<stri
         assumptions: substituted.assumptions,
         quotedLines,
         suggestions: suggestMissing(memory, lines),
+        // Lines the compare did not send to any store, because there was nothing in them to price.
+        unresolved: notQuoted,
         // Where the time went (quote, substitutes, tail), so a slow compare names its slow stage.
         timing: { totalMs: Date.now() - quoteStarted, ...stageMs },
       };

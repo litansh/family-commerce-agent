@@ -30,3 +30,17 @@ export function repairQuery(query: string): string | undefined {
   const out = fixed.join(' ');
   return out && out !== words.join(' ') ? out : undefined;
 }
+
+/**
+ * Does a free-text line say anything a store could price? At least one word with a letter in it, two
+ * letters or more, not one letter typed over and over, and not longer than any real word. Emoji, a
+ * bare number and two hundred copies of one letter (ops/chaos.mjs) all fail; Hebrew with niqqud,
+ * "7up", "AA" and "ביצים L" all pass. /resolve already refuses to choose a product for a line that
+ * fails, and the provider prices it at no store (measured 2026-10-10), but asking still cost the
+ * chaotic list's compare 6-7 s of the provider's time.
+ */
+export function hasWordToQuote(query: string): boolean {
+  return query
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .some((w) => /\p{L}/u.test(w) && w.length >= 2 && w.length <= 40 && !/^(\p{L})\1{3,}$/u.test(w));
+}

@@ -1,17 +1,19 @@
 // Where does the compare's time go? Runs the compare's provider stages from this Mac, in the order
 // buildCompare (apps/api/src/index.ts) runs them, and prints each one's time. No AWS, no store's own
 // site: only the provider (SuperMCP) and Wolt's public feed, one compare at a time.
-//   node services/shopping-agent/lab-compare-timing.mjs [shopper|chaos]
+//   node --experimental-strip-types services/shopping-agent/lab-compare-timing.mjs [shopper|chaos] [--before]
 // The lists are ops/test-cart.mjs's week for five and ops/chaos.mjs's chaotic list (same seed).
 import { SuperMcpQuoteProvider, SuperMcpCatalogProvider } from '../retailer-connectors/src/supermcp.ts';
 import { woltEtasNear } from '../retailer-connectors/src/wolt-eta.ts';
-import { buildChoice, repairQuery, emptyMemory, optimize, DEFAULT_CONSTANTS, isRealAlternative } from '../../packages/domain/src/index.ts';
+import { buildChoice, repairQuery, hasWordToQuote, emptyMemory, optimize, DEFAULT_CONSTANTS, isRealAlternative } from '../../packages/domain/src/index.ts';
 import { quoteWithFallback } from './src/quote-with-fallback.ts';
 import { substituteMissing } from './src/substitutes.ts';
 import { substitutesMs } from '../../apps/api/src/compare-budget.ts';
 import { withDeadline } from '../../apps/api/src/deadline.ts';
 
 const which = process.argv[2] ?? 'shopper';
+// --before: send every non-blank line to the quote, as buildCompare did before 2026-10-10.
+const BEFORE = process.argv.includes('--before');
 const address = 'ביאליק 20, רמת גן';
 const at = { lat: 32.0837, lng: 34.8139 };
 const WEEK = [
@@ -55,7 +57,7 @@ if (gtins.size === 0) await timed('resolve (not part of the compare)', () => map
   const g = c?.chosen?.gtin ?? c?.gtin; if (g) gtins.set(l.id, g);
 }));
 if (!existsSync(keep)) writeFileSync(keep, JSON.stringify(Object.fromEntries(gtins)));
-const lines = list.map((l) => (gtins.get(l.id) && !l.gtin ? { ...l, gtin: gtins.get(l.id) } : l)).filter((l) => l.query.trim() !== '' || l.gtin);
+const lines = list.map((l) => (gtins.get(l.id) && !l.gtin ? { ...l, gtin: gtins.get(l.id) } : l)).filter((l) => l.gtin || (BEFORE ? l.query.trim() !== '' : hasWordToQuote(l.query)));
 console.log(`${which}: ${lines.length} lines to quote, ${lines.filter((l) => l.gtin).length} with a barcode`);
 
 const t0 = Date.now();
