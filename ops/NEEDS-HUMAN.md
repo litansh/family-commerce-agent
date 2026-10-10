@@ -78,6 +78,27 @@ its own 20s on top, but the rest of the pipeline alone is already this close for
 This check now runs daily (`ops/check.mjs`'s `shopper`) and will go red the day this tips into
 another outage; it does not fix the underlying budget question above.
 
+**2026-10-10, measured from the ops Mac (`services/shopping-agent/lab-compare-timing.mjs`), the sync
+route cannot fit a week's list in 26 s, and only a budget decision fixes that.** The phone's real path
+(the `/compares` job) answered the chaotic list live in 65.6 s with 3 options. Only the sync `/quote`
+route, which the ops checks use, fails. Stages for the week for five: barcode pass 2.4 s, then the
+words pass (`quoteWithFallback` asks again by words for every pinned line some store lacks: 35 of
+39 lines, because thin Wolt venues lack nearly everything) 17-20 s, then substitutes, which may run
+until 27 s by design (`substitutesMs`). So the shopper ends at 27 s or later whenever the substitutes
+use their share, and the check's cutoff is 26 s: 28.3 s today. For the chaotic list (48 lines to
+quote after branch `ops/2026-10-07-health`), the barcode pass took 5.8 s and the words pass for 40
+lines took 21-39 s (72 s once under `service_busy`), so the 26 s try aborts and the answer is
+503 `stores_slow`. chaos.mjs then retries once after 8 s: 26 + 8 + 26 = the 60.7 s in the report.
+What does not work: capping the words pass (tried; without it Rami Levy prices 21 of 51 and every
+store falls under the 90 % coverage floor, so 0 options); running it beside the barcode pass (the
+provider slowed the barcode pass from 2.4 s to 9 s and the pair took as long); splitting it into
+parallel chunks (16-21 s against 16-48 s for one call, and 6 chunks get `service_busy`).
+Choices for the owner: (a) the ops checks measure the job, as the phone does, and the sync route
+stays a smoke test; (b) the sync route skips the words pass and the substitutes for lists over N
+lines, and the checks accept fewer alternatives there (promise 3 on that route only); (c) the
+substitutes' catalogue searches start beside the words pass (saves about 4-5 s, not measured under
+load). The check's cutoff stays where it is.
+
 ## ~~Victory / Mahsanei HaShuk / H. Cohen price files~~ — resolved, the vendor's migration finished
 Earlier the same day (docs/BACKLOG.md, price-portal-fixer) the JSON API and the classic postback
 form both answered "nothing published" for all three laibcatalog chains — a vendor-side gap, noted

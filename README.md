@@ -251,6 +251,7 @@ The labs it drives are worth knowing on their own:
 | `apps/mobile/e2e/history-lab.mjs` | each store's order-history reader still maps its fields |
 | `services/branch-prices/lab.mjs` | the chains' price files still parse, branch by branch |
 | `ops/chaos.mjs` | the whole flow under abuse: typos, emoji, a barcode that exists nowhere, quantity 90 |
+| `services/shopping-agent/lab-compare-timing.mjs [shopper\|chaos] [--before]` | where the compare's time goes, stage by stage, against the provider from this Mac (no AWS). The compare's own response also carries `timing` (quote, substitutes, tail) |
 
 Nothing in any lab ever submits a login, creates an account, or completes a payment.
 
