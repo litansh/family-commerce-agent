@@ -7,6 +7,11 @@ denied to litanshamir` (HTTP 403). `gh auth status` shows the keyring login is t
 (the Rami Levy cart work, and today's price-portal fixes `73cd806`, `feb193d`) exists only on this
 Mac, and `ops/pr.sh` cannot open a PR. Needs: the owner to sign this Mac in as `litansh`
 (`gh auth login`, or add `litanshamir` as a collaborator) and then `git push -u origin ops/2026-10-07-health`.
+**Still true 2026-10-10** (`git push --dry-run` → the same 403). `gh auth status` now shows `litansh`
+signed in too, but inactive; `gh auth switch --user litansh` is a one-line fix the owner can make
+(the orchestrator did not switch the owner's active account on its own). The branch now carries
+eleven days of work, including today's cart-lab fix (`2c736c6`) and api-fixer's compare timing
+(`5f4261f`, `192a06c`), none of it reviewable until it is pushed.
 
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
@@ -19,7 +24,12 @@ in again on the ops Mac (`aws login --profile personal-cfo`) and run
 `AWS_PROFILE=personal-cfo node --experimental-strip-types services/branch-prices/refresh-deals.mjs`
 once; the deals check goes green as soon as it writes. **Still true on 2026-10-05**: `aws sts
 get-caller-identity` answers "Your session has expired", and /deals still shows 33 deals across 2
-chains (וולט מרקט, טיב טעם) when called alone, so this is the session, not load. A credential that does not expire every few
+chains (וולט מרקט, טיב טעם) when called alone, so this is the session, not load. **Still true on
+2026-10-10**: the nightly run's `refresh-deals.mjs` and `refresh-branches.mjs` both died on
+`CredentialsProviderError: Your session has expired`, and the deals check reads "8 deals across 1
+chain(s): וולט מרקט" and "3/8 pictured" (the deals-pictures rung `914c64e` writes through the API but
+had only Wolt's 8 deals to picture). No sub-agent was sent: there is nothing to fix in code.
+A credential that does not expire every few
 hours for this one DynamoDB write (a narrowly scoped role for the ops Mac) is an infrastructure
 decision for the owner, not something an agent should create.
 
