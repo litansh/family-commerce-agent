@@ -184,11 +184,19 @@ API instance therefore keeps at most six provider calls in flight, retries a bus
 longer pause, and, if the provider is still busy, answers `503 stores_slow` (the phone already retries
 that), never `500 internal error`.
 
-**A line that finds nothing gets a second search.** When the family's words resolve to no priced
-product, `/resolve` searches once more with the words written the way the catalogue spells them: a
-final letter typed as its middle form ("מלפפונימ" becomes "מלפפונים") and an English word beside the
-Hebrew dropped ("חלב milk 3%" becomes "חלב 3%"; an all-English line is left alone). The line keeps the
-family's own words, with a note saying what was searched (`repairQuery` in `packages/domain`).
+**A line that finds nothing gets a second search.** `/resolve` also searches with the words written
+the way the catalogue spells them: a final letter typed as its middle form ("מלפפונימ" becomes
+"מלפפונים") and an English word beside the Hebrew dropped ("חלב milk 3%" becomes "חלב 3%"; an
+all-English line is left alone). Both searches start together, each with its own deadline
+(`apps/api/src/resolve-line.ts`), so a slow first search never loses the second; the typed words win
+when they answer. A repaired line keeps the family's own words, with a note saying what was searched
+(`repairQuery` in `packages/domain`).
+
+**A plural matches the singular the catalogue names.** Lists say "מלפפונים", "בננות", "תפוחים"; the
+catalogue says "מלפפון", "בננה", "תפוח עץ". When no name shares a whole word with the line,
+`buildChoice` counts a name whose word is the plural's singular, and keeps only the plainest of those:
+"מלפפון", not "מלפפון בחומץ" (pickles); "בננה", not banana chips; and never "תפוח אדמה" (potato) for
+"תפוחים" (`sharesStemWithQuery`, `extraWords`, `headsOtherCompound` in `packages/domain/src/brand.ts`).
 
 ## The number that decides everything
 
