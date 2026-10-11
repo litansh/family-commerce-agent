@@ -243,3 +243,66 @@ export function sharesWordWithQuery(query: string, name: string): boolean {
   const nameWords = new Set(words(name));
   return queryWords.some((w) => nameWords.has(w));
 }
+
+const TO_MIDDLE: Record<string, string> = { ך: 'כ', ם: 'מ', ן: 'נ', ף: 'פ', ץ: 'צ' };
+const middleForm = (w: string): string => w.replace(/[ךםןףץ]/g, (ch) => TO_MIDDLE[ch]!);
+const hebrewWords = (s: string): string[] =>
+  s.replace(/["'׳״]/g, '').split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2).map(middleForm);
+
+/**
+ * The singular a Hebrew plural on a list stands for: "מלפפונים" → "מלפפונ", "בננות" → "בננ",
+ * "עגבניות" → "עגבני". Undefined for a word that is not a plural, or so short that taking the ending
+ * off would leave a particle ("מים" is water, not a plural of "מ"). Final letters are compared in
+ * their middle form, so "מלפפונימ" (the final mem typed as a middle one) is the same plural.
+ */
+export function pluralStem(word: string): string | undefined {
+  const w = middleForm(word);
+  if (w.length < 5 || !/^[א-ת]+$/.test(w)) return undefined;
+  return /(ימ|ות)$/.test(w) ? w.slice(0, -2) : undefined;
+}
+
+/** A name word as the singular it is: "בננה" → "בננ", "מלפפון" → "מלפפונ", "פיתה" → "פית". */
+const singularForms = (w: string): string[] => (/[הת]$/.test(w) && w.length >= 4 ? [w, w.slice(0, -1)] : [w]);
+
+/**
+ * The floor above, for a family that writes the plural and a catalogue that names the singular
+ * (ops/chaos.mjs and the week's own list: "מלפפונים" against "מלפפון", "בננות" against "בננה",
+ * "תפוחים" against "תפוח עץ" — no whole word in common, so every one of them was unresolved). Only a
+ * plural query word is ever stemmed; "חלב" never matches "חלבה" (halva) this way.
+ */
+export function sharesStemWithQuery(query: string, name: string): boolean {
+  const stems = hebrewWords(query).map(pluralStem).filter((s): s is string => s !== undefined);
+  if (stems.length === 0) return false;
+  const nameForms = new Set(hebrewWords(name).flatMap(singularForms));
+  return stems.some((s) => nameForms.has(s));
+}
+
+/**
+ * Words a name may carry beyond the item itself without being a different item: sizes, units,
+ * packaging. Everything else a candidate adds ("בחומץ", "צ'יפס", "אדמה") makes it a more specific
+ * thing than the family wrote.
+ */
+const PLAIN = new Set(['גרם', 'גר', 'ליטר', 'מל', 'קג', 'קילו', 'יח', 'יחידות', 'ארוז', 'ארוזה', 'מארז', 'שקית', 'משקל', 'במשקל', 'תפזורת', 'אורגני', 'אורגנית', 'טרי', 'טריה', 'מובחר', 'מובחרת', 'ישראל'].map(middleForm));
+
+/**
+ * How many words a candidate's name adds to what was typed, sizes and packaging aside. "מלפפונים"
+ * against "מלפפון" is 0, against "מלפפון בחומץ 7-9" (pickles) 1: the plain one is what was meant.
+ */
+export function extraWords(query: string, name: string): number {
+  const q = hebrewWords(query);
+  const qForms = new Set([...q, ...q.map(pluralStem).filter((s): s is string => s !== undefined)]);
+  return hebrewWords(name).filter((w) => /\p{L}/u.test(w) && !PLAIN.has(w) && !singularForms(w).some((f) => qForms.has(f))).length;
+}
+
+/**
+ * Two words that are one different food: "תפוח אדמה" is a potato, not an apple. A plural matched
+ * through its singular ("תפוחים" → "תפוח") never matches a name where the singular heads such a
+ * compound the family did not write.
+ */
+const COMPOUND_TAILS = new Set(['אדמה']);
+export function headsOtherCompound(query: string, name: string): boolean {
+  const q = new Set(hebrewWords(query));
+  const stems = new Set(hebrewWords(query).map(pluralStem).filter((s): s is string => s !== undefined));
+  const n = hebrewWords(name);
+  return n.some((w, i) => i + 1 < n.length && singularForms(w).some((f) => stems.has(f)) && COMPOUND_TAILS.has(n[i + 1]!) && !q.has(n[i + 1]!));
+}

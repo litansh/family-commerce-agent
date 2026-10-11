@@ -164,3 +164,37 @@ test('honours a size stated in the query over a better unit price', () => {
   assert.ok(c);
   assert.equal(c.chosen.productId, 's4', 'the family asked for size 4; size 1 is not a bargain, it is the wrong product');
 });
+
+// Live provider answers for the chaotic list's words, Ramat Gan, 2026-10-11 (search_products, limit 16).
+const veg = (id: string, name: string, chains = 1): ProductCandidate => ({ productId: id, gtin: `gtin-${id}`, name, pricedAtChains: chains });
+const CUCUMBERS = [
+  veg('c1', 'מלפפון'), veg('c2', 'מלפפון בחומץ 7-9 בית השיטה, 290 גרם', 2), veg('c3', 'מלפפון במלח 10-12 A2 בית השיטה 560 גר`', 3),
+  veg('c4', 'מלפפון אורגני כ- 500 גרם'), veg('c5', 'מלפפון בייבי כ- 300 גרם'), veg('c6', 'מלפפון ארוז 6 יחידות'), veg('c7', 'מלפפונים', 0),
+];
+
+test('a plural on the list resolves to the plain singular the catalogue names (ops/chaos.mjs: "מלפפונים", "מלפפונימ")', () => {
+  for (const query of ['מלפפונים', 'מלפפונימ']) {
+    const c = buildChoice(CUCUMBERS, { lineId: 'x-typo', query });
+    assert.ok(c, `${query} must not be a dead end: the catalogue names "מלפפון" at a chain`);
+    assert.ok(['c1', 'c4', 'c6'].includes(c.chosen.productId), `${query} chose "${c.chosen.name}"; pickles or baby cucumbers are a different item`);
+  }
+});
+
+test('bananas resolve to a banana, never to banana chips', () => {
+  const c = buildChoice([veg('b1', 'בננה'), veg('b2', "בננה צ'יפס תפזורת"), veg('b3', 'בננה ציפס 200 גרם ששון הקולה'), veg('b4', 'בננה כ- 1 ק״ג')], { lineId: 'b27', query: 'בננות' });
+  assert.ok(c);
+  assert.ok(['b1', 'b4'].includes(c.chosen.productId), c.chosen.name);
+});
+
+test('"תפוחים" is apples: a potato ("תפוח אדמה") is never chosen for it', () => {
+  const c = buildChoice([veg('p1', 'תפוח אדמה באטר כ -1.3 ק״ג', 2), veg('p2', 'תפוח אדמה לבן דוד משה', 2), veg('a1', 'תפוח עץ זהוב כ- 1 ק״ג')], { lineId: 'b28', query: 'תפוחים' });
+  assert.ok(c);
+  assert.equal(c.chosen.productId, 'a1');
+  assert.equal(buildChoice([veg('p1', 'תפוח אדמה באטר כ -1.3 ק״ג', 2)], { lineId: 'b28', query: 'תפוחים' }), undefined, 'only potatoes: unresolved, not a potato');
+});
+
+test('the plural floor never opens a door for an unrelated product or a near-spelling', () => {
+  assert.equal(buildChoice([veg('h', 'חלבה נוגט כשר חלבי משקל')], { lineId: 'm', query: 'חלב milk 3%' }), undefined, 'halva is not milk');
+  assert.equal(buildChoice([veg('w', 'מים מינרליים עין גדי')], { lineId: 'w', query: 'מימ' }), undefined, 'too short to be a plural');
+  assert.equal(buildChoice([veg('x', 'ויויל-סוכריות ללא סוכר טעם לימון')], { lineId: 'n', query: 'מיץ קקטוס קפוא נדיר מהחלל' }), undefined);
+});

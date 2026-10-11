@@ -21,8 +21,6 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from 'aws-lambda';
 import {
   applyMemory,
-  buildChoice,
-  repairQuery,
   hasWordToQuote,
   confirm,
   DEFAULT_CONSTANTS,
@@ -61,6 +59,7 @@ import { ImportStore, OrderStore, readRow, writeRow } from './orders.ts';
 import { randomUUID } from 'node:crypto';
 import { CachedCatalog } from './cached-catalog.ts';
 import { isSlowError, withDeadline } from './deadline.ts';
+import { resolveLine } from './resolve-line.ts';
 import { jobBudget, SYNC_BUDGET, substitutesMs, tailMs, type CompareBudget } from './compare-budget.ts';
 import { shouldRepullPromos } from './deals-cache.ts';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
@@ -629,26 +628,9 @@ export async function handler(event: Event): Promise<APIGatewayProxyResultV2> {
         // it is unresolved by definition, not a reason to spend a catalogue call or crash the batch.
         if (line.query.trim() === '') { choices[line.id] = null; unresolved.push(line.id); return; }
         try {
-          const [branded, open] = await withDeadline(Promise.all([
-            line.brand ? catalog.searchProducts({ query: line.query, brand: line.brand, limit: 12, location: household.address }) : Promise.resolve([]),
-            catalog.searchProducts({ query: line.query, limit: 16, location: household.address }),
-          ]), LINE_BUDGET_MS);
-          const merged = [...new Map([...branded, ...open].map((p) => [p.productId, p])).values()];
-          const choiceOpts = {
-            lineId: line.id, query: line.query,
-            ...(line.brand ? { requestedBrand: line.brand } : {}),
-            ...(line.gtin ? { requestedGtin: line.gtin } : {}),
-          };
-          let c = buildChoice(merged, choiceOpts);
-          // Second rung: the same words as the catalogue spells them - a final letter typed as its
-          // middle form ("מלפפונימ"), an English word beside the Hebrew ("חלב milk 3%"). Unresolved
-          // in every health run since 2026-09-14; the line keeps the family's own words, with a note.
-          const repaired = c ? undefined : repairQuery(line.query);
-          if (repaired) {
-            const again = await withDeadline(catalog.searchProducts({ query: repaired, limit: 16, location: household.address }), LINE_BUDGET_MS);
-            const r = buildChoice(again, { ...choiceOpts, query: repaired });
-            if (r) c = { ...r, query: line.query, note: `Searched as "${repaired}"` };
-          }
+          // The words as typed and as the catalogue spells them ("מלפפונימ", "חלב milk 3%"), two
+          // independent rungs started together (apps/api/src/resolve-line.ts).
+          const c = await resolveLine(catalog, line, household.address, LINE_BUDGET_MS);
           choices[line.id] = c ? { ...c, source: fromMemory ? 'memory' : c.source } : null;
           // A line that came back neither chosen nor thrown must still be told apart from one
           // never sent: `null` with no `unresolved` entry satisfies neither reader downstream.

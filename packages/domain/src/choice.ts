@@ -12,7 +12,7 @@
  */
 
 import { agorot, subAgorot, type Agorot } from './money.ts';
-import { brandMatches, nameSatisfiesQuery, normalizeBrand, sharesWordWithQuery } from './brand.ts';
+import { brandMatches, extraWords, headsOtherCompound, nameSatisfiesQuery, normalizeBrand, sharesStemWithQuery, sharesWordWithQuery } from './brand.ts';
 import type {
   AlternativeRelation,
   ProductAlternative,
@@ -47,7 +47,11 @@ export function buildChoice(
   // A candidate that shares no real word with the query was never an answer to
   // what was typed, however the catalogue ranked it — no candidate, not a
   // guessed one, when nothing in the query matches anything in the name.
-  const wordMatched = priced.filter((c) => sharesWordWithQuery(opts.query, c.name));
+  // A plural on the list against a catalogue that names the singular ("מלפפונים" / "מלפפון") shares
+  // no whole word; then the singular counts, and only the plainest such names stay: "מלפפון", not
+  // "מלפפון בחומץ" (pickles), and never "תפוח אדמה" for "תפוחים". Exact words still win outright.
+  const exact = priced.filter((c) => sharesWordWithQuery(opts.query, c.name));
+  const wordMatched = exact.length > 0 ? exact : plainest(priced.filter((c) => sharesStemWithQuery(opts.query, c.name) && !headsOtherCompound(opts.query, c.name)), opts.query);
   if (wordMatched.length === 0) return undefined;
 
   // Numbers in the query are constraints: "מידה 4" is not size 1, "3%" is not
@@ -103,6 +107,14 @@ export function buildChoice(
     brandHonoured,
     ...(note !== undefined ? { note } : {}),
   };
+}
+
+/** The candidates whose names add the fewest words to what was typed (see `extraWords`). */
+function plainest(candidates: readonly ProductCandidate[], query: string): ProductCandidate[] {
+  if (candidates.length === 0) return [];
+  const scored = candidates.map((c) => ({ c, extra: extraWords(query, c.name) }));
+  const least = Math.min(...scored.map((s) => s.extra));
+  return scored.filter((s) => s.extra === least).map((s) => s.c);
 }
 
 /**
