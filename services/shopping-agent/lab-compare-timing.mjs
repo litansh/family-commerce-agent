@@ -67,12 +67,15 @@ let pass = 0;
 const counted = { quoteBasket: (r) => timed(`quote pass ${++pass} (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) };
 // As the sync route runs it (apps/api/src/index.ts buildCompare): one 26 s try for both passes.
 const SYNC = { tryMs: 26_000, totalMs: 26_000 };
-const res = await timed('quote (quoteWithFallback)', () => withDeadline(quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab')), SYNC.tryMs));
+// A provider abort (22 s) or the 26 s deadline is what production answers as 503 stores_slow.
+const res = await timed('quote (quoteWithFallback)', () => withDeadline(quoteWithFallback(counted, { lines, address, serviceType: 'delivery' }, emptyMemory('lab')), SYNC.tryMs))
+  .catch((e) => { console.log(`503 stores_slow, as the sync route answers it: ${e?.name ?? e} after ${((Date.now() - t0) / 1000).toFixed(1)}s`); process.exit(2); });
 const subCat = { searchProducts: (r) => cat.searchProducts(r) };
 // Capped as production caps it (compare-budget.ts substitutesMs): 9 s, and never past 27 s.
 const subsMs = substitutesMs(SYNC, Date.now() - t0);
 const subs = await timed(`substitutes (cap ${(subsMs / 1000).toFixed(1)}s)`, () => Promise.race([
-  substituteMissing({ quoteBasket: (r) => timed(`substitutes requote (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) }, subCat, res, lines, address, 12),
+  // A failed substitutes step keeps the quote, as buildCompare does (apps/api/src/index.ts).
+  substituteMissing({ quoteBasket: (r) => timed(`substitutes requote (${r.lines.length} lines)`, () => quoteP.quoteBasket(r)) }, subCat, res, lines, address, 12).catch((e) => { console.log(`  substitutes failed: ${e?.name ?? e}`); return res; }),
   new Promise((r) => setTimeout(() => { console.log('  substitutes skipped at their cap'); r(res); }, subsMs).unref()),
 ]));
 const result = optimize({ quotes: subs.quotes, constants: DEFAULT_CONSTANTS, requestedLineIds: lines.map((l) => l.id) });
