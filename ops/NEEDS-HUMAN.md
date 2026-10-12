@@ -12,7 +12,8 @@ signed in too, but inactive; `gh auth switch --user litansh` is a one-line fix t
 (the orchestrator did not switch the owner's active account on its own). The branch now carries
 eleven days of work, including today's cart-lab fix (`2c736c6`) and api-fixer's compare timing
 (`5f4261f`, `192a06c`), none of it reviewable until it is pushed. **Still true 2026-10-11** (same 403;
-the branch now also carries the chaos typo/mixed fix `951bd26`).
+the branch now also carries the chaos typo/mixed fix `951bd26`). **Still true 2026-10-12** (same 403;
+`litanshamir` still the active `gh` account).
 
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
@@ -31,6 +32,7 @@ chains (וולט מרקט, טיב טעם) when called alone, so this is the sess
 chain(s): וולט מרקט" and "3/8 pictured" (the deals-pictures rung `914c64e` writes through the API but
 had only Wolt's 8 deals to picture). No sub-agent was sent: there is nothing to fix in code.
 **Still true 2026-10-11** (`aws sts get-caller-identity`: session expired; deals 40 across 1 chain).
+**Still true 2026-10-12** (session expired; deals 25 across 2 chains, קרפור + וולט מרקט, 4/25 pictured).
 A credential that does not expire every few
 hours for this one DynamoDB write (a narrowly scoped role for the ops Mac) is an infrastructure
 decision for the owner, not something an agent should create.
@@ -110,6 +112,12 @@ stays a smoke test; (b) the sync route skips the words pass and the substitutes 
 lines, and the checks accept fewer alternatives there (promise 3 on that route only); (c) the
 substitutes' catalogue searches start beside the words pass (saves about 4-5 s, not measured under
 load). The check's cutoff stays where it is.
+
+**2026-10-12, unchanged, and nothing on the branch fixes it** (api-fixer, backlog line `206f5a2`): from the Mac, with the
+branch code, the chaotic list ended in 503 at 25-26 s in 4 of 4 runs. Each time the words pass for 46 lines ran into the provider's
+22 s abort. The shopper took 26.5 s once and got a 503 once. The orchestrator re-ran the three checks at 04:04Z, and production
+(main) was worse: the clean compare also gave 0 options at 54.7 s, and the flaky-item rows (טופו, שוקולד) came back unresolved.
+The provider was answering `service_busy` this morning. Choices (a)/(b)/(c) above are still the owner's call.
 
 ## ~~Victory / Mahsanei HaShuk / H. Cohen price files~~ — resolved, the vendor's migration finished
 Earlier the same day (docs/BACKLOG.md, price-portal-fixer) the JSON API and the classic postback
