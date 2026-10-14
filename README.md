@@ -246,6 +246,12 @@ reporting API Gateway's own throttle 503s (0.3 s, `{"message":"Service Unavailab
 A check that runs past its budget is killed with its whole process group (the lab and its browser,
 not only the shell around it) and reported `unknown`; `store-health.mjs` also gives each store its
 own 120 s budget, so one page that stops answering costs that store's row, never the rows after it.
+Budgets count **awake** seconds: the ops Mac sleeps with the lid closed on battery (waking ~45 s every
+~15 min), and a wall-clock budget used to expire during the sleep and kill every lab on the next wake.
+`check.mjs` measures the sleep from gaps in a 1 s heartbeat, gives each check its budget in awake
+time (with at most 30 min more of wall time), and an `unknown` row says `machine asleep N s` when the
+Mac slept, so a sleeping Mac is never read as a changed store. The labs still need the Mac awake to
+finish in time: on the charger, lid open, or `sudo pmset -b sleep 0` (`ops/NEEDS-HUMAN.md`).
 A cart lab reads the store's basket every second until it settles; a store's basket page shows 0
 for a moment before it syncs, and one early read is not proof (promise 9).
 

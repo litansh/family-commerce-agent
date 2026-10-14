@@ -22,8 +22,21 @@ const withSim = args.includes('--sim');
 // Detached labs no longer share our terminal's Ctrl-C: take them down with us.
 const children = new Set();
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { for (const pid of children) { try { process.kill(-pid, 'SIGKILL'); } catch { /* gone */ } } process.exit(130); });
+// A budget counts awake seconds, not wall seconds (2026-10-14). Closed lid and battery mean the ops Mac
+// sleeps, waking for 2-45 s every ~15 min (DarkWake), and `caffeinate` cannot hold it on battery. A
+// wall-clock setTimeout expired while the Mac slept, then fired on the next wake and killed every lab:
+// stores, cart, history, prices and chaos all ended "unknown" at 846 s (08:30:25 + 846 s = the 08:44:30
+// DarkWake to the second) and again at 1023 s (09:16:24 + 1023 s = the 09:33:27 DarkWake). Awake, the
+// same code was green in 145 s. Sleep is the gaps in a 1 s heartbeat that never ran (as in
+// store-health.mjs); a timed-out check whose run included sleep says so, so it is not read as a store.
+let asleepMs = 0, lastBeat = Date.now();
+setInterval(() => { const now = Date.now(); if (now - lastBeat > 5_000) asleepMs += now - lastBeat - 1_000; lastBeat = now; }, 1_000).unref();
+const asleepNow = () => { const gap = Date.now() - lastBeat; return asleepMs + (gap > 5_000 ? gap - 1_000 : 0); };
+const run0 = { wall: Date.now(), asleep: asleepNow() };
+// However long the Mac sleeps, a check still ends: the wall clock may run this much past its awake budget.
+const WALL_GRACE_MS = 30 * 60_000;
 const run = (name, cmd, cwd, timeoutMs, judge) => new Promise((done) => {
-  const t0 = Date.now();
+  const t0 = Date.now(), s0 = asleepNow();
   // Its own process group, so the timeout kills the lab itself and not only the `bash -lc` around it:
   // killing bash alone left node and its browser holding the pipe, so a 600 s budget ended at 997 s
   // and the lab's late rows never reached the report (stores and chaos, 2026-10-06).
@@ -31,9 +44,19 @@ const run = (name, cmd, cwd, timeoutMs, judge) => new Promise((done) => {
   let out = '';
   children.add(p.pid);
   p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
-  const timer = setTimeout(() => { try { process.kill(-p.pid, 'SIGKILL'); } catch { p.kill('SIGKILL'); } out += '\n[timeout]'; }, timeoutMs);
+  const timer = setInterval(() => {
+    const wall = Date.now() - t0, awake = wall - (asleepNow() - s0);
+    if (awake < timeoutMs && wall < timeoutMs + WALL_GRACE_MS) return;
+    clearInterval(timer); try { process.kill(-p.pid, 'SIGKILL'); } catch { p.kill('SIGKILL'); } out += '\n[timeout]';
+  }, 1_000);
   // A check that could not run to a verdict (timeout, no network) is 'unknown', not a failure: the two are opposite instructions.
-  p.on('close', (code) => { clearTimeout(timer); children.delete(p.pid); const j = judge(out, code); const unknown = /\[timeout\]/.test(out) || /ENOTFOUND|ECONNREFUSED|fetch failed/.test(out) && !j.ok; done({ name, ok: j.ok, unknown, summary: unknown ? `unknown — ${j.summary}` : j.summary, code, seconds: Math.round((Date.now() - t0) / 1000), tail: out.split('\n').filter(Boolean).slice(-25).join('\n') }); });
+  p.on('close', (code) => {
+    clearInterval(timer); children.delete(p.pid);
+    const j = judge(out, code); const unknown = /\[timeout\]/.test(out) || /ENOTFOUND|ECONNREFUSED|fetch failed/.test(out) && !j.ok;
+    const seconds = Math.round((Date.now() - t0) / 1000), asleepS = Math.round((asleepNow() - s0) / 1000);
+    const slept = unknown && asleepS >= 30 ? `machine asleep ${asleepS} s of ${seconds} s (not the stores: rerun with the Mac awake, on AC, lid open) — ` : '';
+    done({ name, ok: j.ok, unknown, summary: unknown ? `unknown — ${slept}${j.summary}` : j.summary, code, seconds, asleepS, tail: out.split('\n').filter(Boolean).slice(-25).join('\n') });
+  });
 });
 const strip = (s) => s.replace(/\(node:\d+\) .*\n|\(Use `node --trace-warnings.*\n|Reparsing as ES module.*\n|To eliminate this warning.*\n/g, '');
 
@@ -136,12 +159,14 @@ const at = new Date().toISOString();
 console.log(`\nKaniti health · ${at}`);
 console.log('check     ok   time   summary');
 for (const r of results) console.log(`${r.name.padEnd(9)} ${(r.ok ? 'ok' : r.unknown ? '?' : 'BAD').padEnd(4)} ${String(r.seconds + 's').padEnd(6)} ${r.summary}`);
+const runAsleepS = Math.round((asleepNow() - run0.asleep) / 1000);
+if (runAsleepS >= 30) console.log(`(the machine was asleep ${runAsleepS} s of this ${Math.round((Date.now() - run0.wall) / 1000)} s run: an "unknown" row is the Mac, not the store)`);
 const ladders = ladderHealth(results);
 if (ladders.length) {
   console.log('\nladders (ADR 0010) — at least two working rungs, checked daily');
   for (const l of ladders) console.log(`${(l.ok ? 'ok  ' : 'BAD ')} ${l.ladder.padEnd(16)} ${l.working}/${l.of} rung(s) working${l.of ? ` (${l.rungs.map((r) => `${r.ok ? 'ok' : 'BAD'} ${r.name}`).join(', ')})` : ' — no daily lab exercises this ladder at all'}`);
 }
-const report = { at, ok: results.every((r) => r.ok) && ladders.every((l) => l.ok), results, ladders };
+const report = { at, ok: results.every((r) => r.ok) && ladders.every((l) => l.ok), asleepS: runAsleepS, results, ladders };
 const stamp = at.replace(/[:.]/g, '-');
 writeFileSync(`${homedir()}/.kaniti/health/${stamp}.json`, JSON.stringify(report, null, 1));
 writeFileSync(`${homedir()}/.kaniti/health/latest.json`, JSON.stringify(report, null, 1));

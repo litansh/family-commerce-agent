@@ -200,3 +200,16 @@ slept one second look, but no lab can finish inside 600 s while the machine is a
 Needs: the owner to keep the ops Mac awake for the nightly run. Either keep it on the charger with
 the lid open, or run `sudo pmset -c sleep 0` (plus `sudo pmset -b sleep 0` if it must work on
 battery), or let `ops/repair.sh` run under `caffeinate -s` (only holds while on AC power).
+
+**Still true 2026-10-14 (store-recipe-fixer).** The `stores`, `cart`, `history`, `prices` and
+`chaos` rows that have read `unknown` since 2026-10-13 were this sleep again. No store and no code
+caused them. `pmset -g log` shows the Mac on battery and in Deep Idle from 08:00 to 11:05, with only
+2-45 s DarkWakes. Each hung run ended exactly on a DarkWake: 08:30:25 + 846 s = 08:44:30, and
+09:16:24 + 1023 s = 09:33:27 (the orchestrator's `caffeinate -dims` was taken at 09:16:24, the
+Mac slept anyway at 09:16:48, and caffeinate's assertions are logged "ClientDied" at 09:33:28).
+caffeinate cannot hold the Mac on battery. The machine is not otherwise to blame: the installs on
+10-12 and 10-14 were WhatsApp and the Claude desktop app, not WebKit or macOS, and Playwright's
+WebKit build is unchanged. Once the Mac was woken (on AC at 11:05), the same code passed
+`check.mjs --only stores,cart,history` in 145 s. `check.mjs` now counts awake seconds and labels a
+sleep-hit row, but the checks only *finish* if the Mac stays awake. Needs: the same as above.
+`sudo pmset -b sleep 0` (or the charger with the lid open) before 06:40.
