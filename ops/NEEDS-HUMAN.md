@@ -16,7 +16,7 @@ the branch now also carries the chaos typo/mixed fix `951bd26`). **Still true 20
 `litanshamir` still the active `gh` account). **Still true 2026-10-14** (same 403). A second branch is
 ready too: `ops/2026-10-14-check-sleep` (`e636334`, made from main, the check.mjs sleep fix only). Its PR body is
 `~/.kaniti/pr/ops-2026-10-14-check-sleep.md`. After `gh auth switch --user litansh`, run: `git switch ops/2026-10-14-check-sleep &&
-ops/pr.sh "ops/check.mjs: budgets count awake seconds" ~/.kaniti/pr/ops-2026-10-14-check-sleep.md`.
+ops/pr.sh "ops/check.mjs: budgets count awake seconds" ~/.kaniti/pr/ops-2026-10-14-check-sleep.md`. **Still true 2026-10-15** (same 403).
 
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
@@ -122,6 +122,8 @@ branch code, the chaotic list ended in 503 at 25-26 s in 4 of 4 runs. Each time 
 22 s abort. The shopper took 26.5 s once and got a 503 once. The orchestrator re-ran the three checks at 04:04Z, and production
 (main) was worse: the clean compare also gave 0 options at 54.7 s, and the flaky-item rows (טופו, שוקולד) came back unresolved.
 The provider was answering `service_busy` this morning. Choices (a)/(b)/(c) above are still the owner's call.
+
+**2026-10-15, unchanged** (api-fixer, `7ac36b0`): the 03:44Z run had shopper red (the compare past the cutoff) and chaos red (the typo row, and the chaotic list 503 at 60.8 s). The orchestrator's re-run at about 03:50Z: shopper green at 31 s, which was luck on a quiet provider. Chaos was still red on three rows. The typo row needs 951bd26 deployed, so the push 403 has to be fixed first. The 'same item twice' row is new today: it used to pass on null vs null (both בננות lines dropped), and api-fixer made it require a real match. So it now honestly reads BAD until the same deploy. The chaotic 503 is still choice (a)/(b)/(c).
 
 ## ~~Victory / Mahsanei HaShuk / H. Cohen price files~~ — resolved, the vendor's migration finished
 Earlier the same day (docs/BACKLOG.md, price-portal-fixer) the JSON API and the classic postback
