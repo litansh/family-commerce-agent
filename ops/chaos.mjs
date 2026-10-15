@@ -211,7 +211,9 @@ check('mixed Hebrew/English resolves like any other line', !!choices[CHAOS.mixed
 // The same item twice: both lines must land the same way — neither one silently favoured over the other.
 const dupA = choices[CHAOS.dupA.id], dupB = choices[CHAOS.dupB.id];
 const dupGtin = (c) => c?.chosen?.gtin ?? c?.gtin ?? null;
-check('the same item twice resolves the same way both times', (!dupA && !dupB) || dupGtin(dupA) === dupGtin(dupB), `${dupGtin(dupA) ?? 'null'} vs ${dupGtin(dupB) ?? 'null'}`);
+// Both unresolved is not "the same way": בננות is an ordinary word, so null vs null is two lines
+// dropped, and passing it hid the plural miss on production (2026-10-15, api-fixer).
+check('the same item twice resolves the same way both times', dupGtin(dupA) !== null && dupGtin(dupA) === dupGtin(dupB), `${dupGtin(dupA) ?? 'null'} vs ${dupGtin(dupB) ?? 'null'}`);
 // Tonight's own provider incident, reproduced as part of an ordinary list: the ladder built for it
 // (bounded retry, Rami Levy's own catalogue as a second rung) must hold up here too, not just alone.
 for (const [name, id] of [['טופו', CHAOS.provider1.id], ['שוקולד', CHAOS.provider2.id]]) {
