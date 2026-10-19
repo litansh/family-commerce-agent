@@ -49,7 +49,8 @@ jobs:
         run: echo "::notice::The fca-github-terraform role could not be assumed; plan skipped."
       - uses: hashicorp/setup-terraform@v3
         if: steps.aws.outcome == 'success'
-        with: { terraform_version: '1.15.8' }
+        # No wrapper: it masks -detailed-exitcode, and the guard reads `terraform show -json` from stdout.
+        with: { terraform_version: '1.15.8', terraform_wrapper: false }
       - uses: actions/setup-node@v4
         if: steps.aws.outcome == 'success'
         with: { node-version: '22', cache: npm }
@@ -98,7 +99,7 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TERRAFORM }}
           aws-region: eu-central-1
       - uses: hashicorp/setup-terraform@v3
-        with: { terraform_version: '1.15.8' }
+        with: { terraform_version: '1.15.8', terraform_wrapper: false }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: npm }
       - run: npm ci || npm install
