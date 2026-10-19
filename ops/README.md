@@ -53,7 +53,8 @@ Nothing deploys any more (ADR 0012). While the stack was live, a merge to `main`
 
 ## Terraform from GitHub
 
-`.github/workflows/terraform.yml`: a pull request that touches `infrastructure/terraform/app/**` gets a plan as a PR comment; the merge to main applies it through the `fca-github-terraform` OIDC role, with the state in S3 (`fca-tfstate-437075214009`, `backend.tf`). After the teardown (ADR 0012) the stack holds only that role and its policy; the next pull request forgets them and the owner deletes them by hand, after which the workflow itself goes. No laptop needs AWS credentials for any of this. Infrastructure changes are pull requests like everything else. Every plan, on the PR and again right before the apply, goes through `ops/plan-guard.mjs`: a destroy or forget must be named in `ops/plan-guard.allow` (`destroy <address>` / `forget <address>`), the shared OIDC provider and the state bucket are never destroyed, and the apply applies that guarded plan file, not a fresh one (ADR 0012).
+Gone with the stack (ADR 0012). While it ran, `terraform.yml` planned on every pull request and applied the guarded plan on merge through the `fca-github-terraform` OIDC role, with state in `fca-tfstate-437075214009`; that history is at the tag `last-live` and in pull requests #130–#132. Only `infrastructure/terraform/bootstrap/` (the account budget) remains, applied once by hand.
+
 ## Agents on every pull request
 
 `.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. The key is the repository secret `ANTHROPIC_API_KEY`; without it the review skips with a notice. The SSM path (`/fca/anthropic-key` through the `fca-github-review` role, `ops/secrets.sh`) went with the AWS stack (ADR 0012). Add `[skip-agents]` to a PR title to skip it (docs-only PRs).

@@ -86,7 +86,7 @@ actually has — is not something any of them can do today.**
 
 ## Retirement
 
-retire(3/4) empties the Terraform state: the `fca-github-terraform` role leaves the state but stays in the account until the owner deletes it (ops/NEEDS-HUMAN.md). retire(4/4) removes `infrastructure/terraform/app/` and the terraform workflow.
+The teardown is complete: retire(1/4) prepared the stack, retire(2/4) destroyed 54 resources, retire(3/4) emptied the state, and retire(4/4) removed `infrastructure/terraform/app/`, the terraform workflow and the plan guard. The stack as it ran is at the tag `last-live`.
 
 Kaniti was retired on 19 October 2026 ([ADR 0012](docs/adr/0012-retire-the-aws-stack.md)): the
 funnel never reached a confirmed purchase, the ops loop stalled twelve days on the laptop side, and
@@ -107,8 +107,7 @@ production (the rebuild path), and ADR 0012.
 
 **Dead on purpose:** the endpoints hard-coded in `apps/mobile/src/lib/config.ts`, `apps/mobile/app.json`,
 `ops/*.mjs` and `apps/mobile/e2e` no longer answer; they stay as the record of what ran. `npm run
-deploy:web`, `deploy.yml` and `logs.yml` are gone; `terraform.yml` stays until the terraform role has
-left the state. The promises in [`docs/WHAT-WE-PROMISE.md`](docs/WHAT-WE-PROMISE.md) are suspended,
+deploy:web`, `deploy.yml`, `logs.yml` and `terraform.yml` are gone. The promises in [`docs/WHAT-WE-PROMISE.md`](docs/WHAT-WE-PROMISE.md) are suspended,
 not weakened: no check was edited to pass against a dead API.
 
 ## Documents
@@ -325,9 +324,8 @@ ops/unblock.sh                            # merge main into any pull request tha
 Every change is a pull request, posted to the Kaniti Telegram channel for approval. Nobody pushes to
 main, and nobody deploys from a laptop. While the stack was live, a merge ran the tests, deployed the
 three Lambdas through a GitHub OIDC role and proved production with the shopper's carts; since the
-retirement a merge runs the tests only. Infrastructure merges apply the guarded plan:
-`ops/plan-guard.mjs` checks the plan against `ops/plan-guard.allow` before the apply, and nothing is
-destroyed or forgotten that the allowlist does not name (ADR 0012).
+retirement a merge runs the tests only; there is no infrastructure left to apply (ADR 0012). The
+plan guard that policed the teardown lives in the history at the tag `last-live` and in PRs 130–132.
 
 ## Setting up a new Mac
 

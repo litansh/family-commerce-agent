@@ -14,7 +14,7 @@ worklist is `docs/BACKLOG.md`. Nothing else needs reading before you start.
 | Providers | `services/retailer-connectors/src/supermcp.ts` (SuperMCP quote and catalogue), `wolt-eta.ts`; `services/shopping-agent/src/{quote-with-fallback,substitutes}.ts` | unit tests next to each |
 | Store sessions in the cloud | `services/cloud-connectors/src/*` (drivers, sealed sessions, history import) | `apps/api` tests |
 | In-store prices | `services/branch-prices/src/{portals,xml,geo,cbs,index}.ts` | `node services/branch-prices/lab.mjs` |
-| Infra | retired (ADR 0012): `infrastructure/terraform/app/*.tf` holds only the terraform role until it is forgotten; `.github/workflows/{ci,terraform,agents-review}.yml`; the stack as it ran is at the tag `last-live` | CI on every PR; nothing deploys |
+| Infra | retired (ADR 0012): no stack left; `infrastructure/terraform/bootstrap/` (budget only); `.github/workflows/{ci,agents-review}.yml`; the stack as it ran is at the tag `last-live` | CI on every PR; nothing deploys |
 | Ops | `ops/check.mjs` (all checks), `ops/repair.sh` (orchestrator), `ops/qa.sh`, `ops/pr.sh` (branch → PR → CI → Telegram), `ops/fleet.sh` (agents, one at a time), `ops/find.mjs` (retrieval) | `node ops/check.mjs --only <check>` |
 
 ## Facts that are not in the code
