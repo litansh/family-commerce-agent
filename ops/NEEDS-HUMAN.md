@@ -16,7 +16,7 @@ the branch now also carries the chaos typo/mixed fix `951bd26`). **Still true 20
 `litanshamir` still the active `gh` account). **Still true 2026-10-14** (same 403). A second branch is
 ready too: `ops/2026-10-14-check-sleep` (`e636334`, made from main, the check.mjs sleep fix only). Its PR body is
 `~/.kaniti/pr/ops-2026-10-14-check-sleep.md`. After `gh auth switch --user litansh`, run: `git switch ops/2026-10-14-check-sleep &&
-ops/pr.sh "ops/check.mjs: budgets count awake seconds" ~/.kaniti/pr/ops-2026-10-14-check-sleep.md`. **Still true 2026-10-15** (same 403). **Still true 2026-10-18** (same 403, `litanshamir` still active).
+ops/pr.sh "ops/check.mjs: budgets count awake seconds" ~/.kaniti/pr/ops-2026-10-14-check-sleep.md`. **Still true 2026-10-15** (same 403). **Still true 2026-10-18** (same 403, `litanshamir` still active). **Still true 2026-10-19** (same 403; branch is 555 commits ahead of main).
 
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
@@ -38,6 +38,7 @@ had only Wolt's 8 deals to picture). No sub-agent was sent: there is nothing to 
 **Still true 2026-10-12** (session expired; deals 25 across 2 chains, קרפור + וולט מרקט, 4/25 pictured).
 **Still true 2026-10-14** (session expired; deals 40 across 2 chains, קרפור + וולט מרקט, 38/40 pictured).
 **Still true 2026-10-18** (session expired; deals 26 across 1 chain, וולט מרקט, 4/26 pictured).
+**Still true 2026-10-19** (`aws sts get-caller-identity` fails; deals 21 across 1 chain, וולט מרקט, 0/21 pictured).
 A credential that does not expire every few
 hours for this one DynamoDB write (a narrowly scoped role for the ops Mac) is an infrastructure
 decision for the owner, not something an agent should create.
@@ -129,6 +130,7 @@ The provider was answering `service_busy` this morning. Choices (a)/(b)/(c) abov
 **2026-10-16, unchanged** (api-fixer): the 06:30Z run had shopper red, with the compare past the cutoff over an 85 s run, Mac awake. The other 26 rows were ok. Re-runs of `ops/test-cart.mjs` against production, a minute apart with the same code: 07:09Z gave `/quote` 27.1 s, red (32.3 s with the whole call, ₪911, 3 options). 07:09:45Z gave 20.1 s, green (24.4 s with the call, ₪911, 3 options). The same list swings 7 s between runs. That is the provider, not a regression: the branch is not deployed, so production runs main. An earlier `check.mjs --only shopper` re-run at 06:51Z gave no verdict, because the Mac was in maintenance sleep on battery with the lid closed (DarkWake 45 s every 2-5 min). No code change. Choices (a)/(b)/(c) are still the owner's call. The cutoff stays at 26 s.
 
 **2026-10-18, unchanged** (orchestrator, no agent sent: same rows as 10-15/10-16, same code on production): the 04:36Z run and an awake re-run at 04:57Z both had shopper red on the cutoff row only (26 other rows ok, ₪928, 3 options) and chaos red on typo, same-item-twice (null vs null) and the chaotic list 503 at 60.7 s. The first two wait on 951bd26 reaching production (push 403); the third is choice (a)/(b)/(c). Stores was red at 04:36Z (hazi-hinam, 968 s asleep) and green awake under `caffeinate` at 05:05Z (9/9, 130 s).
+**2026-10-19, unchanged** (orchestrator, no agent sent): the 04:06Z run and an awake re-run at 04:25Z show the same rows. Shopper is red on the cutoff row only (23 other rows ok, ₪884, 3 options, 37 s). Chaos is red on typo, same-item-twice (null vs null) and the chaotic list 503 at 60.7 s. In the 04:06Z run, chaos also hit a client ETIMEDOUT (no verdict). `ladder:Compare` read 1/1 only because `--only` ran a subset. Stores, cart, prices and all the rest were green, awake 9/9.
 
 ## ~~Victory / Mahsanei HaShuk / H. Cohen price files~~ — resolved, the vendor's migration finished
 Earlier the same day (docs/BACKLOG.md, price-portal-fixer) the JSON API and the classic postback
