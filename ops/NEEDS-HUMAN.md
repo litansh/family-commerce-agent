@@ -1,8 +1,9 @@
 # Needs the owner
 
 ## Retirement: the steps only the owner can take (2026-10-19)
-ADR 0012: the AWS stack is torn down through four pull requests; the plan guard (`ops/plan-guard.mjs`)
-refuses anything the allowlist does not name. These steps are the owner's, in this order:
+ADR 0012: the AWS stack was torn down through four pull requests (#130–#133), each plan checked by a
+guard that refused anything its allowlist did not name. Done 2026-10-19: the role, the orphan log group,
+the state history and the laptop leftovers are deleted. Left: the repository secrets (step 5). The steps, for the record:
 
 1. (done) `gh auth switch --user litansh` — the PRs and the tag come from the repo's own identity.
 2. (done) `launchctl bootout gui/$(id -u)/com.kaniti.ops` and the plist removed from
