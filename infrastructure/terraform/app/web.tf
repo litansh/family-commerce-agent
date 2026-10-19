@@ -3,7 +3,8 @@
 # Deploy: npm run deploy:web (exports, syncs, invalidates).
 
 resource "aws_s3_bucket" "web" {
-  bucket = "${var.name}-web-${random_id.domain.hex}"
+  bucket        = "${var.name}-web-${random_id.domain.hex}"
+  force_destroy = true # retirement (ADR 0012): the bucket is non-empty and goes with the stack
 }
 
 resource "aws_s3_bucket_public_access_block" "web" {

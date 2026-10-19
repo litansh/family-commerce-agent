@@ -2,10 +2,15 @@
 # assumes this role through GitHub's OIDC provider and may only update the three Lambdas'
 # code. Everything else (IAM, tables, buckets, schedules) stays with terraform apply.
 
-resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
+# The OIDC provider is shared with adtech-lab and shamir-finops-hub in this account: this stack
+# created it, but it is not this stack's to delete. Read, never managed (ADR 0012).
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+removed {
+  from = aws_iam_openid_connect_provider.github
+  lifecycle { destroy = false }
 }
 
 variable "github_repo" {
@@ -41,7 +46,7 @@ resource "aws_iam_role" "github_deploy" {
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
@@ -85,21 +90,25 @@ output "github_deploy_role_arn" { value = aws_iam_role.github_deploy.arn }
 # ---------------------------------------------------------------------------
 data "aws_caller_identity" "me" {}
 
-resource "aws_s3_bucket" "tfstate" {
-  bucket = "${var.name}-tfstate-${data.aws_caller_identity.me.account_id}"
+# The state bucket holds this stack's own state and outlives it (ADR 0012): forgotten here,
+# never destroyed. backend.tf names it.
+locals {
+  tfstate_bucket_arn = "arn:aws:s3:::${var.name}-tfstate-${data.aws_caller_identity.me.account_id}"
 }
 
-resource "aws_s3_bucket_versioning" "tfstate" {
-  bucket = aws_s3_bucket.tfstate.id
-  versioning_configuration { status = "Enabled" }
+removed {
+  from = aws_s3_bucket.tfstate
+  lifecycle { destroy = false }
 }
 
-resource "aws_s3_bucket_public_access_block" "tfstate" {
-  bucket                  = aws_s3_bucket.tfstate.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+removed {
+  from = aws_s3_bucket_versioning.tfstate
+  lifecycle { destroy = false }
+}
+
+removed {
+  from = aws_s3_bucket_public_access_block.tfstate
+  lifecycle { destroy = false }
 }
 
 resource "aws_iam_role" "github_terraform" {
@@ -109,7 +118,7 @@ resource "aws_iam_role" "github_terraform" {
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
@@ -125,7 +134,7 @@ resource "aws_iam_role_policy" "github_terraform" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Sid = "State", Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [aws_s3_bucket.tfstate.arn, "${aws_s3_bucket.tfstate.arn}/*"] },
+      { Sid = "State", Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [local.tfstate_bucket_arn, "${local.tfstate_bucket_arn}/*"] },
       { Sid = "ProjectBuckets", Effect = "Allow", Action = ["s3:*"], Resource = ["arn:aws:s3:::${var.name}-*", "arn:aws:s3:::${var.name}-*/*"] },
       { Sid = "ProjectNamed", Effect = "Allow", Action = ["lambda:*", "dynamodb:*", "sqs:*", "sns:*", "events:*", "logs:*", "ssm:*", "iam:*Role*", "iam:*Policy*", "iam:*User*", "iam:*AccessKey*", "iam:PassRole"], Resource = [
         "arn:aws:lambda:${var.region}:*:function:${var.name}-*", "arn:aws:lambda:${var.region}:*:event-source-mapping:*",
@@ -157,7 +166,7 @@ resource "aws_iam_role" "github_review" {
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
