@@ -1,0 +1,11 @@
+# Every destroy or forget a Terraform plan may carry, one per line: `destroy <address>` or
+# `forget <address>`. ops/plan-guard.mjs fails any plan that deletes or forgets something not
+# listed here, and never lets the shared OIDC provider or the state bucket be destroyed.
+# A line whose resource is already gone is harmless.
+#
+# retire(1/4): the OIDC provider is shared with adtech-lab and shamir-finops-hub; the state bucket
+# outlives the stack. Both leave the state, neither leaves the account.
+forget aws_iam_openid_connect_provider.github
+forget aws_s3_bucket.tfstate
+forget aws_s3_bucket_versioning.tfstate
+forget aws_s3_bucket_public_access_block.tfstate
