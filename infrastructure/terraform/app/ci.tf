@@ -1,6 +1,6 @@
-# Continuous deployment from GitHub Actions, with no long-lived keys: the workflow on `main`
-# assumes this role through GitHub's OIDC provider and may only update the three Lambdas'
-# code. Everything else (IAM, tables, buckets, schedules) stays with terraform apply.
+# What the retirement leaves (ADR 0012): the OIDC trust and the role that applies this stack.
+# The deploy and review roles went with the Lambdas and the review key; this role is forgotten
+# in the next pull request and deleted by the owner.
 
 # The OIDC provider is shared with adtech-lab and shamir-finops-hub in this account: this stack
 # created it, but it is not this stack's to delete. Read, never managed (ADR 0012).
@@ -39,46 +39,6 @@ locals {
   github_sub_any  = "repo:${var.github_owner}@${var.github_owner_id}/*@${var.github_repo_id}:*"
   github_sub_main = "repo:${var.github_owner}@${var.github_owner_id}/*@${var.github_repo_id}:ref:refs/heads/main"
 }
-
-resource "aws_iam_role" "github_deploy" {
-  name = "${var.name}-github-deploy"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
-      Action    = "sts:AssumeRoleWithWebIdentity"
-      Condition = {
-        StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub_main }
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "github_deploy" {
-  name = "${var.name}-github-deploy"
-  role = aws_iam_role.github_deploy.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
-        Resource = [aws_lambda_function.api.arn, aws_lambda_function.refresh.arn, aws_lambda_function.alerts.arn]
-      },
-      {
-        # Reading this project's own logs, so a production failure is diagnosed from CI instead of
-        # from a laptop with credentials (ops/logs.yml). Read-only, and only these log groups.
-        Effect   = "Allow"
-        Action   = ["logs:FilterLogEvents", "logs:DescribeLogStreams", "logs:DescribeLogGroups", "logs:GetLogEvents"]
-        Resource = ["arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.name}-*", "arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.name}-*:*"]
-      },
-    ]
-  })
-}
-
-output "github_deploy_role_arn" { value = aws_iam_role.github_deploy.arn }
 
 # ---------------------------------------------------------------------------
 # Terraform from GitHub Actions: state in S3, a role that applies this stack.
@@ -149,40 +109,3 @@ resource "aws_iam_role_policy" "github_terraform" {
 }
 
 output "github_terraform_role_arn" { value = aws_iam_role.github_terraform.arn }
-
-# The agents' key for pull-request reviews, the migration-agent way: an SSM SecureString whose
-# value is entered once by `ops/secrets.sh` (prompted, never on a command line, never in state),
-# read at run time by the review workflow through a second OIDC role that may read nothing else.
-resource "aws_ssm_parameter" "anthropic_key" {
-  name  = "/${var.name}/anthropic-key"
-  type  = "SecureString"
-  value = "placeholder-set-by-ops-secrets"
-  lifecycle { ignore_changes = [value] }
-}
-
-resource "aws_iam_role" "github_review" {
-  name = "${var.name}-github-review"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
-      Action    = "sts:AssumeRoleWithWebIdentity"
-      Condition = {
-        StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub_any }
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "github_review" {
-  name = "${var.name}-github-review"
-  role = aws_iam_role.github_review.id
-  policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = [{ Effect = "Allow", Action = ["ssm:GetParameter"], Resource = aws_ssm_parameter.anthropic_key.arn }]
-  })
-}
-
-output "github_review_role_arn" { value = aws_iam_role.github_review.arn }
