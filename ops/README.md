@@ -31,32 +31,32 @@ Claude Code run (`claude -p`) as the orchestrator. It dispatches the sub-agents 
 - `api-fixer` — API, tests, recipe guard
 
 Each agent must reproduce in the labs, fix, and prove it with the same labs; the
-orchestrator re-runs the failed checks, commits, and pushes `origin main`. Pushing
-is deploying for the phone app (Metro tunnel / OTA); the API deploys with
-Terraform, which the person runs. Anything that needs a human (a locked account, a
-portal behind a login, an expired AWS session) is written to `ops/NEEDS-HUMAN.md`.
+orchestrator re-runs the failed checks, commits, and opens a pull request. Anything
+that needs a human (a locked account, a portal behind a login) is written to
+`ops/NEEDS-HUMAN.md`.
 
-`ops/install.sh` schedules `ops/repair.sh` every morning at 06:40 on this Mac
-(launchd, `com.kaniti.ops`); `launchctl start com.kaniti.ops` runs it now. Logs:
-`~/.kaniti/health/run-*.log`. A macOS notification says healthy / repaired / still unhealthy.
+The daily launchd job (`com.kaniti.ops`, `ops/install.sh`) is gone with the retirement
+(ADR 0012): there is no production to repair. `ops/repair.sh` still runs by hand for the
+labs. Logs: `~/.kaniti/health/run-*.log`.
 
 ## What the phones report
 
-Every store screen on a phone reports load errors, HTTP 4xx/5xx and Cloudflare
-guards to the API (`import-history` log events with `diag`). `infrastructure/terraform/app/alarms.tf`
-turns those into a CloudWatch alarm that e-mails the owner, so a store breaking for real
-families is known the same hour, not the next morning.
+Every store screen on a phone reported load errors, HTTP 4xx/5xx and Cloudflare
+guards to the API (`import-history` log events with `diag`); `alarms.tf` turned those into a
+CloudWatch alarm that e-mailed the owner the same hour. The API, the alarm and the Lambda behind
+it are torn down (ADR 0012); the phone code still sends the reports, to an endpoint that no
+longer answers.
 
 ## Deploying
 
-CI deploys. A merge to `main` runs typecheck, unit tests, the recipe guard and the app typecheck; then builds the API, updates `fca-api`, `fca-branch-prices` and `fca-alerts` through the GitHub OIDC role (`fca-github-deploy`, in Terraform `ci.tf`), and proves production with `ops/api-health.mjs` and both shopper carts. The result is posted to the channel. Secrets in the repo: `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+Nothing deploys any more (ADR 0012). While the stack was live, a merge to `main` ran typecheck, unit tests, the recipe guard and the app typecheck, built the API, updated `fca-api`, `fca-branch-prices` and `fca-alerts` through the `fca-github-deploy` OIDC role (`deploy.yml`) and proved production with `ops/api-health.mjs` and both shopper carts; `npm run deploy:web` synced the web build to the bucket. `deploy.yml`, `logs.yml`, the deploy role and the `deploy:web` script are gone. A merge to `main` runs `ci.yml` (tests) only.
 
 ## Terraform from GitHub
 
-`.github/workflows/terraform.yml`: a pull request that touches `infrastructure/terraform/app/**` gets a plan as a PR comment; the merge to main applies it through the `fca-github-terraform` OIDC role, with the state in S3 (`fca-tfstate-<account>`, `backend.tf`). Secrets reach Terraform as `TF_VAR_*` from the repository secrets; non-secret variables live in committed `*.auto.tfvars`. One local apply created the bucket and the roles and migrated the state; after that no laptop needs AWS credentials for the stack. Infrastructure changes are pull requests like everything else. Every plan, on the PR and again right before the apply, goes through `ops/plan-guard.mjs`: a destroy or forget must be named in `ops/plan-guard.allow` (`destroy <address>` / `forget <address>`), the shared OIDC provider and the state bucket are never destroyed, and the apply applies that guarded plan file, not a fresh one (ADR 0012).
+`.github/workflows/terraform.yml`: a pull request that touches `infrastructure/terraform/app/**` gets a plan as a PR comment; the merge to main applies it through the `fca-github-terraform` OIDC role, with the state in S3 (`fca-tfstate-437075214009`, `backend.tf`). After the teardown (ADR 0012) the stack holds only that role and its policy; the next pull request forgets them and the owner deletes them by hand, after which the workflow itself goes. No laptop needs AWS credentials for any of this. Infrastructure changes are pull requests like everything else. Every plan, on the PR and again right before the apply, goes through `ops/plan-guard.mjs`: a destroy or forget must be named in `ops/plan-guard.allow` (`destroy <address>` / `forget <address>`), the shared OIDC provider and the state bucket are never destroyed, and the apply applies that guarded plan file, not a fresh one (ADR 0012).
 ## Agents on every pull request
 
-`.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. The key lives in AWS SSM as a SecureString (`/fca/anthropic-key`, put there once by `ops/secrets.sh`, prompted and never on a command line) and is read at run time through the `fca-github-review` OIDC role; a repository secret `ANTHROPIC_API_KEY` also works. Add `[skip-agents]` to a PR title to skip it (docs-only PRs).
+`.github/workflows/agents-review.yml`: the product-qa agent reviews each PR against the promises with the diff and the tests it can run on Linux, and posts one review comment. The key is the repository secret `ANTHROPIC_API_KEY`; without it the review skips with a notice. The SSM path (`/fca/anthropic-key` through the `fca-github-review` role, `ops/secrets.sh`) went with the AWS stack (ADR 0012). Add `[skip-agents]` to a PR title to skip it (docs-only PRs).
 
 ## Who decides
 

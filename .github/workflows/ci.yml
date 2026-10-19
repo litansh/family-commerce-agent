@@ -1,8 +1,7 @@
 name: ci
 
 # Every pull request and every merge to main: typecheck, unit tests, the recipe guard, the app's
-# typecheck, and the API bundle as an artifact. The deploy lives in deploy.yml and runs only after
-# this workflow succeeds on main, so a pull request never shows a skipped deploy job.
+# typecheck, and the API bundle as an artifact. Nothing deploys: the AWS stack is retired (ADR 0012).
 on:
   push: { branches: [main] }
   pull_request:

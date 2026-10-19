@@ -57,6 +57,12 @@ function verbOf(actions) {
   return 'no-op';
 }
 
+// Drops attributes that hold policy documents, so a reference inside them is not read as an identity.
+function withoutPolicies(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  return Object.fromEntries(Object.entries(obj).filter(([k]) => !/policy|statement/i.test(k)));
+}
+
 export function evaluate(plan, allow) {
   if (!plan || !Array.isArray(plan.resource_changes)) throw new Error('plan.json has no resource_changes[]');
   const counts = { add: 0, change: 0, destroy: 0, forget: 0 };
@@ -78,7 +84,9 @@ export function evaluate(plan, allow) {
     const problems = [];
     if (verb === 'destroy' && PROTECTED.has(address)) problems.push('protected address would be destroyed');
     if (verb === 'destroy') {
-      for (const s of strings(before)) {
+      // Policy documents name other resources as principals and ARNs by design (a role's trust policy
+      // names the OIDC provider); only identity attributes say what the resource itself is.
+      for (const s of strings(withoutPolicies(before))) {
         const hit = FORBIDDEN_FRAGMENTS.find((f) => s.includes(f));
         if (hit) { problems.push(`identity "${s}" names a kept resource (${hit})`); break; }
       }

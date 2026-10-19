@@ -61,3 +61,13 @@ test('an allowlist line with the wrong verb fails', () => {
 test('a malformed allowlist line is rejected', () => {
   assert.throws(() => parseAllow('delete aws_lambda_function.api\n'), /cannot read line/);
 });
+
+test('a role whose trust policy names the OIDC provider is an fca- role, not the provider', () => {
+  const allow = new Map([['aws_iam_role.github_deploy', 'destroy']]);
+  const before = {
+    name: 'fca-github-deploy', arn: 'arn:aws:iam::437075214009:role/fca-github-deploy', id: 'fca-github-deploy',
+    assume_role_policy: JSON.stringify({ Statement: [{ Principal: { Federated: 'arn:aws:iam::437075214009:oidc-provider/token.actions.githubusercontent.com' } }] }),
+  };
+  const r = evaluate(plan(change('aws_iam_role.github_deploy', ['delete'], before)), allow);
+  assert.equal(r.ok, true, r.reasons.join('\n'));
+});
