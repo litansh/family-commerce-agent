@@ -86,6 +86,8 @@ actually has — is not something any of them can do today.**
 
 ## Retirement
 
+retire(3/4) empties the Terraform state: the `fca-github-terraform` role leaves the state but stays in the account until the owner deletes it (ops/NEEDS-HUMAN.md). retire(4/4) removes `infrastructure/terraform/app/` and the terraform workflow.
+
 Kaniti was retired on 19 October 2026 ([ADR 0012](docs/adr/0012-retire-the-aws-stack.md)): the
 funnel never reached a confirmed purchase, the ops loop stalled twelve days on the laptop side, and
 a live stack nobody watches is a liability. The stack went the way it came, through pull requests,
