@@ -297,7 +297,9 @@ ops/unblock.sh                            # merge main into any pull request tha
 
 Every change is a pull request, posted to the Kaniti Telegram channel for approval. Nobody pushes to
 main, and nobody deploys from a laptop: a merge runs the tests, deploys the three Lambdas through a
-GitHub OIDC role, and proves production with the shopper's carts.
+GitHub OIDC role, and proves production with the shopper's carts. Infrastructure merges apply the
+guarded plan: `ops/plan-guard.mjs` checks the plan against `ops/plan-guard.allow` before the apply,
+and nothing is destroyed or forgotten that the allowlist does not name (ADR 0012).
 
 ## Setting up a new Mac
 
