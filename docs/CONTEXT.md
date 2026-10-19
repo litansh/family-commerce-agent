@@ -14,13 +14,13 @@ worklist is `docs/BACKLOG.md`. Nothing else needs reading before you start.
 | Providers | `services/retailer-connectors/src/supermcp.ts` (SuperMCP quote and catalogue), `wolt-eta.ts`; `services/shopping-agent/src/{quote-with-fallback,substitutes}.ts` | unit tests next to each |
 | Store sessions in the cloud | `services/cloud-connectors/src/*` (drivers, sealed sessions, history import) | `apps/api` tests |
 | In-store prices | `services/branch-prices/src/{portals,xml,geo,cbs,index}.ts` | `node services/branch-prices/lab.mjs` |
-| Infra | `infrastructure/terraform/app/*.tf` (Lambdas, table `fca-main`, alarms, CI roles); `.github/workflows/{ci,deploy,terraform,agents-review}.yml` | CI on every PR; deploy after merge |
+| Infra | retired (ADR 0012): `infrastructure/terraform/app/*.tf` holds only the terraform role until it is forgotten; `.github/workflows/{ci,terraform,agents-review}.yml`; the stack as it ran is at the tag `last-live` | CI on every PR; nothing deploys |
 | Ops | `ops/check.mjs` (all checks), `ops/repair.sh` (orchestrator), `ops/qa.sh`, `ops/pr.sh` (branch → PR → CI → Telegram), `ops/fleet.sh` (agents, one at a time), `ops/find.mjs` (retrieval) | `node ops/check.mjs --only <check>` |
 
 ## Facts that are not in the code
 - Stores: Rami Levy (own site), stor.ai chains (Victory, Carrefour, Keshet, Mahsanei HaShuk, Tiv Taam), Wolt venues, Hatzi Hinam, Shufersal (owner's account locked at the store). Sessions live in the phone's WebView; the cloud keeps a sealed copy (ADR 0008).
 - The compare answers in ~15–23 s; API Gateway cuts at 30 s; the provider call has 22 s, the whole quote 26 s, then `503 stores_slow`.
-- Test family: `~/.kaniti/e2e.env`; Telegram: `~/.kaniti/telegram.env`; AWS: profile `personal-cfo`, region `eu-central-1`, only through CI for deploys.
+- Test family: `~/.kaniti/e2e.env`; Telegram: `~/.kaniti/telegram.env`; AWS: profile `personal-cfo`, region `eu-central-1`; the stack is torn down (ADR 0012), only the owner's hand steps in `ops/NEEDS-HUMAN.md` touch the account now.
 - No Anthropic key exists anywhere; agents run on this Mac's Claude login. Usage is a budget: one agent at a time, cheap models for mechanical work, retrieval before reading, WIP committed as you go.
 
 ## How to work cheaply (this is a rule, not advice)

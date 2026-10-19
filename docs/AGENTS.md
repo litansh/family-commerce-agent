@@ -63,4 +63,4 @@ could not observe stops the diagnosis there and says so.
 
 ## The daily run
 
-`ops/repair.sh` at 06:40 (launchd `com.kaniti.ops`): checks → repair if red → briefing → store scout → review of open PRs → product review → the fleet (`ops/fleet.sh`, one agent at a time through the backlog). Everything ends in a pull request the owner merges; CI deploys and proves production after the merge. The owner is asked only for what a lab may not do: a real order, a locked account, a store account.
+`ops/repair.sh`, by hand (the launchd job `com.kaniti.ops` is gone with the retirement, ADR 0012): checks → repair if red → briefing → store scout → review of open PRs → product review → the fleet (`ops/fleet.sh`, one agent at a time through the backlog). Everything ends in a pull request the owner merges; there is no production to deploy to. The owner is asked only for what a lab may not do: a real order, a locked account, a store account.

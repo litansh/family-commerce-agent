@@ -32,9 +32,9 @@ checks out.
 
 <p align="center"><sub>Screenshots are the built-in test household on the iOS simulator. No real family, address or order appears anywhere in this repository.</sub></p>
 
-**Status: live.** Web at https://d3lykvs28o7qrc.cloudfront.net · backend on AWS (Cognito, DynamoDB,
-Lambda, API Gateway) · Expo app for iOS/Android (EAS config in `apps/mobile`). Phases 0–4 done;
-store connection ladder (ADR 0008) built; Phase 5 (prepared carts) next.
+**Status: retired (October 2026).** The AWS stack is torn down (ADR 0012, the "Retirement" section
+below); the code, the labs and the record of what ran stay. Phases 0–4 were done; the store
+connection ladder (ADR 0008) was built; Phase 5 (prepared carts) was next.
 
 ## The short version
 
@@ -83,6 +83,31 @@ Both were measured directly, not read:
 So the honest claim is narrow and large at once: the comparison is a commodity, and **the shop
 itself — a full cart at the chain, built from what this family buys, out of what their branch
 actually has — is not something any of them can do today.**
+
+## Retirement
+
+Kaniti was retired on 19 October 2026 ([ADR 0012](docs/adr/0012-retire-the-aws-stack.md)): the
+funnel never reached a confirmed purchase, the ops loop stalled twelve days on the laptop side, and
+a live stack nobody watches is a liability. The stack went the way it came, through pull requests,
+each plan checked by `ops/plan-guard.mjs` against `ops/plan-guard.allow`.
+
+**Torn down:** the Cognito user pool and its domain, the `fca-main` table, the `fca-api` Lambda and
+its HTTP API, the `fca-branch-prices` refresher and its nightly rule, the `fca-alerts` Lambda, the
+SNS topic and alarms, the `fca-orders` queue and its worker user, the CloudFront distribution and the
+`fca-web-4b19ec` bucket, the `fca-branch-prices` bucket, the SSM review key, and the deploy and
+review OIDC roles. Data loss was accepted: the sealed store sessions, the cached catalogue and the
+price indexes went with it (nothing in them was a family's credential, ADR 0008).
+
+**Remaining:** the bootstrap stack (`infrastructure/terraform/bootstrap`, the account budget), the
+shared GitHub OIDC provider (used by other projects in the account), the state bucket
+`fca-tfstate-437075214009`, this repository, the tag `last-live` on the last commit that ran in
+production (the rebuild path), and ADR 0012.
+
+**Dead on purpose:** the endpoints hard-coded in `apps/mobile/src/lib/config.ts`, `apps/mobile/app.json`,
+`ops/*.mjs` and `apps/mobile/e2e` no longer answer; they stay as the record of what ran. `npm run
+deploy:web`, `deploy.yml` and `logs.yml` are gone; `terraform.yml` stays until the terraform role has
+left the state. The promises in [`docs/WHAT-WE-PROMISE.md`](docs/WHAT-WE-PROMISE.md) are suspended,
+not weakened: no check was edited to pass against a dead API.
 
 ## Documents
 
@@ -296,10 +321,11 @@ ops/unblock.sh                            # merge main into any pull request tha
 ```
 
 Every change is a pull request, posted to the Kaniti Telegram channel for approval. Nobody pushes to
-main, and nobody deploys from a laptop: a merge runs the tests, deploys the three Lambdas through a
-GitHub OIDC role, and proves production with the shopper's carts. Infrastructure merges apply the
-guarded plan: `ops/plan-guard.mjs` checks the plan against `ops/plan-guard.allow` before the apply,
-and nothing is destroyed or forgotten that the allowlist does not name (ADR 0012).
+main, and nobody deploys from a laptop. While the stack was live, a merge ran the tests, deployed the
+three Lambdas through a GitHub OIDC role and proved production with the shopper's carts; since the
+retirement a merge runs the tests only. Infrastructure merges apply the guarded plan:
+`ops/plan-guard.mjs` checks the plan against `ops/plan-guard.allow` before the apply, and nothing is
+destroyed or forgotten that the allowlist does not name (ADR 0012).
 
 ## Setting up a new Mac
 
@@ -312,14 +338,14 @@ printf 'KANITI_E2E_EMAIL=…\nKANITI_E2E_PASSWORD=…\n' > ~/.kaniti/e2e.env
 printf 'TELEGRAM_BOT_TOKEN=…\nTELEGRAM_CHAT_ID=…\n' > ~/.kaniti/telegram.env
 ```
 
-Both files stay out of git. AWS credentials are deliberately **not** needed: deploys and Terraform
-run in CI through OIDC, and production logs are read with
-`gh workflow run logs.yml -f minutes=30 -f pattern='"event":"quote"'`.
+Both files stay out of git. AWS credentials are deliberately **not** needed on a Mac: Terraform ran
+in CI through OIDC, and so did deploys and log reads while the stack was live (`deploy.yml` and
+`logs.yml` went with it). There is no production to read logs from any more.
 
-To run your own copy, CI needs repository secrets rather than anything in the tree: `AWS_ACCOUNT_ID`
-(the roles in `infrastructure/terraform/app/ci.tf` and the state bucket `fca-tfstate-<account id>`
-are named from it), `KANITI_E2E_EMAIL` / `KANITI_E2E_PASSWORD` for the test household, and
-`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` for the channel. The repo is public, so its run logs are
+To run your own copy, start from the tag `last-live` and ADR 0012's rebuild path. Its CI needs
+repository secrets rather than anything in the tree: `KANITI_E2E_EMAIL` / `KANITI_E2E_PASSWORD` for
+the test household and `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` for the channel; the account id is
+written into `backend.tf` and `terraform.yml`. The repo is public, so its run logs are
 public too: keep identifiers in secrets, never in variables, code or commit messages.
 
 ## The measuring instruments
