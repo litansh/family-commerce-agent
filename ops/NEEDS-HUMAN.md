@@ -1,5 +1,28 @@
 # Needs the owner
 
+## Retirement: the steps only the owner can take (2026-10-19)
+ADR 0012: the AWS stack is torn down through four pull requests; the plan guard (`ops/plan-guard.mjs`)
+refuses anything the allowlist does not name. These steps are the owner's, in this order:
+
+1. (done) `gh auth switch --user litansh` — the PRs and the tag come from the repo's own identity.
+2. (done) `launchctl bootout gui/$(id -u)/com.kaniti.ops` and the plist removed from
+   `~/Library/LaunchAgents` — the ops loop no longer wakes the Mac for a stack that is going away.
+3. (done) tag `last-live` on the last commit that ran in production, pushed — the rebuild path.
+4. After PR 3's apply is green (the terraform role has left the state):
+   - `aws login --profile personal-cfo`
+   - `aws iam delete-role-policy --role-name fca-github-terraform --policy-name fca-github-terraform && aws iam delete-role --role-name fca-github-terraform`
+   - delete the log group `/aws/lambda/fca-alerts` and any other `/aws/lambda/fca-*` still there
+     (Lambda creates them outside Terraform): `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/fca-`
+   - delete every version and delete-marker of `app/terraform.tfstate` and `app/terraform.tfstate.tflock`
+     in the bucket `fca-tfstate-437075214009` — the state versions hold the worker's secret access key
+     and the Telegram bot token; the bucket itself stays
+   - remove `[profile kanili-worker]` from `~/.aws/config`
+   - delete `infrastructure/terraform/app/terraform.tfvars` from disk, or rotate the Telegram bot token it holds
+5. After PR 4 (the workflow is gone): `gh secret delete` for `AWS_ACCOUNT_ID`, `TELEGRAM_BOT_TOKEN`,
+   `TELEGRAM_CHAT_ID`, `KANITI_E2E_EMAIL`, `KANITI_E2E_PASSWORD`.
+
+Nothing else is requested.
+
 ## The ops Mac's AWS session (personal-cfo) has expired, so מבצעים has had no second rung (2026-10-04)
 `services/branch-prices/refresh-deals.mjs` read 480 named deals across 8 chains from the chains' own
 files this morning and then failed to write them: `CredentialsProviderError: Your session has

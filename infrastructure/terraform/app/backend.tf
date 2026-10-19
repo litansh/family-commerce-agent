@@ -1,10 +1,10 @@
-# Remote state, so Terraform runs from GitHub Actions and a laptop alike. The bucket is created
-# by this stack (ci.tf) on the first local apply; `terraform init -migrate-state` then moves the
-# state into it once, and no laptop needs AWS credentials for this stack again.
-# The bucket is `fca-tfstate-<account id>`, passed at init so the account id stays out of the tree:
-#   terraform init -backend-config="bucket=fca-tfstate-$AWS_ACCOUNT_ID"
+# Remote state, so Terraform runs from GitHub Actions and a laptop alike. The bucket was created
+# by this stack on the first local apply and is now kept outside it (ci.tf, `removed` block):
+# it outlives the stack (ADR 0012). The account id is hard-coded on purpose, so no repository
+# secret is load-bearing for init.
 terraform {
   backend "s3" {
+    bucket       = "fca-tfstate-437075214009"
     key          = "app/terraform.tfstate"
     region       = "eu-central-1"
     encrypt      = true

@@ -3,7 +3,8 @@
 # a small per-branch barcode index in S3. Nightly, and on demand from the API.
 
 resource "aws_s3_bucket" "branch_prices" {
-  bucket = "${var.name}-branch-prices"
+  bucket        = "${var.name}-branch-prices"
+  force_destroy = true # retirement (ADR 0012): the bucket is non-empty and goes with the stack
 }
 
 resource "aws_s3_bucket_public_access_block" "branch_prices" {

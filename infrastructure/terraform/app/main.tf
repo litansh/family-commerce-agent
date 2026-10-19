@@ -3,10 +3,10 @@
 #
 #   cd infrastructure/terraform/app
 #   eval "$(aws configure export-credentials --profile personal-cfo --format env)"
-#   terraform init -backend-config="bucket=fca-tfstate-<account id>" && terraform apply
+#   terraform init && terraform apply
 
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.7"
   required_providers {
     aws     = { source = "hashicorp/aws", version = "~> 5.70" }
     archive = { source = "hashicorp/archive", version = "~> 2.6" }
