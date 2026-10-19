@@ -68,3 +68,7 @@ destroy aws_sqs_queue.orders
 destroy aws_ssm_parameter.anthropic_key
 destroy random_bytes.session_key
 destroy random_id.domain
+
+# retire(3/4): the role that applied this stack leaves the state; the owner deletes it by hand.
+forget aws_iam_role.github_terraform
+forget aws_iam_role_policy.github_terraform
